@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aymane El Ouafi</title>
+  <link rel="icon" href="images/skull.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rubik+Glitch&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="container post">
+
+    <a class="back" href="index.html">← cd ..</a>
+
+    <h1 id="title">loading...</h1>
+    <p class="post-meta" id="meta"></p>
+
+    <!-- Table of contents, filled by post.js -->
+    <nav id="toc" class="toc"></nav>
+
+    <!-- The Markdown file is turned into HTML here -->
+    <article id="content"></article>
+
+  </main>
+
+  <!-- marked = library that turns Markdown into HTML -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/18.1.0/lib/marked.umd.min.js"></script>
+  <script src="posts.js"></script>
+  <script src="post.js"></script>
+</body>
+</html>

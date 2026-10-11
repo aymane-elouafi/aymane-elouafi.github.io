@@ -1,30 +1,52 @@
-// ===== YOUR POSTS =====
-// To add a post:
-//   1. Copy posts/_template.html, rename it (ex: posts/my-new-post.html) and write in it
-//   2. Add a line at the TOP of this list
-const posts = [
-  {
-    title: "Hello World - why this blog exists",
-    date: "2026-10-11",
-    tag: "notes",
-    file: "posts/hello-world.html",
-  },
-];
+// Your list of posts is in posts.js (that's the file to edit when you add a post)
 
 
-// ===== Show the posts on the home page (no need to touch this) =====
+// ===== Show the posts on the home page =====
 const list = document.getElementById("post-list");
 
+function showPosts(postsToShow) {
+  list.innerHTML = "";
+  postsToShow.forEach(function (post) {
+    const tags = post.tags.map(function (t) { return "#" + t; }).join(" ");
+    const item = document.createElement("li");
+    item.innerHTML = `
+      <a href="post.html?id=${post.id}">
+        <div class="post-title">${post.title}</div>
+        <div class="post-desc">${post.description}</div>
+        <div class="post-meta">${post.date} · ${tags}</div>
+      </a>
+    `;
+    list.appendChild(item);
+  });
+  document.getElementById("no-results").hidden = postsToShow.length > 0;
+}
+
+showPosts(posts);
+
+
+// ===== Search bar =====
+// Searches in the title, description, tags AND the full text of the notes
+
+// Load the text of every post once, so we can search inside them
 posts.forEach(function (post) {
-  const item = document.createElement("li");
-  item.innerHTML = `
-    <a href="${post.file}">
-      <div class="post-title">${post.title}</div>
-      <div class="post-meta">${post.date} · #${post.tag}</div>
-    </a>
-  `;
-  list.appendChild(item);
+  post.text = "";
+  fetch("posts/" + post.id + ".md")
+    .then(function (response) { return response.text(); })
+    .then(function (text) { post.text = text; })
+    .catch(function () {}); // if it fails, search still works on title and tags
 });
+
+document.getElementById("search").addEventListener("input", function (event) {
+  const search = event.target.value.toLowerCase().trim();
+
+  const found = posts.filter(function (post) {
+    const everything = [post.title, post.description, post.tags.join(" "), post.text].join(" ");
+    return everything.toLowerCase().includes(search);
+  });
+
+  showPosts(found);
+});
+
 
 document.getElementById("year").textContent = new Date().getFullYear();
 

@@ -43,9 +43,12 @@
 
     <!-- ===== BLOG ===== -->
     <section class="blog">
-      <p class="prompt"><span class="user">root@aymane</span>:<span class="path">~/posts</span># ls -t</p>
+      <p class="prompt"><span class="user">root@aymane</span>:<span class="path">~/posts</span># grep -ri</p>
 
-      <!-- Posts are added in script.js -->
+      <input id="search" class="search" type="text" placeholder="search posts... (ex: nmap, -sV, htb)" autocomplete="off">
+      <p id="no-results" class="no-results" hidden>grep: no match found ¯\_(ツ)_/¯</p>
+
+      <!-- Posts come from posts.js -->
       <ul id="post-list" class="post-list"></ul>
     </section>
 
@@ -63,6 +66,7 @@
 
   </main>
 
+  <script src="posts.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
