@@ -404,8 +404,34 @@ footer {
 }
 
 /* ===== PHONES ===== */
+/* everything below only applies on screens smaller than 600px */
 @media (max-width: 600px) {
-  .container { padding: 40px 16px; }
-  .glitch { font-size: 2.2rem; }
-  .contact h2 { font-size: 1.7rem; }
+  body { font-size: 15px; line-height: 1.6; }
+  .container { padding: 30px 16px; }
+
+  /* home page */
+  .skull { width: 64px; }
+  .glitch { font-size: 2rem; }
+  .bio { font-size: 1rem; }
+  .tags { gap: 8px; }
+  .tag { font-size: 0.85rem; padding: 3px 10px; }
+  .whoami { margin-bottom: 50px; }
+  .post-list a { padding: 14px 16px; }
+  .contact { margin-top: 50px; padding: 30px 16px; }
+  .contact h2 { font-size: 1.6rem; }
+  .button { font-size: 1rem; padding: 12px 20px; }
+
+  /* post page */
+  .post h1 { font-size: 1.8rem; }
+  .post article h1 { font-size: 1.4rem; margin-top: 40px; }
+  .post h2 { font-size: 1.2rem; margin-top: 30px; }
+  pre { padding: 12px; font-size: 0.8rem; }
+  table { font-size: 0.8rem; }
+  th, td { padding: 6px 8px; }
+  td code { word-break: break-all; }
+}
+
+/* long words or commands never push the page wider than the screen */
+p, li, td {
+  overflow-wrap: anywhere;
 }
