@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aymane El Ouafi</title>
+  <meta name="description" content="Aymane El Ouafi - cybersecurity engineer. Notes and write-ups on offensive and defensive security.">
+  <link rel="icon" href="images/skull.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rubik+Glitch&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Matrix rain in the background (drawn by script.js) -->
+  <canvas id="matrix"></canvas>
+
+  <main class="container">
+
+    <!-- ===== WHOAMI ===== -->
+    <section class="whoami">
+      <img class="skull" src="images/skull.svg" alt="pixel skull">
+
+      <p class="prompt"><span class="user">root@aymane</span>:<span class="path">~</span># <span id="typed"></span><span class="cursor">█</span></p>
+
+      <h1 class="glitch" data-text="AYMANE EL OUAFI">AYMANE EL OUAFI</h1>
+
+      <p class="bio">
+        <span class="highlight">// cybersecurity engineer</span><br>
+        I like breaking things and catching the people who break things.
+        Interested in both <span class="pink">offensive</span> and <span class="cyan">defensive</span> security.
+        Lately I've been spending a lot of time on
+        <a href="https://www.hackthebox.com" target="_blank">Hack The Box</a>.
+        This is where I write down what I learn so I don't lose it.
+      </p>
+
+      <ul class="tags">
+        <li class="tag pink">Penetration Testing</li>
+        <li class="tag cyan">Detection Engineering</li>
+        <li class="tag yellow">SOC Operations</li>
+        <li class="tag purple">Incident Response</li>
+      </ul>
+    </section>
+
+    <!-- ===== BLOG ===== -->
+    <section class="blog">
+      <p class="prompt"><span class="user">root@aymane</span>:<span class="path">~/posts</span># ls -t</p>
+
+      <!-- Posts are added in script.js -->
+      <ul id="post-list" class="post-list"></ul>
+    </section>
+
+    <!-- ===== CONTACT ===== -->
+    <section class="contact">
+      <p class="prompt">&gt; establishing secure connection...</p>
+      <h2>WANT TO TALK?</h2>
+      <p>Questions, opportunities or just want to say hi. Reach me on LinkedIn.</p>
+      <a class="button" href="https://www.linkedin.com/in/aymaneelouafi" target="_blank">CONNECT ON LINKEDIN</a>
+    </section>
+
+    <footer>
+      <p>© <span id="year"></span> Aymane El Ouafi // hack the planet</p>
+    </footer>
+
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

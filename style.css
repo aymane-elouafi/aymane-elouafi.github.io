@@ -1,0 +1,332 @@
+/* ===== COLORS - change them here ===== */
+:root {
+  --bg: #0a0a0f;
+  --card: rgba(20, 20, 30, 0.85);
+  --text: #e8e8f0;
+  --muted: #7a7a95;
+
+  --pink: #ff2e88;
+  --cyan: #00f0ff;
+  --yellow: #f5f500;
+  --purple: #a855ff;
+  --green: #39ff14;
+}
+
+/* ===== BASE ===== */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Share Tech Mono", "Courier New", monospace;
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+/* old CRT screen lines on top of everything */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.03) 0,
+    rgba(255, 255, 255, 0.03) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  z-index: 10;
+}
+
+/* matrix rain background */
+#matrix {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.25;
+}
+
+.container {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 60px 20px;
+}
+
+a {
+  color: var(--cyan);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--pink);
+}
+
+.pink { color: var(--pink); }
+.cyan { color: var(--cyan); }
+
+/* ===== TERMINAL PROMPT ===== */
+.prompt {
+  color: var(--muted);
+  margin: 0;
+}
+
+.prompt .user { color: var(--green); }
+.prompt .path { color: var(--cyan); }
+
+.cursor {
+  color: var(--green);
+  animation: blink 1s steps(1) infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* ===== WHOAMI ===== */
+.whoami {
+  margin-bottom: 70px;
+}
+
+.skull {
+  width: 90px;
+  image-rendering: pixelated;
+  margin-bottom: 20px;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  50% { transform: translateY(-8px) rotate(-4deg); }
+}
+
+.highlight {
+  background: var(--yellow);
+  color: #000;
+  padding: 0 6px;
+}
+
+.bio {
+  font-size: 1.1rem;
+}
+
+/* ===== GLITCH TITLE ===== */
+.glitch {
+  position: relative;
+  font-family: "Rubik Glitch", sans-serif;
+  font-weight: normal;
+  font-size: 3.2rem;
+  line-height: 1.1;
+  margin: 15px 0 25px;
+  color: #fff;
+  isolation: isolate; /* keeps the colored copies right behind the title */
+}
+
+/* two colored copies of the title that jump around */
+.glitch::before,
+.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+}
+
+.glitch::before {
+  color: var(--pink);
+  z-index: -1;
+  animation: glitch 2.5s infinite;
+}
+
+.glitch::after {
+  color: var(--cyan);
+  z-index: -2;
+  animation: glitch 2s infinite reverse;
+}
+
+@keyframes glitch {
+  0%, 85%, 100% { transform: translate(0); }
+  87% { transform: translate(-4px, 2px); }
+  90% { transform: translate(4px, -2px); }
+  93% { transform: translate(-3px, -1px); }
+  96% { transform: translate(3px, 1px); }
+}
+
+/* ===== TAGS (sticker style) ===== */
+.tags {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.tag {
+  padding: 4px 14px;
+  color: #000;
+  font-weight: bold;
+  transition: transform 0.2s;
+}
+
+.tag:nth-child(odd)  { transform: rotate(-2deg); }
+.tag:nth-child(even) { transform: rotate(2deg); }
+
+.tag:hover {
+  transform: rotate(0) scale(1.1);
+}
+
+.tag.pink   { background: var(--pink); }
+.tag.cyan   { background: var(--cyan); }
+.tag.yellow { background: var(--yellow); }
+.tag.purple { background: var(--purple); }
+
+/* ===== POST LIST ===== */
+.post-list {
+  list-style: none;
+  padding: 0;
+  margin-top: 20px;
+}
+
+.post-list li {
+  margin-bottom: 14px;
+}
+
+.post-list a {
+  display: block;
+  padding: 16px 20px;
+  background: var(--card);
+  border: 1px solid var(--pink);
+  box-shadow: 4px 4px 0 var(--pink);
+  color: var(--text);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.post-list a:hover {
+  transform: translate(-3px, -3px);
+  box-shadow: 7px 7px 0 var(--cyan);
+  border-color: var(--cyan);
+}
+
+.post-title {
+  font-size: 1.15rem;
+  color: #fff;
+}
+
+.post-title::before {
+  content: "> ";
+  color: var(--green);
+}
+
+.post-meta {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* ===== CONTACT ===== */
+.contact {
+  margin-top: 80px;
+  padding: 40px 20px;
+  text-align: center;
+  border: 2px dashed var(--cyan);
+  background: var(--card);
+}
+
+.contact h2 {
+  font-family: "Rubik Glitch", sans-serif;
+  font-weight: normal;
+  font-size: 2.2rem;
+  margin: 10px 0;
+  color: var(--yellow);
+}
+
+.button {
+  display: inline-block;
+  margin-top: 15px;
+  padding: 12px 28px;
+  background: var(--pink);
+  color: #000;
+  font-weight: bold;
+  font-size: 1.1rem;
+  box-shadow: 5px 5px 0 var(--cyan);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.button:hover {
+  color: #000;
+  transform: translate(-3px, -3px);
+  box-shadow: 8px 8px 0 var(--yellow);
+}
+
+/* ===== SINGLE POST PAGE ===== */
+.back {
+  color: var(--green);
+}
+
+.post h1 {
+  font-family: "Rubik Glitch", sans-serif;
+  font-weight: normal;
+  font-size: 2.4rem;
+  line-height: 1.2;
+  color: var(--pink);
+}
+
+.post h2 {
+  color: var(--yellow);
+  margin-top: 40px;
+}
+
+.post h2::before {
+  content: "# ";
+  color: var(--pink);
+}
+
+.post h3 {
+  color: var(--cyan);
+}
+
+.post img {
+  max-width: 100%;
+  border: 1px solid var(--cyan);
+}
+
+code {
+  background: #1a1a26;
+  color: var(--green);
+  padding: 2px 6px;
+}
+
+pre {
+  background: #05050a;
+  border: 1px solid var(--green);
+  padding: 16px;
+  overflow-x: auto;
+}
+
+pre code {
+  padding: 0;
+  background: none;
+}
+
+blockquote {
+  margin: 20px 0;
+  padding: 10px 20px;
+  border-left: 4px solid var(--yellow);
+  background: var(--card);
+}
+
+/* ===== FOOTER ===== */
+footer {
+  margin-top: 60px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* ===== PHONES ===== */
+@media (max-width: 600px) {
+  .container { padding: 40px 16px; }
+  .glitch { font-size: 2.2rem; }
+  .contact h2 { font-size: 1.7rem; }
+}
