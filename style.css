@@ -425,7 +425,9 @@ footer {
   .post h1 { font-size: 1.8rem; }
   .post article h1 { font-size: 1.4rem; margin-top: 40px; }
   .post h2 { font-size: 1.2rem; margin-top: 30px; }
-  pre { padding: 12px; font-size: 0.8rem; }
+  /* long commands go to the next line instead of being cut */
+  pre { padding: 12px; font-size: 0.75rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+  pre code { white-space: pre-wrap; }
   table { font-size: 0.8rem; }
   th, td { padding: 6px 8px; }
   td code { word-break: break-all; }
