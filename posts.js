@@ -13,11 +13,4 @@ const posts = [
     tags: ["htb", "nmap", "enumeration", "pentest"],
     description: "My notes from the HTB Academy Nmap module: host discovery, port scanning, service enumeration and NSE.",
   },
-  {
-    id: "hello-world",
-    title: "Hello World - why this blog exists",
-    date: "2026-10-11",
-    tags: ["notes"],
-    description: "What this place is about.",
-  },
 ];
