@@ -301,7 +301,21 @@ pre {
   background: #05050a;
   border: 1px solid var(--green);
   padding: 16px;
-  overflow-x: auto;
+  overflow-x: auto; /* long lines get a scroll bar */
+  scrollbar-color: var(--green) #05050a;
+}
+
+/* green scroll bar for code blocks */
+pre::-webkit-scrollbar {
+  height: 8px;
+}
+
+pre::-webkit-scrollbar-track {
+  background: #05050a;
+}
+
+pre::-webkit-scrollbar-thumb {
+  background: var(--green);
 }
 
 pre code {
@@ -425,9 +439,7 @@ footer {
   .post h1 { font-size: 1.8rem; }
   .post article h1 { font-size: 1.4rem; margin-top: 40px; }
   .post h2 { font-size: 1.2rem; margin-top: 30px; }
-  /* long commands go to the next line instead of being cut */
-  pre { padding: 12px; font-size: 0.75rem; white-space: pre-wrap; overflow-wrap: anywhere; }
-  pre code { white-space: pre-wrap; }
+  pre { padding: 12px; font-size: 0.8rem; }
   table { font-size: 0.8rem; }
   th, td { padding: 6px 8px; }
   td code { word-break: break-all; }
