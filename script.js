@@ -8,9 +8,11 @@ function showPosts(postsToShow) {
   list.innerHTML = "";
   postsToShow.forEach(function (post) {
     const tags = post.tags.map(function (t) { return "#" + t; }).join(" ");
+    const series = post.series ? `<span class="series-label">${post.series}</span>` : "";
     const item = document.createElement("li");
     item.innerHTML = `
       <a href="post.html?id=${post.id}">
+        ${series}
         <div class="post-title">${post.title}</div>
         <div class="post-desc">${post.description}</div>
         <div class="post-meta">${post.date} · ${tags}</div>
@@ -40,7 +42,7 @@ document.getElementById("search").addEventListener("input", function (event) {
   const search = event.target.value.toLowerCase().trim();
 
   const found = posts.filter(function (post) {
-    const everything = [post.title, post.description, post.tags.join(" "), post.text].join(" ");
+    const everything = [post.title, post.description, post.series, post.tags.join(" "), post.text].join(" ");
     return everything.toLowerCase().includes(search);
   });
 
