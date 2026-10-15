@@ -422,7 +422,17 @@ table {
   border-collapse: collapse;
   margin: 20px 0;
   display: block;
-  overflow-x: auto;
+  overflow-x: auto; /* wide tables get a scroll bar, like code blocks */
+  scrollbar-color: var(--green) #05050a;
+}
+
+td code {
+  white-space: nowrap; /* never cut a setting or command in the middle */
+}
+
+/* the description column never gets squeezed too thin */
+td:last-child {
+  min-width: 240px;
 }
 
 th, td {
@@ -476,10 +486,9 @@ footer {
   pre { padding: 12px; font-size: 0.8rem; }
   table { font-size: 0.8rem; }
   th, td { padding: 6px 8px; }
-  td code { word-break: break-all; }
 }
 
 /* long words or commands never push the page wider than the screen */
-p, li, td {
+p, li {
   overflow-wrap: anywhere;
 }

@@ -8,6 +8,14 @@
 //   series = (optional) posts with the same series name are linked together
 const posts = [
   {
+    id: "ftp",
+    title: "Footprinting FTP",
+    date: "2026-10-15",
+    series: "Footprinting Services",
+    tags: ["htb", "footprinting", "ftp", "tftp", "vsftpd", "enumeration"],
+    description: "How FTP and TFTP work, vsFTPd config and dangerous settings, anonymous login, downloading/uploading files and enumerating with Nmap and openssl.",
+  },
+  {
     id: "nfs",
     title: "Footprinting NFS",
     date: "2026-10-14",
