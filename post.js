@@ -26,12 +26,24 @@ if (!post) {
       content.innerHTML = marked.parse(markdown, { breaks: true });
       buildTableOfContents();
       showSeries();
+      makeImagesClickable();
     })
     .catch(function () {
       // happens when you open the file by double-clicking it (file://)
       content.innerHTML = "<p class='no-results'>Can't load the post. If you're testing on your computer, " +
         "run <code>python3 -m http.server</code> in the site folder and open http://localhost:8000</p>";
     });
+}
+
+// Clicking a screenshot opens it in full size in a new tab
+function makeImagesClickable() {
+  content.querySelectorAll("img").forEach(function (img) {
+    const link = document.createElement("a");
+    link.href = img.src;
+    link.target = "_blank";
+    img.replaceWith(link);
+    link.appendChild(img);
+  });
 }
 
 // If the post is part of a series, list all the posts of that series at the bottom

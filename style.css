@@ -287,8 +287,15 @@ a:hover {
 }
 
 .post img {
+  display: block;
   max-width: 100%;
+  margin: 10px 0;
   border: 1px solid var(--cyan);
+  cursor: zoom-in; /* click = open full size */
+}
+
+.post a:hover img {
+  border-color: var(--pink);
 }
 
 code {

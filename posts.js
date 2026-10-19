@@ -8,6 +8,13 @@
 //   series = (optional) posts with the same series name are linked together
 const posts = [
   {
+    id: "cap",
+    title: "Cap - HTB Walkthrough",
+    date: "2026-10-19",
+    tags: ["htb", "walkthrough", "linux", "idor", "wireshark", "capabilities", "privesc"],
+    description: "Easy Linux box: IDOR to grab a pcap, FTP creds in clear text, SSH as nathan, then root through python3.8 with cap_setuid.",
+  },
+  {
     id: "ftp",
     title: "Footprinting FTP",
     date: "2026-10-15",
