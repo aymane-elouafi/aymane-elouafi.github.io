@@ -51,6 +51,7 @@ function head({ title, description, canonical, ogType, jsonld }) {
   <meta name="description" content="${attr(description)}">
   <meta name="author" content="${attr(AUTHOR)}">
   <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="google-site-verification" content="P6WC3YGSehH9r2o-Lon_-tKZGpFiOWJjHD41vtJqLsk">
   <link rel="canonical" href="${attr(canonical)}">
   <link rel="icon" href="/images/skull.svg">
 
