@@ -8,6 +8,14 @@
 //   series = (optional) posts with the same series name are linked together
 const posts = [
   {
+    id: "dns",
+    title: "Footprinting DNS",
+    date: "2026-10-20",
+    series: "Footprinting Services",
+    tags: ["htb", "footprinting", "dns", "bind9", "dig", "zone-transfer", "axfr", "enumeration"],
+    description: "DNS servers and records, Bind9 config and zone files, dangerous settings, dig queries, AXFR zone transfers and subdomain brute forcing.",
+  },
+  {
     id: "cap",
     title: "Cap - HTB Walkthrough",
     date: "2026-10-19",
