@@ -211,7 +211,7 @@ Sometimes it is also possible to query a DNS server's version using a class CHAO
 ## DIG - Version Query :
 
 ```shell
-aymane0x90@htb[/htb]$ dig CH TXT version.bind 10.129.120.85
+aymane0x90@htb[/htb]$ dig CH TXT version.bind @10.129.120.85
 
 ; <<>> DiG 9.10.6 <<>> CH TXT version.bind
 ;; global options: +cmd
