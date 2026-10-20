@@ -1,2 +1,8 @@
 # my drafts, not published
 txt-posts*/
+
+# build tooling (not needed on the live site)
+node_modules/
+
+# editor / preview tooling
+.claude/

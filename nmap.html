@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Network Enumeration with Nmap · Aymane El Ouafi</title>
+  <meta name="description" content="My notes from the HTB Academy Nmap module: host discovery, port scanning, service enumeration, NSE and firewall evasion.">
+  <meta name="author" content="Aymane El Ouafi">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <link rel="canonical" href="https://aymaneelouafi.me/nmap.html">
+  <link rel="icon" href="/images/skull.svg">
+
+  <!-- Open Graph (Facebook, LinkedIn, Discord...) -->
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Network Enumeration with Nmap · Aymane El Ouafi">
+  <meta property="og:description" content="My notes from the HTB Academy Nmap module: host discovery, port scanning, service enumeration, NSE and firewall evasion.">
+  <meta property="og:url" content="https://aymaneelouafi.me/nmap.html">
+  <meta property="og:site_name" content="Aymane El Ouafi">
+  <meta property="og:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Network Enumeration with Nmap · Aymane El Ouafi">
+  <meta name="twitter:description" content="My notes from the HTB Academy Nmap module: host discovery, port scanning, service enumeration, NSE and firewall evasion.">
+  <meta name="twitter:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Network Enumeration with Nmap",
+  "description": "My notes from the HTB Academy Nmap module: host discovery, port scanning, service enumeration, NSE and firewall evasion.",
+  "datePublished": "2026-10-11",
+  "dateModified": "2026-10-11",
+  "author": {
+    "@type": "Person",
+    "name": "Aymane El Ouafi",
+    "url": "https://aymaneelouafi.me"
+  },
+  "publisher": {
+    "@type": "Person",
+    "name": "Aymane El Ouafi",
+    "url": "https://aymaneelouafi.me"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://aymaneelouafi.me/nmap.html"
+  },
+  "url": "https://aymaneelouafi.me/nmap.html",
+  "image": "https://aymaneelouafi.me/images/og.png",
+  "keywords": "htb, nmap, enumeration, pentest",
+  "inLanguage": "en"
+}
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rubik+Glitch&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css?v=1792492549120">
+</head>
+<body>
+  <main class="container post">
+
+    <a class="back" href="/index.html">← cd ..</a>
+
+    
+    <h1>Network Enumeration with Nmap</h1>
+    <p class="post-meta">2026-10-11 · #htb #nmap #enumeration #pentest</p>
+
+    <input id="post-search" class="search post-search" type="text"
+           placeholder="search in this post...  (Enter = next, Shift+Enter = previous, Esc = clear)"
+           autocomplete="off">
+    <p id="post-search-count" class="search-count" hidden></p>
+
+  <details class="cheatsheet">
+    <summary><span class="arrow">&#9656;</span> Cheat sheet &mdash; useful commands</summary>
+    <div class="cheat-body">
+      <div class="cheat-row">
+        <code>nmap -sn 10.129.2.0/24</code>
+        <span>Host discovery (no port scan)</span>
+      </div>
+      <div class="cheat-row">
+        <code>nmap -sS &lt;target&gt;</code>
+        <span>Default SYN scan</span>
+      </div>
+      <div class="cheat-row">
+        <code>nmap -p- &lt;target&gt;</code>
+        <span>Scan all 65535 ports</span>
+      </div>
+      <div class="cheat-row">
+        <code>nmap -sV -sC &lt;target&gt;</code>
+        <span>Version detection + default scripts</span>
+      </div>
+      <div class="cheat-row">
+        <code>nmap -sU &lt;target&gt;</code>
+        <span>UDP scan</span>
+      </div>
+      <div class="cheat-row">
+        <code>nmap -A &lt;target&gt;</code>
+        <span>Aggressive: OS, version, scripts, traceroute</span>
+      </div>
+      <div class="cheat-row">
+        <code>nmap --script vuln &lt;target&gt;</code>
+        <span>Run the vuln NSE category</span>
+      </div>
+      <div class="cheat-row">
+        <code>nmap -sA -Pn &lt;target&gt;</code>
+        <span>ACK scan (map firewall rules)</span>
+      </div>
+      <div class="cheat-row">
+        <code>nmap -D RND:5 &lt;target&gt;</code>
+        <span>Hide behind 5 random decoys</span>
+      </div>
+      <div class="cheat-row">
+        <code>nmap --source-port 53 &lt;target&gt;</code>
+        <span>Scan from a trusted source port</span>
+      </div>
+    </div>
+  </details>
+
+  <nav class="toc">
+    <p class="prompt">$ cat contents.txt</p>
+    <ul>
+      <li><a href="#section-0">1. Introduction to Nmap</a></li>
+      <li><a href="#section-1">2. Host Discovery</a></li>
+      <li><a href="#section-2">3. Host and Port Scanning</a></li>
+      <li><a href="#section-3">4. Service Enumeration</a></li>
+      <li><a href="#section-4">5. Nmap Scripting Engine (NSE)</a></li>
+      <li><a href="#section-5">6. Firewall and IDS/IPS Evasion</a></li>
+    </ul>
+  </nav>
+
+    <article id="content">
+<h2 id="section-0">1. Introduction to Nmap</h2>
+<h3>Nmap:</h3>
+<p>Network Mapper (<code>Nmap</code>) is an open-source network analysis and security auditing tool written in C, C++, Python, and Lua. It is designed to scan networks and identify which hosts are available on the network using raw packets, and services and applications, including the name and version, where possible. It can also identify the operating systems and versions of these hosts. Besides other features, Nmap also offers scanning capabilities that can determine if packet filters, firewalls, or intrusion detection systems (IDS) are configured as needed.</p>
+<h3>Different types of scans :</h3>
+<ul>
+<li>Host discovery</li>
+<li>Port scanning</li>
+<li>Service enumeration and detection</li>
+<li>OS detection</li>
+<li>Scriptable interaction with the target service (Nmap Scripting Engine)</li>
+</ul>
+<h3>Syntax :</h3>
+<pre><code class="language-shell">nmap &lt;scan types&gt; &lt;options&gt; &lt;target&gt;
+</code></pre>
+<h3>Scan Techniques :</h3>
+<p>The default scan is   TCP-SYN scan <code>-sS</code> : The TCP-SYN scan sends one packet with the SYN flag and, therefore, never completes the three-way handshake, which results in not establishing a full TCP connection to the scanned port.</p>
+<ul>
+<li>If our target sends a <code>SYN-ACK</code> flagged packet back to us, Nmap detects that the port is <code>open</code>.</li>
+<li>If the target responds with an <code>RST</code> flagged packet, it is an indicator that the port is <code>closed</code>.</li>
+<li>If Nmap does not receive a packet back, it will display it as <code>filtered</code>. Depending on the firewall configuration, certain packets may be dropped or ignored by the firewall.</li>
+</ul>
+<h5>Example:</h5>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap -sS localhost
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-06-11 22:50 UTC
+Nmap scan report for localhost (127.0.0.1)
+Host is up (0.000010s latency).
+Not shown: 996 closed ports
+PORT     STATE SERVICE
+22/tcp   open  ssh
+80/tcp   open  http
+5432/tcp open  postgresql
+5901/tcp open  vnc-1
+
+Nmap done: 1 IP address (1 host up) scanned in 0.18 seconds
+</code></pre>
+<hr>
+<h2 id="section-1">2. Host Discovery</h2>
+<h3>Scan Network Range :</h3>
+<pre><code class="language-shell">sudo nmap 10.129.2.0/24 -sn -oA tnet | grep for | cut -d&quot; &quot; -f5
+</code></pre>
+<p>-sn : Disables port scanning.<br>-oA tnet : Stores the results in all formats starting with the name &#39;tnet&#39;.</p>
+<h3>Scan IP List :</h3>
+<p>Example of the list:</p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ cat hosts.lst
+
+10.129.2.4
+10.129.2.10
+10.129.2.11
+10.129.2.18
+10.129.2.19
+10.129.2.20
+10.129.2.28
+</code></pre>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap -sn -oA tnet -iL hosts.lst | grep for | cut -d&quot; &quot; -f5
+
+10.129.2.18
+10.129.2.19
+10.129.2.20
+</code></pre>
+<p>-iL : Performs defined scans against targets in provided &#39;host.lst&#39; list.</p>
+<p>We see that only 3 of 7 hosts are active. Remember, this may mean that the other hosts ignore the default <strong>ICMP echo requests</strong> because of their firewall configurations. Since <code>Nmap</code> does not receive a response, it marks those hosts as inactive.</p>
+<h3>Scan Multiple IPs :</h3>
+<pre><code class="language-shell">sudo nmap -sn -oA tnet 10.129.2.18 10.129.2.19 10.129.2.20
+</code></pre>
+<p>If these IP addresses are next to each other, we can also define the range in the respective octet using <code>-</code> . </p>
+<pre><code class="language-shell">sudo nmap -sn -oA tnet 10.129.2.18-20
+</code></pre>
+<p>If we disable port scan (<code>-sn</code>), Nmap automatically ping scan with <code>ICMP Echo Requests</code> (<code>-PE</code>). Once such a request is sent, we usually expect an <code>ICMP reply</code> if the pinging host is alive.</p>
+<p>The more interesting fact is that our previous scans did not do that because before Nmap could send an ICMP echo request, it would send an <code>ARP ping</code> resulting in an <code>ARP reply</code>. We can confirm this with the &quot;<code>--packet-trace</code>&quot; option. To ensure that ICMP echo requests are sent, we also define the option (<code>-PE</code>) for this.</p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap 10.129.2.18 -sn -oA host -PE --packet-trace 
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-06-15 00:08 CEST
+SENT (0.0074s) ARP who-has 10.129.2.18 tell 10.10.14.2
+RCVD (0.0309s) ARP reply 10.129.2.18 is-at DE:AD:00:00:BE:EF
+Nmap scan report for 10.129.2.18
+Host is up (0.023s latency).
+MAC Address: DE:AD:00:00:BE:EF
+Nmap done: 1 IP address (1 host up) scanned in 0.05 seconds
+</code></pre>
+<p>-PE : performs the ping scan by using &#39;ICMP Echo requests&#39; against the target.<br>--packet-trace : Shows all packets sent and received.</p>
+<p>Example 2 (Another way to determine why Nmap has our target marked as &quot;alive&quot; is with the &quot;<code>--reason</code>&quot; option.):</p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap 10.129.2.18 -sn -oA host -PE --reason 
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-06-15 00:10 CEST
+SENT (0.0074s) ARP who-has 10.129.2.18 tell 10.10.14.2
+RCVD (0.0309s) ARP reply 10.129.2.18 is-at DE:AD:00:00:BE:EF
+Nmap scan report for 10.129.2.18
+Host is up, received arp-response (0.028s latency).
+MAC Address: DE:AD:00:00:BE:EF
+Nmap done: 1 IP address (1 host up) scanned in 0.03 seconds
+</code></pre>
+<p>--reason : displays the reason for specific result , in the example we can see : Host is up, <code>received arp-response</code>  (0.028s latency).</p>
+<p>We see here that <code>Nmap</code> does indeed detect whether the host is alive or not through the <code>ARP request</code> and <code>ARP reply</code> alone.</p>
+<p>To disable ARP requests and scan our target with the desired <code>ICMP echo requests</code>, we can disable ARP pings by setting the &quot;<code>--disable-arp-ping</code>&quot; option.</p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap 10.129.2.18 -sn -oA host -PE --packet-trace --disable-arp-ping 
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-06-15 00:12 CEST
+SENT (0.0107s) ICMP [10.10.14.2 &gt; 10.129.2.18 Echo request (type=8/code=0) id=13607 seq=0] IP [ttl=255 id=23541 iplen=28 ]
+RCVD (0.0152s) ICMP [10.129.2.18 &gt; 10.10.14.2 Echo reply (type=0/code=0) id=13607 seq=0] IP [ttl=128 id=40622 iplen=28 ]
+Nmap scan report for 10.129.2.18
+Host is up (0.086s latency).
+MAC Address: DE:AD:00:00:BE:EF
+Nmap done: 1 IP address (1 host up) scanned in 0.11 seconds
+</code></pre>
+<hr>
+<h2 id="section-2">3. Host and Port Scanning</h2>
+<p>After we have found out that our target is alive, we want to get a more accurate picture of the system. The information we need includes:</p>
+<ul>
+<li>Open ports and its services</li>
+<li>Service versions</li>
+<li>Information that the services provided</li>
+<li>Operating system</li>
+</ul>
+<p>We have 6 different states for a scanned port :</p>
+<ul>
+<li><code>open</code> : the connection to the scanned port is established , and it can be TCP connections , UDP datagrams or SCTP associations.</li>
+<li><code>closed</code> : the TCP protocol indicates that we received a packet that contains an RST flag. This scanning method can also be used to determine if our target is alive or not.</li>
+<li><code>filtered</code> : Nmap cannot correctly identify if the port is open or closed because either no reponse from the target or we get an error code from it.</li>
+<li><code>unfiltered</code> : it only occur during the TCP-ACK scan and means that the port is accessible ,but we cannot determine if its open or closed.</li>
+<li><code>open | filtered </code>: if we do not get a response for a specific port . This indicates that a firewall or packet filter may protect the port.</li>
+<li><code>closed | filtered</code> : occurs in the IP ID idle scans and idicates that it was impossible to determine if the scanned port is closed or filtered by a firewall.</li>
+</ul>
+<h3>Discovering Open TCP Ports :</h3>
+<p>By default, Nmap scans the top 1000 TCP ports with the SYN scan (<code>-sS</code>). This SYN scan is set only to default when we run it as root because of the socket permissions required to create raw TCP packets .<br>Otherwise, the TCP scan (<code>-sT</code>)  is performed by default. </p>
+<ul>
+<li>Define Ports : <code>-p 22,25,80,139,445</code> or by range <code>-p 22-445</code> or by top ports <code>--top-ports=10</code>.</li>
+<li>To scan all ports : <code>-p-</code> , and the top 100 ports : <code>-F</code></li>
+</ul>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap 10.129.2.28 --top-ports=10 
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-06-15 15:36 CEST
+Nmap scan report for 10.129.2.28
+Host is up (0.021s latency).
+
+PORT     STATE    SERVICE
+21/tcp   closed   ftp
+22/tcp   open     ssh
+23/tcp   closed   telnet
+25/tcp   open     smtp
+80/tcp   open     http
+110/tcp  open     pop3
+139/tcp  filtered netbios-ssn
+443/tcp  closed   https
+445/tcp  filtered microsoft-ds
+3389/tcp closed   ms-wbt-server
+MAC Address: DE:AD:00:00:BE:EF (Intel Corporate)
+
+Nmap done: 1 IP address (1 host up) scanned in 1.44 seconds
+</code></pre>
+<p>If we trace the packets <code>Nmap</code> sends, we will see the <code>RST</code> flag on <code>TCP port 21</code> that our target sends back to us. To have a clear view of the SYN scan, we disable the ICMP echo requests (<code>-Pn</code>), DNS resolution (<code>-n</code>), and ARP ping scan (<code>--disable-arp-ping</code>).</p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap 10.129.2.28 -p 21 --packet-trace -Pn -n --disable-arp-ping
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-06-15 15:39 CEST
+SENT (0.0429s) TCP 10.10.14.2:63090 &gt; 10.129.2.28:21 S ttl=56 id=57322 iplen=44  seq=1699105818 win=1024 &lt;mss 1460&gt;
+RCVD (0.0573s) TCP 10.129.2.28:21 &gt; 10.10.14.2:63090 RA ttl=64 id=0 iplen=40  seq=0 win=0
+Nmap scan report for 10.129.2.28
+Host is up (0.014s latency).
+
+PORT   STATE  SERVICE
+21/tcp closed ftp
+MAC Address: DE:AD:00:00:BE:EF (Intel Corporate)
+
+Nmap done: 1 IP address (1 host up) scanned in 0.07 seconds
+</code></pre>
+<p>We can see from the SENT line that we (<code>10.10.14.2</code>) sent a TCP packet with the <code>SYN</code> flag (<code>S</code>) to our target (<code>10.129.2.28</code>). In the next RCVD line, we can see that the target responds with a TCP packet containing the <code>RST</code> and <code>ACK</code> flags (<code>RA</code>). <code>RST</code> and <code>ACK</code> flags are used to acknowledge receipt of the TCP packet (<code>ACK</code>) and to end the TCP session (<code>RST</code>).</p>
+<h5>Request</h5>
+<table>
+<thead>
+<tr>
+<th><strong>Message</strong></th>
+<th><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>SENT (0.0429s)</code></td>
+<td>Indicates the SENT operation of Nmap, which sends a packet to the target.</td>
+</tr>
+<tr>
+<td><code>TCP</code></td>
+<td>Shows the protocol that is being used to interact with the target port.</td>
+</tr>
+<tr>
+<td><code>10.10.14.2:63090 &gt;</code></td>
+<td>Represents our IPv4 address and the source port, which will be used by Nmap to send the packets.</td>
+</tr>
+<tr>
+<td><code>10.129.2.28:21</code></td>
+<td>Shows the target IPv4 address and the target port.</td>
+</tr>
+<tr>
+<td><code>S</code></td>
+<td>SYN flag of the sent TCP packet.</td>
+</tr>
+<tr>
+<td><code>ttl=56 id=57322 iplen=44 seq=1699105818 win=1024 mss 1460</code></td>
+<td>Additional TCP Header parameters.</td>
+</tr>
+</tbody></table>
+<h5>Response</h5>
+<table>
+<thead>
+<tr>
+<th><strong>Message</strong></th>
+<th><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>RCVD (0.0573s)</code></td>
+<td>Indicates a received packet from the target.</td>
+</tr>
+<tr>
+<td><code>TCP</code></td>
+<td>Shows the protocol that is being used.</td>
+</tr>
+<tr>
+<td><code>10.129.2.28:21 &gt;</code></td>
+<td>Represents targets IPv4 address and the source port, which will be used to reply.</td>
+</tr>
+<tr>
+<td><code>10.10.14.2:63090</code></td>
+<td>Shows our IPv4 address and the port that will be replied to.</td>
+</tr>
+<tr>
+<td><code>RA</code></td>
+<td>RST and ACK flags of the sent TCP packet.</td>
+</tr>
+<tr>
+<td><code>ttl=64 id=0 iplen=40 seq=0 win=0</code></td>
+<td>Additional TCP Header parameters.</td>
+</tr>
+</tbody></table>
+<h3>Connect Scan (<code>-sT</code>) :</h3>
+<p>The Nmap <a href="https://nmap.org/book/scan-methods-connect-scan.html">TCP Connect Scan</a> (<code>-sT</code>) uses the TCP three-way handshake to determine if a specific port on a target host is open or closed. The scan sends an <code>SYN</code> packet to the target port and waits for a response. It is considered open if the target port responds with an <code>SYN-ACK</code> packet and closed if it responds with an <code>RST</code> packet.</p>
+<h3>Filtered Ports :</h3>
+<p>When a port is shown as filtered, it can have several reasons. In most cases, firewalls have certain rules set to handle specific connections. The packets can either be <code>dropped</code>, or <code>rejected</code>. When a packet gets dropped, <code>Nmap</code> receives no response from our target, and by default, the retry rate (<code>--max-retries</code>) is set to <code>10</code>. This means <code>Nmap</code> will resend the request to the target port to determine if the previous packet was accidentally mishandled or not.</p>
+<p>Let us look at an example where the firewall <code>drops</code> the TCP packets we send for the port scan :</p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap 10.129.2.28 -p 139 --packet-trace -n --disable-arp-ping -Pn
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-06-15 15:45 CEST
+SENT (0.0381s) TCP 10.10.14.2:60277 &gt; 10.129.2.28:139 S ttl=47 id=14523 iplen=44  seq=4175236769 win=1024 &lt;mss 1460&gt;
+SENT (1.0411s) TCP 10.10.14.2:60278 &gt; 10.129.2.28:139 S ttl=45 id=7372 iplen=44  seq=4175171232 win=1024 &lt;mss 1460&gt;
+Nmap scan report for 10.129.2.28
+Host is up.
+
+PORT    STATE    SERVICE
+139/tcp filtered netbios-ssn
+MAC Address: DE:AD:00:00:BE:EF (Intel Corporate)
+
+Nmap done: 1 IP address (1 host up) scanned in 2.06 seconds
+</code></pre>
+<p>We see in the last scan that <code>Nmap</code> sent two TCP packets with the SYN flag. By the duration (<code>2.06s</code>) of the scan, we can recognize that it took much longer than the previous ones (<code>~0.05s</code>). The case is different if the firewall rejects the packets. For this, we look at TCP port <code>445</code>, which is handled accordingly by such a rule of the firewall.</p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap 10.129.2.28 -p 445 --packet-trace -n --disable-arp-ping -Pn
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-06-15 15:55 CEST
+SENT (0.0388s) TCP 10.129.2.28:52472 &gt; 10.129.2.28:445 S ttl=49 id=21763 iplen=44  seq=1418633433 win=1024 &lt;mss 1460&gt;
+RCVD (0.0487s) ICMP [10.129.2.28 &gt; 10.129.2.28 Port 445 unreachable (type=3/code=3) ] IP [ttl=64 id=20998 iplen=72 ]
+Nmap scan report for 10.129.2.28
+Host is up (0.0099s latency).
+
+PORT    STATE    SERVICE
+445/tcp filtered microsoft-ds
+MAC Address: DE:AD:00:00:BE:EF (Intel Corporate)
+
+Nmap done: 1 IP address (1 host up) scanned in 0.05 seconds
+</code></pre>
+<p>As a response, we receive an <code>ICMP</code> reply with <code>type 3</code> and <code>error code 3</code>, which indicates that the desired port is unreachable. Nevertheless, if we know that the host is alive, we can strongly assume that the firewall on this port is rejecting the packets, and we will have to take a closer look at this port later.</p>
+<h3>Discovering Open UDP Ports :</h3>
+<p>Some system administrators sometimes forget to filter the UDP ports in addition to the TCP ones. Since <code>UDP</code> is a <code>stateless protocol</code> and does not require a three-way handshake like TCP. We do not receive any acknowledgment. Consequently, the timeout is much longer, making the whole <code>UDP scan</code> (<code>-sU</code>) much slower than the <code>TCP scan</code> (<code>-sS</code>).</p>
+<h3>UDP Port Scan :</h3>
+<pre><code class="language-shell">sudo nmap 10.129.2.28 -F -sU
+</code></pre>
+<p>-sU : Performs  a UDP scan.</p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap 10.129.2.28 -F -sU
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-06-15 16:01 CEST
+Nmap scan report for 10.129.2.28
+Host is up (0.059s latency).
+Not shown: 95 closed ports
+PORT     STATE         SERVICE
+68/udp   open|filtered dhcpc
+137/udp  open          netbios-ns
+138/udp  open|filtered netbios-dgm
+631/udp  open|filtered ipp
+5353/udp open          zeroconf
+MAC Address: DE:AD:00:00:BE:EF (Intel Corporate)
+
+Nmap done: 1 IP address (1 host up) scanned in 98.07 seconds
+</code></pre>
+<p><code>Nmap</code> sends empty datagrams to the scanned UDP ports, and we do not receive any response. So we cannot determine if the UDP packet has arrived at all or not. If the UDP port is <code>open</code>, we only get a response if the application is configured to do so.</p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap 10.129.2.28 -sU -Pn -n --disable-arp-ping --packet-trace -p 137 --reason 
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-06-15 16:15 CEST
+SENT (0.0367s) UDP 10.10.14.2:55478 &gt; 10.129.2.28:137 ttl=57 id=9122 iplen=78
+RCVD (0.0398s) UDP 10.129.2.28:137 &gt; 10.10.14.2:55478 ttl=64 id=13222 iplen=257
+Nmap scan report for 10.129.2.28
+Host is up, received user-set (0.0031s latency).
+
+PORT    STATE SERVICE    REASON
+137/udp open  netbios-ns udp-response ttl 64
+MAC Address: DE:AD:00:00:BE:EF (Intel Corporate)
+
+Nmap done: 1 IP address (1 host up) scanned in 0.04 seconds
+</code></pre>
+<p>If we get an ICMP response with <code>error code 3</code> (port unreachable), we know that the port is indeed <code>closed</code>.</p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap 10.129.2.28 -sU -Pn -n --disable-arp-ping --packet-trace -p 100 --reason 
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-06-15 16:25 CEST
+SENT (0.0445s) UDP 10.10.14.2:63825 &gt; 10.129.2.28:100 ttl=57 id=29925 iplen=28
+RCVD (0.1498s) ICMP [10.129.2.28 &gt; 10.10.14.2 Port unreachable (type=3/code=3) ] IP [ttl=64 id=11903 iplen=56 ]
+Nmap scan report for 10.129.2.28
+Host is up, received user-set (0.11s latency).
+
+PORT    STATE  SERVICE REASON
+100/udp closed unknown port-unreach ttl 64
+MAC Address: DE:AD:00:00:BE:EF (Intel Corporate)
+
+Nmap done: 1 IP address (1 host up) scanned in  0.15 seconds
+</code></pre>
+<p>For all other ICMP responses, the scanned ports are marked as (open|filtered).</p>
+<hr>
+<h3>Version Scan :</h3>
+<p>Another handy method for scanning ports is the <code>-sV</code> option which is used to get additional available information from the open ports. This method can identify versions, service names, and details about our target.</p>
+<pre><code class="language-shell">sudo nmap 10.129.2.28 -Pn -n --disable-arp-ping --packet-trace -p 445 --reason  -sV
+</code></pre>
+<p>-sV : Performs a service scan.</p>
+<hr>
+<h3>Saving the results :</h3>
+<ul>
+<li>Normal output (<code>-oN</code>) with the <code>.nmap</code> file extension</li>
+<li>Grepable output (<code>-oG</code>) with the <code>.gnmap</code> file extension</li>
+<li>XML output (<code>-oX</code>) with the <code>.xml</code> file extension</li>
+</ul>
+<h3>Style sheets</h3>
+<p>With the XML output, we can easily create HTML reports that are easy to read, even for non-technical people. This is later very useful for documentation, as it presents our results in a detailed and clear way. To convert the stored results from XML format to HTML, we can use the tool <code>xsltproc</code>.</p>
+<pre><code class="language-shell">xsltproc target.xml -o target.html
+</code></pre>
+<hr>
+<h2 id="section-3">4. Service Enumeration</h2>
+<h3>Service Version Detection :</h3>
+<ul>
+<li>We can use the version scan to scan the specific ports for services and their versions (<code>-sV</code>).</li>
+<li>To view the scan status, we can press the <code>[Space Bar]</code> during the scan, which will cause <code>Nmap</code> to show us the scan status.</li>
+<li>Another option (<code>--stats-every=5s</code>) that we can use is defining how periods of time the status should be shown. Here we can specify the number of seconds (<code>s</code>) or minutes (<code>m</code>), after which we want to get the status.</li>
+<li>We can also increase the <code>verbosity level</code> (<code>-v</code> / <code>-vv</code>), which will show us the open ports directly when <code>Nmap</code> detects them.</li>
+</ul>
+<h3>Banner Grabbing :</h3>
+<p>Primarily, <code>Nmap</code> looks at the banners of the scanned ports and prints them out. If it cannot identify versions through the banners, <code>Nmap</code> attempts to identify them through a signature-based matching system, but this significantly increases the scan&#39;s duration. One disadvantage to <code>Nmap</code>&#39;s presented results is that the automatic scan can miss some information because sometimes <code>Nmap</code> does not know how to handle it. Let us look at an example of this.</p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap 10.129.2.28 -p- -sV -Pn -n --disable-arp-ping --packet-trace
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-06-16 20:10 CEST
+&lt;SNIP&gt;
+NSOCK INFO [0.4200s] nsock_trace_handler_callback(): Callback: READ SUCCESS for EID 18 [10.129.2.28:25] (35 bytes): 220 inlane ESMTP Postfix (Ubuntu)..
+Service scan match (Probe NULL matched with NULL line 3104): 10.129.2.28:25 is smtp.  Version: |Postfix smtpd|||
+NSOCK INFO [0.4200s] nsock_iod_delete(): nsock_iod_delete (IOD #1)
+Nmap scan report for 10.129.2.28
+Host is up (0.076s latency).
+
+PORT   STATE SERVICE VERSION
+25/tcp open  smtp    Postfix smtpd
+MAC Address: DE:AD:00:00:BE:EF (Intel Corporate)
+Service Info: Host:  inlane
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 0.47 seconds
+</code></pre>
+<p>--packet-trace : Shows all packets sent and received .</p>
+<p>If we look at the results from <code>Nmap</code>, we can see the port&#39;s status, service name, and hostname. Nevertheless, let us look at this line here:</p>
+<ul>
+<li><code>NSOCK INFO [0.4200s] nsock_trace_handler_callback(): Callback: READ SUCCESS for EID 18 [10.129.2.28:25] (35 bytes): 220 inlane ESMTP Postfix (Ubuntu)..</code></li>
+</ul>
+<p>Then we see that the SMTP server on our target gave us more information than <code>Nmap</code> showed us. Because here, we see that it is the Linux distribution <code>Ubuntu</code>. It happens because, after a successful three-way handshake, the server often sends a banner for identification. This serves to let the client know which service it is working with. At the network level, this happens with a <code>PSH</code> flag in the TCP header. However, it can happen that some services do not immediately provide such information. It is also possible to remove or manipulate the banners from the respective services. If we <code>manually</code> connect to the SMTP server using <code>nc</code>, grab the banner, and intercept the network traffic using <code>tcpdump</code>, we can see what <code>Nmap</code> did not show us.</p>
+<h5>Tcpdump</h5>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo tcpdump -i eth0 host 10.10.14.2 and 10.129.2.28  tcpdump: verbose output suppressed, use -v or -vv for full protocol decode listening on eth0, link-type EN10MB (Ethernet), capture size 262144 bytes
+</code></pre>
+<h5>Nc</h5>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$  nc -nv 10.129.2.28 25  Connection to 10.129.2.28 port 25 [tcp/*] succeeded! 220 inlane ESMTP Postfix (Ubuntu)
+</code></pre>
+<h5>Tcpdump - Intercepted Traffic</h5>
+<pre><code class="language-shell">18:28:07.128564 IP 10.10.14.2.59618 &gt; 10.129.2.28.smtp: Flags [S], seq 1798872233, win 65535, options [mss 1460,nop,wscale 6,nop,nop,TS val 331260178 ecr 0,sackOK,eol], length 0 18:28:07.255151 IP 10.129.2.28.smtp &gt; 10.10.14.2.59618: Flags [S.], seq 1130574379, ack 1798872234, win 65160, options [mss 1460,sackOK,TS val 1800383922 ecr 331260178,nop,wscale 7], length 0 18:28:07.255281 IP 10.10.14.2.59618 &gt; 10.129.2.28.smtp: Flags [.], ack 1, win 2058, options [nop,nop,TS val 331260304 ecr 1800383922], length 0 18:28:07.319306 IP 10.129.2.28.smtp &gt; 10.10.14.2.59618: Flags [P.], seq 1:36, ack 1, win 510, options [nop,nop,TS val 1800383985 ecr 331260304], length 35: SMTP: 220 inlane ESMTP Postfix (Ubuntu) 18:28:07.319426 IP 10.10.14.2.59618 &gt; 10.129.2.28.smtp: Flags [.], ack 36, win 2058, options [nop,nop,TS val 331260368 ecr 1800383985], length 0
+</code></pre>
+<p>The first three lines show us the three-way handshake.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1.</td>
+<td><code>[SYN]</code></td>
+<td><code>18:28:07.128564 IP 10.10.14.2.59618 &gt; 10.129.2.28.smtp: Flags [S], &lt;SNIP&gt;</code></td>
+</tr>
+<tr>
+<td>2.</td>
+<td><code>[SYN-ACK]</code></td>
+<td><code>18:28:07.255151 IP 10.129.2.28.smtp &gt; 10.10.14.2.59618: Flags [S.], &lt;SNIP&gt;</code></td>
+</tr>
+<tr>
+<td>3.</td>
+<td><code>[ACK]</code></td>
+<td><code>18:28:07.255281 IP 10.10.14.2.59618 &gt; 10.129.2.28.smtp: Flags [.], &lt;SNIP&gt;</code></td>
+</tr>
+</tbody></table>
+<p>After that, the target SMTP server sends us a TCP packet with the <code>PSH</code> and <code>ACK</code> flags, where <code>PSH</code> states that the target server is sending data to us and with <code>ACK</code> simultaneously informs us that all required data has been sent.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>4.</td>
+<td><code>[PSH-ACK]</code></td>
+<td><code>18:28:07.319306 IP 10.129.2.28.smtp &gt; 10.10.14.2.59618: Flags [P.], &lt;SNIP&gt;</code></td>
+</tr>
+</tbody></table>
+<p>The last TCP packet that we sent confirms the receipt of the data with an <code>ACK</code>.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>5.</td>
+<td><code>[ACK]</code></td>
+<td><code>18:28:07.319426 IP 10.10.14.2.59618 &gt; 10.129.2.28.smtp: Flags [.], &lt;SNIP&gt;</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="section-4">5. Nmap Scripting Engine (NSE)</h2>
+<p>Nmap Scripting Engine (<code>NSE</code>) is another handy feature of <code>Nmap</code>. It provides us with the possibility to create scripts in Lua for interaction with certain services. There are a total of 14 categories into which these scripts can be divided:</p>
+<table>
+<thead>
+<tr>
+<th><strong>Category</strong></th>
+<th><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>auth</code></td>
+<td>Determination of authentication credentials.</td>
+</tr>
+<tr>
+<td><code>broadcast</code></td>
+<td>Scripts, which are used for host discovery by broadcasting and the discovered hosts, can be automatically added to the remaining scans.</td>
+</tr>
+<tr>
+<td><code>brute</code></td>
+<td>Executes scripts that try to log in to the respective service by brute-forcing with credentials.</td>
+</tr>
+<tr>
+<td><code>default</code></td>
+<td>Default scripts executed by using the <code>-sC</code> option.</td>
+</tr>
+<tr>
+<td><code>discovery</code></td>
+<td>Evaluation of accessible services.</td>
+</tr>
+<tr>
+<td><code>dos</code></td>
+<td>These scripts are used to check services for denial of service vulnerabilities and are used less as it harms the services.</td>
+</tr>
+<tr>
+<td><code>exploit</code></td>
+<td>This category of scripts tries to exploit known vulnerabilities for the scanned port.</td>
+</tr>
+<tr>
+<td><code>external</code></td>
+<td>Scripts that use external services for further processing.</td>
+</tr>
+<tr>
+<td><code>fuzzer</code></td>
+<td>This uses scripts to identify vulnerabilities and unexpected packet handling by sending different fields, which can take much time.</td>
+</tr>
+<tr>
+<td><code>intrusive</code></td>
+<td>Intrusive scripts that could negatively affect the target system.</td>
+</tr>
+<tr>
+<td><code>malware</code></td>
+<td>Checks if some malware infects the target system.</td>
+</tr>
+<tr>
+<td><code>safe</code></td>
+<td>Defensive scripts that do not perform intrusive and destructive access.</td>
+</tr>
+<tr>
+<td><code>version</code></td>
+<td>Extension for service detection.</td>
+</tr>
+<tr>
+<td><code>vuln</code></td>
+<td>Identification of specific vulnerabilities.</td>
+</tr>
+</tbody></table>
+<h3>Default Scripts :</h3>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap &lt;target&gt; -sC
+</code></pre>
+<h3>Specific Scripts Category :</h3>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap &lt;target&gt; --script &lt;category&gt;
+</code></pre>
+<h3>Defined Scripts :</h3>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap &lt;target&gt; --script &lt;script-name&gt;,&lt;script-name&gt;,...
+</code></pre>
+<p>Example of an SMTP port Target (Nmap - Specifying Scripts):</p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap 10.129.2.28 -p 25 --script banner,smtp-commands
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-06-16 23:21 CEST
+Nmap scan report for 10.129.2.28
+Host is up (0.050s latency).
+
+PORT   STATE SERVICE
+25/tcp open  smtp
+|_banner: 220 inlane ESMTP Postfix (Ubuntu)
+|_smtp-commands: inlane, PIPELINING, SIZE 10240000, VRFY, ETRN, STARTTLS, ENHANCEDSTATUSCODES, 8BITMIME, DSN, SMTPUTF8,
+MAC Address: DE:AD:00:00:BE:EF (Intel Corporate)
+</code></pre>
+<p>--script banner,smtp-commands : Use specified NSE scripts .</p>
+<p>We see that we can recognize the <strong>Ubuntu</strong> distribution of Linux by using the&#39; banner&#39; script. The <code>smtp-commands</code> script shows us which commands we can use by interacting with the target SMTP server. In this example, such information may help us to find out existing users on the target. <code>Nmap</code> also gives us the ability to scan our target with the aggressive option (<code>-A</code>). This scans the target with multiple options as service detection (<code>-sV</code>), OS detection (<code>-O</code>), traceroute (<code>--traceroute</code>), and with the default NSE scripts (<code>-sC</code>).</p>
+<h3>Nmap - Aggressive Scan (<code>-A</code>) :</h3>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap 10.129.2.28 -p 80 -A
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-06-17 01:38 CEST
+Nmap scan report for 10.129.2.28
+Host is up (0.012s latency).
+
+PORT   STATE SERVICE VERSION
+80/tcp open  http    Apache httpd 2.4.29 ((Ubuntu))
+|_http-generator: WordPress 5.3.4
+|_http-server-header: Apache/2.4.29 (Ubuntu)
+|_http-title: blog.inlanefreight.com
+MAC Address: DE:AD:00:00:BE:EF (Intel Corporate)
+Warning: OSScan results may be unreliable because we could not find at least 1 open and 1 closed port
+Aggressive OS guesses: Linux 2.6.32 (96%), Linux 3.2 - 4.9 (96%), Linux 2.6.32 - 3.10 (96%), Linux 3.4 - 3.10 (95%), Linux 3.1 (95%), Linux 3.2 (95%), 
+AXIS 210A or 211 Network Camera (Linux 2.6.17) (94%), Synology DiskStation Manager 5.2-5644 (94%), Netgear RAIDiator 4.2.28 (94%), 
+Linux 2.6.32 - 2.6.35 (94%)
+No exact OS matches for host (test conditions non-ideal).
+Network Distance: 1 hop
+
+TRACEROUTE
+HOP RTT      ADDRESS
+1   11.91 ms 10.129.2.28
+
+OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 11.36 seconds
+</code></pre>
+<p>With the help of the used scan option (<code>-A</code>), we found out what kind of web server (<code>Apache 2.4.29</code>) is running on the system, which web application (<code>WordPress 5.3.4</code>) is used, and the title (<code>blog.inlanefreight.com</code>) of the web page. Also, <code>Nmap</code> shows that it is likely to be <code>Linux</code> (<code>96%</code>) operating system.</p>
+<h3>Vulnerability Assessment :</h3>
+<p>Now let us move on to HTTP port 80 and see what information and vulnerabilities we can find using the <code>vuln</code> category from <code>NSE</code>.</p>
+<h3>Nmap -Vuln Category (<code>--script vuln</code>) :</h3>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap 10.129.2.28 -p 80 -sV --script vuln 
+
+Nmap scan report for 10.129.2.28
+Host is up (0.036s latency).
+
+PORT   STATE SERVICE VERSION
+80/tcp open  http    Apache httpd 2.4.29 ((Ubuntu))
+| http-enum:
+|   /wp-login.php: Possible admin folder
+|   /readme.html: Wordpress version: 2
+|   /: WordPress version: 5.3.4
+|   /wp-includes/images/rss.png: Wordpress version 2.2 found.
+|   /wp-includes/js/jquery/suggest.js: Wordpress version 2.5 found.
+|   /wp-includes/images/blank.gif: Wordpress version 2.6 found.
+|   /wp-includes/js/comment-reply.js: Wordpress version 2.7 found.
+|   /wp-login.php: Wordpress login page.
+|   /wp-admin/upgrade.php: Wordpress login page.
+|_  /readme.html: Interesting, a readme.
+|_http-server-header: Apache/2.4.29 (Ubuntu)
+|_http-stored-xss: Couldn&#39;t find any stored XSS vulnerabilities.
+| http-wordpress-users:
+| Username found: admin
+|_Search stopped at ID #25. Increase the upper limit if necessary with &#39;http-wordpress-users.limit&#39;
+| vulners:
+|   cpe:/a:apache:http_server:2.4.29:
+|       CVE-2019-0211   7.2 https://vulners.com/cve/CVE-2019-0211
+|       CVE-2018-1312   6.8 https://vulners.com/cve/CVE-2018-1312
+|       CVE-2017-15715  6.8 https://vulners.com/cve/CVE-2017-15715
+&lt;SNIP&gt;
+</code></pre>
+<p>--script vuln : Uses all related scripts from specified category .</p>
+<hr>
+<h2 id="section-5">6. Firewall and IDS/IPS Evasion</h2>
+<p><code>Nmap</code> gives us many different ways to bypass firewalls rules and IDS/IPS. These methods include the fragmentation of packets, the use of decoys, and others that we will discuss in this section.</p>
+<h3>Determine Firewalls and Their Rules</h3>
+<p>We already know that when a port is shown as filtered, it can have several reasons. In most cases, firewalls have certain rules set to handle specific connections. The packets can either be <code>dropped</code>, or <code>rejected</code>. The <code>dropped</code> packets are ignored, and no response is returned from the host.</p>
+<p>This is different for rejected packets, which elicit an explicit response. TCP packets are returned with an RST flag, while ICMP can contain different types of error codes.</p>
+<p>Such errors include:</p>
+<ul>
+<li>Net Unreachable</li>
+<li>Net Prohibited</li>
+<li>Host Unreachable</li>
+<li>Host Prohibited</li>
+<li>Port Unreachable</li>
+<li>Proto Unreachable</li>
+</ul>
+<p>Nmap&#39;s TCP ACK scan (<code>-sA</code>) method is much harder to filter for firewalls and IDS/IPS systems than regular SYN (<code>-sS</code>) or Connect scans (<code>sT</code>) because they only send a TCP packet with only the <code>ACK</code> flag. When a port is closed or open, the host must respond with an <code>RST</code> flag. Unlike outgoing connections, all connection attempts (with the <code>SYN</code> flag) from external networks are usually blocked by firewalls. However, the packets with the <code>ACK</code> flag are often passed by the firewall because the firewall cannot determine whether the connection was first established from the external network or the internal network.</p>
+<h3>SYN-Scan :</h3>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap 10.129.2.28 -p 21,22,25 -sS -Pn -n --disable-arp-ping --packet-trace
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-06-21 14:56 CEST
+SENT (0.0278s) TCP 10.10.14.2:57347 &gt; 10.129.2.28:22 S ttl=53 id=22412 iplen=44  seq=4092255222 win=1024 &lt;mss 1460&gt;
+SENT (0.0278s) TCP 10.10.14.2:57347 &gt; 10.129.2.28:25 S ttl=50 id=62291 iplen=44  seq=4092255222 win=1024 &lt;mss 1460&gt;
+SENT (0.0278s) TCP 10.10.14.2:57347 &gt; 10.129.2.28:21 S ttl=58 id=38696 iplen=44  seq=4092255222 win=1024 &lt;mss 1460&gt;
+RCVD (0.0329s) ICMP [10.129.2.28 &gt; 10.10.14.2 Port 21 unreachable (type=3/code=3) ] IP [ttl=64 id=40884 iplen=72 ]
+RCVD (0.0341s) TCP 10.129.2.28:22 &gt; 10.10.14.2:57347 SA ttl=64 id=0 iplen=44  seq=1153454414 win=64240 &lt;mss 1460&gt;
+RCVD (1.0386s) TCP 10.129.2.28:22 &gt; 10.10.14.2:57347 SA ttl=64 id=0 iplen=44  seq=1153454414 win=64240 &lt;mss 1460&gt;
+SENT (1.1366s) TCP 10.10.14.2:57348 &gt; 10.129.2.28:25 S ttl=44 id=6796 iplen=44  seq=4092320759 win=1024 &lt;mss 1460&gt;
+Nmap scan report for 10.129.2.28
+Host is up (0.0053s latency).
+
+PORT   STATE    SERVICE
+21/tcp filtered ftp
+22/tcp open     ssh
+25/tcp filtered smtp
+MAC Address: DE:AD:00:00:BE:EF (Intel Corporate)
+
+Nmap done: 1 IP address (1 host up) scanned in 0.07 seconds
+</code></pre>
+<p>-sS : Performs SYN scan on specified ports .</p>
+<h3>ACK-Scan :</h3>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap 10.129.2.28 -p 21,22,25 -sA -Pn -n --disable-arp-ping --packet-trace
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-06-21 14:57 CEST
+SENT (0.0422s) TCP 10.10.14.2:49343 &gt; 10.129.2.28:21 A ttl=49 id=12381 iplen=40  seq=0 win=1024
+SENT (0.0423s) TCP 10.10.14.2:49343 &gt; 10.129.2.28:22 A ttl=41 id=5146 iplen=40  seq=0 win=1024
+SENT (0.0423s) TCP 10.10.14.2:49343 &gt; 10.129.2.28:25 A ttl=49 id=5800 iplen=40  seq=0 win=1024
+RCVD (0.1252s) ICMP [10.129.2.28 &gt; 10.10.14.2 Port 21 unreachable (type=3/code=3) ] IP [ttl=64 id=55628 iplen=68 ]
+RCVD (0.1268s) TCP 10.129.2.28:22 &gt; 10.10.14.2:49343 R ttl=64 id=0 iplen=40  seq=1660784500 win=0
+SENT (1.3837s) TCP 10.10.14.2:49344 &gt; 10.129.2.28:25 A ttl=59 id=21915 iplen=40  seq=0 win=1024
+Nmap scan report for 10.129.2.28
+Host is up (0.083s latency).
+
+PORT   STATE      SERVICE
+21/tcp filtered   ftp
+22/tcp unfiltered ssh
+25/tcp filtered   smtp
+MAC Address: DE:AD:00:00:BE:EF (Intel Corporate)
+
+Nmap done: 1 IP address (1 host up) scanned in 0.15 seconds
+</code></pre>
+<p>-sA : Performs ACK scan on specified ports .</p>
+<p>Please pay attention to the RCVD packets and its set flag we receive from our target. With the SYN scan (<code>-sS</code>) our target tries to establish the TCP connection by sending a packet back with the SYN-ACK (<code>SA</code>) flags set and with the ACK scan (<code>-sA</code>) we get the <code>RST</code> flag because TCP port 22 is open. For the TCP port 25, we do not receive any packets back, which indicates that the packets will be dropped.</p>
+<h3>Decoys :</h3>
+<p>There are cases in which administrators block specific subnets from different regions in principle. This prevents any access to the target network. Another example is when IPS should block us. For this reason, the Decoy scanning method (<code>-D</code>) is the right choice. With this method, Nmap generates various random IP addresses inserted into the IP header to disguise the origin of the packet sent. With this method, we can generate random (<code>RND</code>) a specific number (for example: <code>5</code>) of IP addresses separated by a colon (<code>:</code>). Our real IP address is then randomly placed between the generated IP addresses. In the next example, our real IP address is therefore placed in the second position. Another critical point is that the decoys must be alive. Otherwise, the service on the target may be unreachable due to SYN-flooding security mechanisms.</p>
+<h3>Scan by Using Decoys :</h3>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap 10.129.2.28 -p 80 -sS -Pn -n --disable-arp-ping --packet-trace -D RND:5
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-06-21 16:14 CEST
+SENT (0.0378s) TCP 102.52.161.59:59289 &gt; 10.129.2.28:80 S ttl=42 id=29822 iplen=44  seq=3687542010 win=1024 &lt;mss 1460&gt;
+SENT (0.0378s) TCP 10.10.14.2:59289 &gt; 10.129.2.28:80 S ttl=59 id=29822 iplen=44  seq=3687542010 win=1024 &lt;mss 1460&gt;
+SENT (0.0379s) TCP 210.120.38.29:59289 &gt; 10.129.2.28:80 S ttl=37 id=29822 iplen=44  seq=3687542010 win=1024 &lt;mss 1460&gt;
+SENT (0.0379s) TCP 191.6.64.171:59289 &gt; 10.129.2.28:80 S ttl=38 id=29822 iplen=44  seq=3687542010 win=1024 &lt;mss 1460&gt;
+SENT (0.0379s) TCP 184.178.194.209:59289 &gt; 10.129.2.28:80 S ttl=39 id=29822 iplen=44  seq=3687542010 win=1024 &lt;mss 1460&gt;
+SENT (0.0379s) TCP 43.21.121.33:59289 &gt; 10.129.2.28:80 S ttl=55 id=29822 iplen=44  seq=3687542010 win=1024 &lt;mss 1460&gt;
+RCVD (0.1370s) TCP 10.129.2.28:80 &gt; 10.10.14.2:59289 SA ttl=64 id=0 iplen=44  seq=4056111701 win=64240 &lt;mss 1460&gt;
+Nmap scan report for 10.129.2.28
+Host is up (0.099s latency).
+
+PORT   STATE SERVICE
+80/tcp open  http
+MAC Address: DE:AD:00:00:BE:EF (Intel Corporate)
+
+Nmap done: 1 IP address (1 host up) scanned in 0.15 seconds
+</code></pre>
+<p>-D RND:5 : Generates five random IP addresses that indicates the source IP the connection comes from.</p>
+<p>The spoofed packets are often filtered out by ISPs and routers, even though they come from the same network range. Therefore, we can also specify our VPS servers&#39; IP addresses and use them in combination with &quot;<code>IP ID</code>&quot; manipulation in the IP headers to scan the target.</p>
+<p>Another scenario would be that only individual subnets would not have access to the server&#39;s specific services. So we can also manually specify the source IP address (<code>-S</code>) to test if we get better results with this one. Decoys can be used for SYN, ACK, ICMP scans, and OS detection scans. So let us look at such an example and determine which operating system it is most likely to be.</p>
+<h3>Testing Firewall Rule :</h3>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap 10.129.2.28 -n -Pn -p445 -O
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-06-22 01:23 CEST
+Nmap scan report for 10.129.2.28
+Host is up (0.032s latency).
+
+PORT    STATE    SERVICE
+445/tcp filtered microsoft-ds
+MAC Address: DE:AD:00:00:BE:EF (Intel Corporate)
+Too many fingerprints match this host to give specific OS details
+Network Distance: 1 hop
+
+OS detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 3.14 seconds
+</code></pre>
+<h3>Scan by Using Different Source IP :</h3>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap 10.129.2.28 -n -Pn -p 445 -O -S 10.129.2.200 -e tun0
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-06-22 01:16 CEST
+Nmap scan report for 10.129.2.28
+Host is up (0.010s latency).
+
+PORT    STATE SERVICE
+445/tcp open  microsoft-ds
+MAC Address: DE:AD:00:00:BE:EF (Intel Corporate)
+Warning: OSScan results may be unreliable because we could not find at least 1 open and 1 closed port
+Aggressive OS guesses: Linux 2.6.32 (96%), Linux 3.2 - 4.9 (96%), Linux 2.6.32 - 3.10 (96%), Linux 3.4 - 3.10 (95%), Linux 3.1 (95%), Linux 3.2 (95%), AXIS 210A or 211 Network Camera (Linux 2.6.17) (94%), Synology DiskStation Manager 5.2-5644 (94%), Linux 2.6.32 - 2.6.35 (94%), Linux 2.6.32 - 3.5 (94%)
+No exact OS matches for host (test conditions non-ideal).
+Network Distance: 1 hop
+
+OS detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 4.11 seconds
+</code></pre>
+<p>-S : Scans the target by using different source IP address.</p>
+<h3>DNS Proxying :</h3>
+<p>By default, <code>Nmap</code> performs a reverse DNS resolution unless otherwise specified to find more important information about our target. These DNS queries are also passed in most cases because the given web server is supposed to be found and visited. The DNS queries are made over the <code>UDP port 53</code>. The <code>TCP port 53</code> was previously only used for the so-called &quot;<code>Zone transfers</code>&quot; between the DNS servers or data transfer larger than 512 bytes. More and more, this is changing due to IPv6 and DNSSEC expansions. These changes cause many DNS requests to be made via TCP port 53.</p>
+<ul>
+<li>Zone Transfers :<br>  A zone transfer is when one DNS server hands its entire set of records to another DNS server — normally a primary server copying everything to a backup/secondary server for redundancy.<br>  That’s a huge amount of data (potentially thousands of records at once), nowhere near fitting in 512 bytes — so zone transfers have always used TCP 53, because of the sheer volume.</li>
+</ul>
+<p>However, <code>Nmap</code> still gives us a way to specify DNS servers ourselves (<code>--dns-server &lt;ns&gt;,&lt;ns&gt;</code>). This method could be fundamental to us if we are in a demilitarized zone (<code>DMZ</code>). The company&#39;s DNS servers are usually more trusted than those from the Internet. So, for example, we could use them to interact with the hosts of the internal network. As another example, we can use <code>TCP port 53</code> as a source port (<code>--source-port</code>) for our scans. If the administrator uses the firewall to control this port and does not filter IDS/IPS properly, our TCP packets will be trusted and passed through.</p>
+<h3>SYN-Scan of a filtered Port :</h3>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap 10.129.2.28 -p50000 -sS -Pn -n --disable-arp-ping --packet-trace
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2020-06-21 22:50 CEST
+SENT (0.0417s) TCP 10.10.14.2:33436 &gt; 10.129.2.28:50000 S ttl=41 id=21939 iplen=44  seq=736533153 win=1024 &lt;mss 1460&gt;
+SENT (1.0481s) TCP 10.10.14.2:33437 &gt; 10.129.2.28:50000 S ttl=46 id=6446 iplen=44  seq=736598688 win=1024 &lt;mss 1460&gt;
+Nmap scan report for 10.129.2.28
+Host is up.
+
+PORT      STATE    SERVICE
+50000/tcp filtered ibm-db2
+
+Nmap done: 1 IP address (1 host up) scanned in 2.06 seconds
+</code></pre>
+<h3>SYN-Scan from a DNS Port :</h3>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap 10.129.2.28 -p50000 -sS -Pn -n --disable-arp-ping --packet-trace --source-port 53
+
+SENT (0.0482s) TCP 10.10.14.2:53 &gt; 10.129.2.28:50000 S ttl=58 id=27470 iplen=44  seq=4003923435 win=1024 &lt;mss 1460&gt;
+RCVD (0.0608s) TCP 10.129.2.28:50000 &gt; 10.10.14.2:53 SA ttl=64 id=0 iplen=44  seq=540635485 win=64240 &lt;mss 1460&gt;
+Nmap scan report for 10.129.2.28
+Host is up (0.013s latency).
+
+PORT      STATE SERVICE
+50000/tcp open  ibm-db2
+MAC Address: DE:AD:00:00:BE:EF (Intel Corporate)
+
+Nmap done: 1 IP address (1 host up) scanned in 0.08 seconds
+</code></pre>
+<p>--source-port 53 : Performs the scans from specified source port.</p>
+<p>Now that we have found out that the firewall accepts <code>TCP port 53</code>, it is very likely that IDS/IPS filters might also be configured much weaker than others. We can test this by trying to connect to this port by using <code>Netcat</code>.</p>
+<h3>Connect to the filtered Port :</h3>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ ncat -nv --source-port 53 10.129.2.28 50000
+
+Ncat: Version 7.80 ( https://nmap.org/ncat )
+Ncat: Connected to 10.129.2.28:50000.
+220 ProFTPd
+</code></pre>
+
+    </article>
+
+
+
+  </main>
+
+  <script src="/post.js?v=1792492549120"></script>
+</body>
+</html>

@@ -1,82 +1,103 @@
-// Shows one post. The URL looks like: post.html?id=nmap
-// -> it finds "nmap" in posts.js and loads posts/nmap.md
+// ===== Post page: search inside the post + copy cheat sheet commands =====
 
-const id = new URLSearchParams(window.location.search).get("id");
-const post = posts.find(function (p) { return p.id === id; });
-
-const title = document.getElementById("title");
-const meta = document.getElementById("meta");
 const content = document.getElementById("content");
-const toc = document.getElementById("toc");
+const searchBox = document.getElementById("post-search");
+const countLabel = document.getElementById("post-search-count");
 
-if (!post) {
-  title.textContent = "404 - post not found";
-} else {
-  title.textContent = post.title;
-  document.title = post.title + " - Aymane El Ouafi";
-  meta.textContent = post.date + " · " + post.tags.map(function (t) { return "#" + t; }).join(" ");
-  if (post.series) {
-    title.insertAdjacentHTML("beforebegin", `<span class="series-label">${post.series}</span>`);
+// keep the original post so we can restore it when the search changes
+const originalHTML = content.innerHTML;
+
+let marks = [];      // the <mark> elements currently highlighted
+let current = -1;    // which match we are focused on
+
+// highlight every occurrence of "query" inside the post content
+function runSearch(query) {
+  // always start from the clean post
+  content.innerHTML = originalHTML;
+  marks = [];
+  current = -1;
+
+  if (!query) {
+    countLabel.hidden = true;
+    return;
   }
 
-  fetch("posts/" + post.id + ".md")
-    .then(function (response) { return response.text(); })
-    .then(function (markdown) {
-      // breaks: true -> a single line break in your notes stays a line break
-      content.innerHTML = marked.parse(markdown, { breaks: true });
-      buildTableOfContents();
-      showSeries();
-      makeImagesClickable();
-    })
-    .catch(function () {
-      // happens when you open the file by double-clicking it (file://)
-      content.innerHTML = "<p class='no-results'>Can't load the post. If you're testing on your computer, " +
-        "run <code>python3 -m http.server</code> in the site folder and open http://localhost:8000</p>";
-    });
-}
+  const safe = query.toLowerCase();
 
-// Clicking a screenshot opens it in full size in a new tab
-function makeImagesClickable() {
-  content.querySelectorAll("img").forEach(function (img) {
-    const link = document.createElement("a");
-    link.href = img.src;
-    link.target = "_blank";
-    img.replaceWith(link);
-    link.appendChild(img);
-  });
-}
+  // walk every piece of text in the post and wrap the matches
+  const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT);
+  const textNodes = [];
+  let node;
+  while ((node = walker.nextNode())) textNodes.push(node);
 
-// If the post is part of a series, list all the posts of that series at the bottom
-function showSeries() {
-  if (!post.series) return;
+  textNodes.forEach(function (textNode) {
+    const text = textNode.nodeValue;
+    const lower = text.toLowerCase();
+    if (!lower.includes(safe)) return;
 
-  // posts.js has the newest first, so reverse to show them in order
-  const inSeries = posts.filter(function (p) { return p.series === post.series; }).reverse();
-
-  let html = `<p class="prompt">$ ls ~/series/${post.series.toLowerCase().replaceAll(" ", "-")}</p><ul>`;
-  inSeries.forEach(function (p) {
-    if (p.id === post.id) {
-      html += `<li class="current">${p.title} &lt;- you are here</li>`;
-    } else {
-      html += `<li><a href="post.html?id=${p.id}">${p.title}</a></li>`;
+    const frag = document.createDocumentFragment();
+    let i = 0, hit;
+    while ((hit = lower.indexOf(safe, i)) !== -1) {
+      if (hit > i) frag.appendChild(document.createTextNode(text.slice(i, hit)));
+      const mark = document.createElement("mark");
+      mark.className = "hl";
+      mark.textContent = text.slice(hit, hit + safe.length);
+      frag.appendChild(mark);
+      marks.push(mark);
+      i = hit + safe.length;
     }
+    if (i < text.length) frag.appendChild(document.createTextNode(text.slice(i)));
+    textNode.parentNode.replaceChild(frag, textNode);
   });
 
-  const box = document.createElement("nav");
-  box.className = "series";
-  box.innerHTML = html + "</ul>";
-  content.after(box);
+  countLabel.hidden = false;
+  if (marks.length === 0) {
+    countLabel.textContent = "no match";
+  } else {
+    jumpTo(0);
+  }
 }
 
-// Makes a clickable list of the big "# " sections at the top of the post
-function buildTableOfContents() {
-  const headings = content.querySelectorAll("h1");
-  if (headings.length < 2) return;
+// focus one match: highlight it stronger and scroll to it
+function jumpTo(index) {
+  if (!marks.length) return;
+  if (current >= 0 && marks[current]) marks[current].classList.remove("active");
+  current = (index + marks.length) % marks.length;
+  marks[current].classList.add("active");
+  marks[current].scrollIntoView({ block: "center", behavior: "smooth" });
+  countLabel.textContent = (current + 1) + " / " + marks.length + " matches";
+}
 
-  let html = "<p class='prompt'>$ cat contents.txt</p><ul>";
-  headings.forEach(function (heading, index) {
-    heading.id = "section-" + index;
-    html += `<li><a href="#section-${index}">${heading.textContent}</a></li>`;
+let timer;
+searchBox.addEventListener("input", function () {
+  clearTimeout(timer);
+  timer = setTimeout(function () { runSearch(searchBox.value.trim()); }, 150);
+});
+
+searchBox.addEventListener("keydown", function (e) {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    jumpTo(current + (e.shiftKey ? -1 : 1));
+  } else if (e.key === "Escape") {
+    searchBox.value = "";
+    runSearch("");
+  }
+});
+
+
+// ===== Click a cheat sheet command to copy it =====
+document.querySelectorAll(".cheat-row code").forEach(function (code) {
+  code.title = "click to copy";
+  code.addEventListener("click", function () {
+    navigator.clipboard.writeText(code.textContent).then(function () {
+      const old = code.getAttribute("data-copied");
+      if (old) return;
+      code.setAttribute("data-copied", "1");
+      const tag = document.createElement("span");
+      tag.className = "copied";
+      tag.textContent = " copied!";
+      code.after(tag);
+      setTimeout(function () { tag.remove(); code.removeAttribute("data-copied"); }, 1200);
+    });
   });
-  toc.innerHTML = html + "</ul>";
-}
+});

@@ -272,17 +272,17 @@ a:hover {
   color: var(--pink);
 }
 
-.post h2 {
+.post article h3 {
   color: var(--yellow);
   margin-top: 40px;
 }
 
-.post h2::before {
+.post article h3::before {
   content: "# ";
   color: var(--pink);
 }
 
-.post h3 {
+.post article h4 {
   color: var(--cyan);
 }
 
@@ -368,6 +368,113 @@ blockquote {
   margin: 4px 0;
 }
 
+/* snippet from inside a post, shown when the match is in the body text */
+.post-match {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 6px 0;
+  border-left: 2px solid var(--green);
+  padding-left: 10px;
+}
+
+/* the highlighted search term (home page previews) */
+mark {
+  background: var(--yellow);
+  color: #000;
+  padding: 0 2px;
+}
+
+/* ===== IN-POST SEARCH ===== */
+.post-search {
+  margin: 20px 0 4px;
+}
+
+.search-count {
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  color: var(--green);
+}
+
+/* matched words inside a post */
+.post mark.hl {
+  background: var(--cyan);
+  color: #000;
+}
+
+/* the match you jumped to (Enter / arrows) glows */
+.post mark.hl.active {
+  background: var(--pink);
+  box-shadow: 0 0 8px var(--pink);
+  scroll-margin-top: 20px;
+}
+
+/* ===== CHEAT SHEET DROPDOWN ===== */
+.cheatsheet {
+  margin: 10px 0 30px;
+  border: 1px solid var(--green);
+  background: #05050a;
+}
+
+.cheatsheet summary {
+  cursor: pointer;
+  padding: 12px 16px;
+  color: var(--green);
+  font-weight: bold;
+  list-style: none; /* hide the default triangle */
+  user-select: none;
+}
+
+.cheatsheet summary::-webkit-details-marker { display: none; }
+
+.cheatsheet summary:hover {
+  background: rgba(57, 255, 20, 0.08);
+}
+
+.cheatsheet .arrow {
+  display: inline-block;
+  transition: transform 0.2s;
+}
+
+.cheatsheet[open] .arrow {
+  transform: rotate(90deg);
+}
+
+.cheat-body {
+  padding: 6px 16px 16px;
+  border-top: 1px dashed var(--green);
+}
+
+.cheat-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  padding: 7px 0;
+  border-bottom: 1px solid #1a1a26;
+}
+
+.cheat-row:last-child { border-bottom: none; }
+
+.cheat-row code {
+  color: var(--cyan);
+  background: none;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.cheat-row code:hover {
+  color: var(--pink);
+}
+
+.cheat-row span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.copied {
+  color: var(--green);
+  font-size: 0.85rem;
+}
+
 /* ===== SERIES ===== */
 .series-label {
   display: inline-block;
@@ -415,7 +522,7 @@ blockquote {
 }
 
 /* big sections inside a post ("# " in Markdown) */
-.post article h1 {
+.post article h2 {
   font-size: 1.8rem;
   color: var(--cyan);
   margin-top: 60px;
@@ -488,11 +595,15 @@ footer {
 
   /* post page */
   .post h1 { font-size: 1.8rem; }
-  .post article h1 { font-size: 1.4rem; margin-top: 40px; }
-  .post h2 { font-size: 1.2rem; margin-top: 30px; }
+  .post article h2 { font-size: 1.4rem; margin-top: 40px; }
+  .post article h3 { font-size: 1.2rem; margin-top: 30px; }
   pre { padding: 12px; font-size: 0.8rem; }
   table { font-size: 0.8rem; }
   th, td { padding: 6px 8px; }
+
+  /* cheat sheet: command on top, description under it */
+  .cheat-row { flex-direction: column; gap: 2px; }
+  .cheat-row code { font-size: 0.85rem; }
 }
 
 /* long words or commands never push the page wider than the screen */

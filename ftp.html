@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Footprinting FTP · Aymane El Ouafi</title>
+  <meta name="description" content="How FTP and TFTP work, vsFTPd config and dangerous settings, anonymous login, downloading/uploading files and enumerating with Nmap and openssl.">
+  <meta name="author" content="Aymane El Ouafi">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <link rel="canonical" href="https://aymaneelouafi.me/ftp.html">
+  <link rel="icon" href="/images/skull.svg">
+
+  <!-- Open Graph (Facebook, LinkedIn, Discord...) -->
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Footprinting FTP · Aymane El Ouafi">
+  <meta property="og:description" content="How FTP and TFTP work, vsFTPd config and dangerous settings, anonymous login, downloading/uploading files and enumerating with Nmap and openssl.">
+  <meta property="og:url" content="https://aymaneelouafi.me/ftp.html">
+  <meta property="og:site_name" content="Aymane El Ouafi">
+  <meta property="og:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Footprinting FTP · Aymane El Ouafi">
+  <meta name="twitter:description" content="How FTP and TFTP work, vsFTPd config and dangerous settings, anonymous login, downloading/uploading files and enumerating with Nmap and openssl.">
+  <meta name="twitter:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Footprinting FTP",
+  "description": "How FTP and TFTP work, vsFTPd config and dangerous settings, anonymous login, downloading/uploading files and enumerating with Nmap and openssl.",
+  "datePublished": "2026-10-15",
+  "dateModified": "2026-10-15",
+  "author": {
+    "@type": "Person",
+    "name": "Aymane El Ouafi",
+    "url": "https://aymaneelouafi.me"
+  },
+  "publisher": {
+    "@type": "Person",
+    "name": "Aymane El Ouafi",
+    "url": "https://aymaneelouafi.me"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://aymaneelouafi.me/ftp.html"
+  },
+  "url": "https://aymaneelouafi.me/ftp.html",
+  "image": "https://aymaneelouafi.me/images/og.png",
+  "keywords": "htb, footprinting, ftp, tftp, vsftpd, enumeration",
+  "inLanguage": "en"
+}
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rubik+Glitch&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css?v=1792492549120">
+</head>
+<body>
+  <main class="container post">
+
+    <a class="back" href="/index.html">← cd ..</a>
+
+    <span class="series-label">Footprinting Services</span>
+    <h1>Footprinting FTP</h1>
+    <p class="post-meta">2026-10-15 · #htb #footprinting #ftp #tftp #vsftpd #enumeration</p>
+
+    <input id="post-search" class="search post-search" type="text"
+           placeholder="search in this post...  (Enter = next, Shift+Enter = previous, Esc = clear)"
+           autocomplete="off">
+    <p id="post-search-count" class="search-count" hidden></p>
+
+  <details class="cheatsheet">
+    <summary><span class="arrow">&#9656;</span> Cheat sheet &mdash; useful commands</summary>
+    <div class="cheat-body">
+      <div class="cheat-row">
+        <code>ftp &lt;target&gt;</code>
+        <span>Connect (try anonymous / anonymous)</span>
+      </div>
+      <div class="cheat-row">
+        <code>nmap -sV -p21 -sC -A &lt;target&gt;</code>
+        <span>Footprint FTP with NSE scripts</span>
+      </div>
+      <div class="cheat-row">
+        <code>ls -R</code>
+        <span>Recursive directory listing</span>
+      </div>
+      <div class="cheat-row">
+        <code>get &lt;file&gt;  /  put &lt;file&gt;</code>
+        <span>Download / upload a file</span>
+      </div>
+      <div class="cheat-row">
+        <code>wget -m --no-passive ftp://anonymous:anonymous@&lt;target&gt;</code>
+        <span>Mirror everything</span>
+      </div>
+      <div class="cheat-row">
+        <code>openssl s_client -connect &lt;target&gt;:21 -starttls ftp</code>
+        <span>Inspect TLS cert</span>
+      </div>
+      <div class="cheat-row">
+        <code>nc -nv &lt;target&gt; 21   /   telnet &lt;target&gt; 21</code>
+        <span>Grab the banner manually</span>
+      </div>
+    </div>
+  </details>
+
+
+
+    <article id="content">
+<p><strong>What FTP does</strong></p>
+<ul>
+<li>FTP = <strong>File Transfer Protocol</strong>: upload/download files to/from a server.</li>
+</ul>
+<p><strong>Two channels (key concept)</strong></p>
+<ul>
+<li>FTP opens <strong>two</strong> separate connections:<ul>
+<li><strong>Control channel — TCP port 21</strong>: carries commands (client) and status codes (server).</li>
+<li><strong>Data channel — TCP port 20</strong>: carries the actual file data, with error-checking.</li>
+</ul>
+</li>
+<li>If a transfer breaks mid-way, it can resume after reconnecting.</li>
+</ul>
+<p><strong>Active vs. Passive mode (the part worth understanding)</strong></p>
+<ul>
+<li><strong>Active</strong>: client connects on port 21 and tells the server which client port to send data back to. Problem: if a <strong>firewall</strong> protects the client, it blocks that incoming data connection from the server → fails.</li>
+<li><strong>Passive</strong>: the <strong>server</strong> announces a port, and the <strong>client</strong> opens the data connection to it. Since the client initiates both channels, the firewall doesn&#39;t block it. (This is why passive is the common default )</li>
+</ul>
+<p><strong>Commands &amp; status codes</strong></p>
+<ul>
+<li>Client sends commands (upload, download, make/delete directories, etc.); server replies with a status code saying if it worked.</li>
+<li>Not every server implements every command.</li>
+</ul>
+<p><strong>Security</strong></p>
+<ul>
+<li>Usually needs <strong>credentials</strong>.</li>
+<li><strong>FTP is clear-text</strong> — usernames, passwords, and files can be <strong>sniffed</strong> off the network if someone&#39;s positioned to capture traffic.</li>
+<li><strong>Anonymous FTP</strong>: some servers let <em>anyone</em> log in with no password (often limited permissions). A common easy finding during recon — worth always checking for.</li>
+</ul>
+<hr>
+<h2>TFTP :</h2>
+<p><code>Trivial File Transfer Protocol</code> (<code>TFTP</code>) is simpler than FTP and performs file transfers between client and server processes.</p>
+<ul>
+<li>does not  provide user auth and valuable features supported by FTP .</li>
+<li>TFTP use UDP , making it an unreliable protocol and causing it to use UDP-assisted application layer recovery .</li>
+<li>sets limits on access based solely on the read and write permissions of a file in the operating system.</li>
+<li>TFTP operating exclusively in directories and with files that have been shared with all users and can be read and written globally.</li>
+</ul>
+<p>commands of <code>TFTP</code>:</p>
+<table>
+<thead>
+<tr>
+<th><strong>Commands</strong></th>
+<th><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>connect</code></td>
+<td>Sets the remote host, and optionally the port, for file transfers.</td>
+</tr>
+<tr>
+<td><code>get</code></td>
+<td>Transfers a file or set of files from the remote host to the local host.</td>
+</tr>
+<tr>
+<td><code>put</code></td>
+<td>Transfers a file or set of files from the local host onto the remote host.</td>
+</tr>
+<tr>
+<td><code>quit</code></td>
+<td>Exits tftp.</td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>Shows the current status of tftp, including the current transfer mode (ascii or binary), connection status, time-out value, and so on.</td>
+</tr>
+<tr>
+<td><code>verbose</code></td>
+<td>Turns verbose mode, which displays additional information during file transfer, on or off.</td>
+</tr>
+</tbody></table>
+<p>Unlike the FTP client, <code>TFTP</code> does not have directory listing functionality.</p>
+<hr>
+<h2>FTP Default Configuration :</h2>
+<p>The default configuration of vsFTPd can be found in <code>/etc/vsftpd.conf</code></p>
+<h2>install vsFTPd :</h2>
+<pre><code class="language-bash">aymane0x90@htb[/htb]$ sudo apt install vsftpd 
+</code></pre>
+<h2>vsFTPd Config File :</h2>
+<table>
+<thead>
+<tr>
+<th><strong>Setting</strong></th>
+<th><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>listen=NO</code></td>
+<td>Run from inetd or as a standalone daemon?</td>
+</tr>
+<tr>
+<td><code>listen_ipv6=YES</code></td>
+<td>Listen on IPv6 ?</td>
+</tr>
+<tr>
+<td><code>anonymous_enable=NO</code></td>
+<td>Enable Anonymous access?</td>
+</tr>
+<tr>
+<td><code>local_enable=YES</code></td>
+<td>Allow local users to login?</td>
+</tr>
+<tr>
+<td><code>dirmessage_enable=YES</code></td>
+<td>Display active directory messages when users go into certain directories?</td>
+</tr>
+<tr>
+<td><code>use_localtime=YES</code></td>
+<td>Use local time?</td>
+</tr>
+<tr>
+<td><code>xferlog_enable=YES</code></td>
+<td>Activate logging of uploads/downloads?</td>
+</tr>
+<tr>
+<td><code>connect_from_port_20=YES</code></td>
+<td>Connect from port 20?</td>
+</tr>
+<tr>
+<td><code>secure_chroot_dir=/var/run/vsftpd/empty</code></td>
+<td>Name of an empty directory</td>
+</tr>
+<tr>
+<td><code>pam_service_name=vsftpd</code></td>
+<td>This string is the name of the PAM service vsftpd will use.</td>
+</tr>
+<tr>
+<td><code>rsa_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem</code></td>
+<td>The last three options specify the location of the RSA certificate to use for SSL encrypted connections.</td>
+</tr>
+<tr>
+<td><code>rsa_private_key_file=/etc/ssl/private/ssl-cert-snakeoil.key</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>ssl_enable=NO</code></td>
+<td></td>
+</tr>
+</tbody></table>
+<p>In addition, there is a file called <code>/etc/ftpusers</code> that we also need to pay attention to, as this file is used to deny certain users access to the FTP service.</p>
+<h2>FTPUSERS :</h2>
+<pre><code class="language-bash">aymane0x90@htb[/htb]$ cat /etc/ftpusers
+
+guest
+john
+kevin
+</code></pre>
+<h2>Dangerous Settings :</h2>
+<table>
+<thead>
+<tr>
+<th><strong>Setting</strong></th>
+<th><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>anonymous_enable=YES</code></td>
+<td>Allowing anonymous login?</td>
+</tr>
+<tr>
+<td><code>anon_upload_enable=YES</code></td>
+<td>Allowing anonymous to upload files?</td>
+</tr>
+<tr>
+<td><code>anon_mkdir_write_enable=YES</code></td>
+<td>Allowing anonymous to create new directories?</td>
+</tr>
+<tr>
+<td><code>no_anon_password=YES</code></td>
+<td>Do not ask anonymous for password?</td>
+</tr>
+<tr>
+<td><code>anon_root=/home/username/ftp</code></td>
+<td>Directory for anonymous.</td>
+</tr>
+<tr>
+<td><code>write_enable=YES</code></td>
+<td>Allow the usage of FTP commands: STOR, DELE, RNFR, RNTO, MKD, RMD, APPE, and SITE?</td>
+</tr>
+</tbody></table>
+<p>With the standard FTP client (<code>ftp</code>), we can access the FTP server accordingly and log in with the anonymous user if the settings shown above have been used. The use of the anonymous account can occur in internal environments and infrastructures where the participants are all known. Access to this type of service can be set temporarily or with the setting to accelerate the exchange of files.</p>
+<ul>
+<li>As soon as we connect to the vsFTPd server, the <code>response code 220</code> is displayed with the banner of the FTP server.</li>
+</ul>
+<h2>Anonymous Login :</h2>
+<pre><code class="language-bash">aymane0x90@htb[/htb]$ ftp 10.129.14.136
+
+Connected to 10.129.14.136.
+220 &quot;Welcome to the HTB Academy vsFTP service.&quot;
+Name (10.129.14.136:cry0l1t3): anonymous
+
+230 Login successful.
+Remote system type is UNIX.
+Using binary mode to transfer files.
+
+
+ftp&gt; ls
+
+200 PORT command successful. Consider using PASV.
+150 Here comes the directory listing.
+-rw-rw-r--    1 1002     1002      8138592 Sep 14 16:54 Calender.pptx
+drwxrwxr-x    2 1002     1002         4096 Sep 14 16:50 Clients
+drwxrwxr-x    2 1002     1002         4096 Sep 14 16:50 Documents
+drwxrwxr-x    2 1002     1002         4096 Sep 14 16:50 Employees
+-rw-rw-r--    1 1002     1002           41 Sep 14 16:45 Important Notes.txt
+226 Directory send OK.
+</code></pre>
+<p>to get the first overview of the server&#39;s settings, we can use the following command:</p>
+<h2>vsFTPd status :</h2>
+<pre><code class="language-bash">ftp&gt; status
+
+Connected to 10.129.14.136.
+No proxy connection.
+Connecting using address family: any.
+Mode: stream; Type: binary; Form: non-print; Structure: file
+Verbose: on; Bell: off; Prompting: on; Globbing: on
+Store unique: off; Receive unique: off
+Case: off; CR stripping: on
+Quote control characters: on
+Ntrans: off
+Nmap: off
+Hash mark printing: off; Use of PORT cmds: on
+Tick counter printing: off
+</code></pre>
+<p>Some commands should be used occasionally, as these will make the server show us more information that we can use for our purposes. These commands include <code>debug</code> and <code>trace</code>.</p>
+<h2>vsFTPd Detailed Output :</h2>
+<pre><code class="language-bash">ftp&gt; debug
+
+Debugging on (debug=1).
+
+
+ftp&gt; trace
+
+Packet tracing on.
+
+
+ftp&gt; ls
+
+---&gt; PORT 10,10,14,4,188,195
+200 PORT command successful. Consider using PASV.
+---&gt; LIST
+150 Here comes the directory listing.
+-rw-rw-r--    1 1002     1002      8138592 Sep 14 16:54 Calender.pptx
+drwxrwxr-x    2 1002     1002         4096 Sep 14 17:03 Clients
+drwxrwxr-x    2 1002     1002         4096 Sep 14 16:50 Documents
+drwxrwxr-x    2 1002     1002         4096 Sep 14 16:50 Employees
+-rw-rw-r--    1 1002     1002           41 Sep 14 16:45 Important Notes.txt
+226 Directory send OK.
+</code></pre>
+<table>
+<thead>
+<tr>
+<th><strong>Setting</strong></th>
+<th><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>dirmessage_enable=YES</code></td>
+<td>Show a message when they first enter a new directory?</td>
+</tr>
+<tr>
+<td><code>chown_uploads=YES</code></td>
+<td>Change ownership of anonymously uploaded files?</td>
+</tr>
+<tr>
+<td><code>chown_username=username</code></td>
+<td>User who is given ownership of anonymously uploaded files.</td>
+</tr>
+<tr>
+<td><code>local_enable=YES</code></td>
+<td>Enable local users to login?</td>
+</tr>
+<tr>
+<td><code>chroot_local_user=YES</code></td>
+<td>Place local users into their home directory?</td>
+</tr>
+<tr>
+<td><code>chroot_list_enable=YES</code></td>
+<td>Use a list of local users that will be placed in their home directory?</td>
+</tr>
+</tbody></table>
+<table>
+<thead>
+<tr>
+<th><strong>Setting</strong></th>
+<th><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>hide_ids=YES</code></td>
+<td>All user and group information in directory listings will be displayed as &quot;ftp&quot;.</td>
+</tr>
+<tr>
+<td><code>ls_recurse_enable=YES</code></td>
+<td>Allows the use of recurse listings.</td>
+</tr>
+</tbody></table>
+<p>In the following example, we can see that if the <code>hide_ids=YES</code> setting is present, the UID and GUID representation of the service will be overwritten, making it more difficult for us to identify with which rights these files are written and uploaded.</p>
+<h2>Hiding IDs - Yes :</h2>
+<pre><code class="language-bash">ftp&gt; ls
+
+---&gt; TYPE A
+200 Switching to ASCII mode.
+ftp: setsockopt (ignored): Permission denied
+---&gt; PORT 10,10,14,4,223,101
+200 PORT command successful. Consider using PASV.
+---&gt; LIST
+150 Here comes the directory listing.
+-rw-rw-r--    1 ftp     ftp      8138592 Sep 14 16:54 Calender.pptx
+drwxrwxr-x    2 ftp     ftp         4096 Sep 14 17:03 Clients
+drwxrwxr-x    2 ftp     ftp         4096 Sep 14 16:50 Documents
+drwxrwxr-x    2 ftp     ftp         4096 Sep 14 16:50 Employees
+-rw-rw-r--    1 ftp     ftp           41 Sep 14 16:45 Important Notes.txt
+-rw-------    1 ftp     ftp            0 Sep 15 14:57 testupload.txt
+226 Directory send OK.
+</code></pre>
+<p>This setting is a security feature to prevent local usernames from being revealed. With the usernames, we could attack the services like FTP and SSH and many others with a brute-force attack in theory. However, in reality, <a href="https://en.wikipedia.org/wiki/Fail2ban">fail2ban</a> solutions are now a standard implementation of any infrastructure that logs the IP address and blocks all access to the infrastructure after a certain number of failed login attempts.</p>
+<ul>
+<li><code>ls_recurse_enable=YES</code> : is often set on the vsFTPd server to have a better overview of the FTP directory structure, as it allows us to see all the visible content at once.</li>
+</ul>
+<h2>Recursive Listing :</h2>
+<pre><code class="language-bash">ftp&gt; ls -R
+
+---&gt; PORT 10,10,14,4,222,149
+200 PORT command successful. Consider using PASV.
+---&gt; LIST -R
+150 Here comes the directory listing.
+.:
+-rw-rw-r--    1 ftp      ftp      8138592 Sep 14 16:54 Calender.pptx
+drwxrwxr-x    2 ftp      ftp         4096 Sep 14 17:03 Clients
+drwxrwxr-x    2 ftp      ftp         4096 Sep 14 16:50 Documents
+drwxrwxr-x    2 ftp      ftp         4096 Sep 14 16:50 Employees
+-rw-rw-r--    1 ftp      ftp           41 Sep 14 16:45 Important Notes.txt
+-rw-------    1 ftp      ftp            0 Sep 15 14:57 testupload.txt
+
+./Clients:
+drwx------    2 ftp      ftp          4096 Sep 16 18:04 HackTheBox
+drwxrwxrwx    2 ftp      ftp          4096 Sep 16 18:00 Inlanefreight
+
+./Clients/HackTheBox:
+-rw-r--r--    1 ftp      ftp         34872 Sep 16 18:04 appointments.xlsx
+-rw-r--r--    1 ftp      ftp        498123 Sep 16 18:04 contract.docx
+-rw-r--r--    1 ftp      ftp        478237 Sep 16 18:04 contract.pdf
+-rw-r--r--    1 ftp      ftp           348 Sep 16 18:04 meetings.txt
+
+./Clients/Inlanefreight:
+-rw-r--r--    1 ftp      ftp         14211 Sep 16 18:00 appointments.xlsx
+-rw-r--r--    1 ftp      ftp         37882 Sep 16 17:58 contract.docx
+-rw-r--r--    1 ftp      ftp            89 Sep 16 17:58 meetings.txt
+-rw-r--r--    1 ftp      ftp        483293 Sep 16 17:59 proposal.pptx
+
+./Documents:
+-rw-r--r--    1 ftp      ftp         23211 Sep 16 18:05 appointments-template.xlsx
+-rw-r--r--    1 ftp      ftp         32521 Sep 16 18:05 contract-template.docx
+-rw-r--r--    1 ftp      ftp        453312 Sep 16 18:05 contract-template.pdf
+
+./Employees:
+226 Directory send OK.
+</code></pre>
+<p><code>Downloading</code> files from such an FTP server is one of the main features, as well as <code>uploading</code> files created by us. This allows us, for example, to use LFI vulnerabilities to make the host execute system commands. Apart from the files, we can view, download and inspect. Attacks are also possible with the FTP logs, leading to <code>Remote Command Execution</code> (<code>RCE</code>). This applies to the FTP services and all those we can detect during our enumeration phase.</p>
+<h2>Download a File :</h2>
+<pre><code class="language-bash">ftp&gt; ls
+
+200 PORT command successful. Consider using PASV.
+150 Here comes the directory listing.
+-rwxrwxrwx    1 ftp      ftp             0 Sep 16 17:24 Calendar.pptx
+drwxrwxrwx    4 ftp      ftp          4096 Sep 16 17:57 Clients
+drwxrwxrwx    2 ftp      ftp          4096 Sep 16 18:05 Documents
+drwxrwxrwx    2 ftp      ftp          4096 Sep 16 17:24 Employees
+-rwxrwxrwx    1 ftp      ftp            41 Sep 18 15:58 Important Notes.txt
+226 Directory send OK.
+
+
+ftp&gt; get Important\ Notes.txt
+
+local: Important Notes.txt remote: Important Notes.txt
+200 PORT command successful. Consider using PASV.
+150 Opening BINARY mode data connection for Important Notes.txt (41 bytes).
+226 Transfer complete.
+41 bytes received in 0.00 secs (606.6525 kB/s)
+
+
+ftp&gt; exit
+
+221 Goodbye.
+</code></pre>
+<pre><code class="language-bash">aymane0x90@htb[/htb]$ ls | grep Notes.txt
+
+&#39;Important Notes.txt&#39;
+</code></pre>
+<h2>Download All Available Files :</h2>
+<pre><code class="language-bash">aymane0x90@htb[/htb]$ wget -m --no-passive ftp://anonymous:anonymous@10.129.14.136
+
+--2021-09-19 14:45:58--  ftp://anonymous:*password*@10.129.14.136/                                         
+           =&gt; ‘10.129.14.136/.listing’                                                                     
+Connecting to 10.129.14.136:21... connected.                                                               
+Logging in as anonymous ... Logged in!
+==&gt; SYST ... done.    ==&gt; PWD ... done.
+==&gt; TYPE I ... done.  ==&gt; CWD not needed.
+==&gt; PORT ... done.    ==&gt; LIST ... done.                                                                 
+12.12.1.136/.listing           [ &lt;=&gt;                                  ]     466  --.-KB/s    in 0s       
+                                                                                                         
+2021-09-19 14:45:58 (65,8 MB/s) - ‘10.129.14.136/.listing’ saved [466]                                     
+--2021-09-19 14:45:58--  ftp://anonymous:*password*@10.129.14.136/Calendar.pptx   
+           =&gt; ‘10.129.14.136/Calendar.pptx’                                       
+==&gt; CWD not required.                                                           
+==&gt; SIZE Calendar.pptx ... done.                                                                                                                            
+==&gt; PORT ... done.    ==&gt; RETR Calendar.pptx ... done.       
+
+...SNIP...
+
+2021-09-19 14:45:58 (48,3 MB/s) - ‘10.129.14.136/Employees/.listing’ saved [119]
+
+FINISHED --2021-09-19 14:45:58--
+Total wall clock time: 0,03s
+Downloaded: 15 files, 1,7K in 0,001s (3,02 MB/s)
+</code></pre>
+<h2>Upload a File</h2>
+<pre><code class="language-bash">aymane0x90@htb[/htb]$ touch testupload.txt
+</code></pre>
+<p>With the <code>PUT</code> command, we can upload files in the current folder to the FTP server.</p>
+<pre><code class="language-bash">ftp&gt; put testupload.txt 
+
+local: testupload.txt remote: testupload.txt
+---&gt; PORT 10,10,14,4,184,33
+200 PORT command successful. Consider using PASV.
+---&gt; STOR testupload.txt
+150 Ok to send data.
+226 Transfer complete.
+
+
+ftp&gt; ls
+
+---&gt; TYPE A
+200 Switching to ASCII mode.
+---&gt; PORT 10,10,14,4,223,101
+200 PORT command successful. Consider using PASV.
+---&gt; LIST
+150 Here comes the directory listing.
+-rw-rw-r--    1 1002     1002      8138592 Sep 14 16:54 Calender.pptx
+drwxrwxr-x    2 1002     1002         4096 Sep 14 17:03 Clients
+drwxrwxr-x    2 1002     1002         4096 Sep 14 16:50 Documents
+drwxrwxr-x    2 1002     1002         4096 Sep 14 16:50 Employees
+-rw-rw-r--    1 1002     1002           41 Sep 14 16:45 Important Notes.txt
+-rw-------    1 1002     133             0 Sep 15 14:57 testupload.txt
+226 Directory send OK.
+</code></pre>
+<h2>Footprinting the service :</h2>
+<h3>Nmap FTP Scripts :</h3>
+<pre><code class="language-bash">aymane0x90@htb[/htb]$ sudo nmap --script-updatedb
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2021-09-19 13:49 CEST
+NSE: Updating rule database.
+NSE: Script Database updated successfully.
+Nmap done: 0 IP addresses (0 hosts up) scanned in 0.28 seconds
+</code></pre>
+<p>Find the nmap scripts on the system  :</p>
+<pre><code class="language-bash">aymane0x90@htb[/htb]$ find / -type f -name ftp* 2&gt;/dev/null | grep scripts
+
+/usr/share/nmap/scripts/ftp-syst.nse
+/usr/share/nmap/scripts/ftp-vsftpd-backdoor.nse
+/usr/share/nmap/scripts/ftp-vuln-cve2010-4221.nse
+/usr/share/nmap/scripts/ftp-proftpd-backdoor.nse
+/usr/share/nmap/scripts/ftp-bounce.nse
+/usr/share/nmap/scripts/ftp-libopie.nse
+/usr/share/nmap/scripts/ftp-anon.nse
+/usr/share/nmap/scripts/ftp-brute.nse
+</code></pre>
+<p>As we already know, the FTP server usually runs on the standard TCP port 21, which we can scan using Nmap. We also use the version scan (<code>-sV</code>), aggressive scan (<code>-A</code>), and the default script scan (<code>-sC</code>) against our target <code>10.129.14.136</code>.</p>
+<h3>Nmap :</h3>
+<pre><code class="language-bash">aymane0x90@htb[/htb]$ sudo nmap -sV -p21 -sC -A 10.129.14.136
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2021-09-16 18:12 CEST
+Nmap scan report for 10.129.14.136
+Host is up (0.00013s latency).
+
+PORT   STATE SERVICE VERSION
+21/tcp open  ftp     vsftpd 2.0.8 or later
+| ftp-anon: Anonymous FTP login allowed (FTP code 230)
+| -rwxrwxrwx    1 ftp      ftp       8138592 Sep 16 17:24 Calendar.pptx [NSE: writeable]
+| drwxrwxrwx    4 ftp      ftp          4096 Sep 16 17:57 Clients [NSE: writeable]
+| drwxrwxrwx    2 ftp      ftp          4096 Sep 16 18:05 Documents [NSE: writeable]
+| drwxrwxrwx    2 ftp      ftp          4096 Sep 16 17:24 Employees [NSE: writeable]
+| -rwxrwxrwx    1 ftp      ftp            41 Sep 16 17:24 Important Notes.txt [NSE: writeable]
+|_-rwxrwxrwx    1 ftp      ftp             0 Sep 15 14:57 testupload.txt [NSE: writeable]
+| ftp-syst: 
+|   STAT: 
+| FTP server status:
+|      Connected to 10.10.14.4
+|      Logged in as ftp
+|      TYPE: ASCII
+|      No session bandwidth limit
+|      Session timeout in seconds is 300
+|      Control connection is plain text
+|      Data connections will be plain text
+|      At session startup, client count was 2
+|      vsFTPd 3.0.3 - secure, fast, stable
+|_End of status
+</code></pre>
+<ul>
+<li><p>the <a href="https://nmap.org/nsedoc/scripts/ftp-anon.html">ftp-anon</a> NSE script checks whether the FTP server allows anonymous access. If so, the contents of the FTP root directory are rendered for the anonymous user.</p>
+</li>
+<li><p>The <code>ftp-syst</code>, for example, executes the <code>STAT</code> command, which displays information about the FTP server status. This includes configurations as well as the version of the FTP server.</p>
+</li>
+<li><p>trace the progress of NSE scripts at the network level if we use the <code>--script-trace</code> option in our scans.</p>
+</li>
+</ul>
+<h3>Nmap Script Trace</h3>
+<pre><code class="language-bash">aymane0x90@htb[/htb]$ sudo nmap -sV -p21 -sC -A 10.129.14.136 --script-trace
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2021-09-19 13:54 CEST                                                                                                                                                   
+NSOCK INFO [11.4640s] nsock_trace_handler_callback(): Callback: CONNECT SUCCESS for EID 8 [10.129.14.136:21]                                   
+NSOCK INFO [11.4640s] nsock_trace_handler_callback(): Callback: CONNECT SUCCESS for EID 16 [10.129.14.136:21]             
+NSOCK INFO [11.4640s] nsock_trace_handler_callback(): Callback: CONNECT SUCCESS for EID 24 [10.129.14.136:21]
+NSOCK INFO [11.4640s] nsock_trace_handler_callback(): Callback: CONNECT SUCCESS for EID 32 [10.129.14.136:21]
+NSOCK INFO [11.4640s] nsock_read(): Read request from IOD #1 [10.129.14.136:21] (timeout: 7000ms) EID 42
+NSOCK INFO [11.4640s] nsock_read(): Read request from IOD #2 [10.129.14.136:21] (timeout: 9000ms) EID 50
+NSOCK INFO [11.4640s] nsock_read(): Read request from IOD #3 [10.129.14.136:21] (timeout: 7000ms) EID 58
+NSOCK INFO [11.4640s] nsock_read(): Read request from IOD #4 [10.129.14.136:21] (timeout: 11000ms) EID 66
+NSE: TCP 10.10.14.4:54226 &gt; 10.129.14.136:21 | CONNECT
+NSE: TCP 10.10.14.4:54228 &gt; 10.129.14.136:21 | CONNECT
+NSE: TCP 10.10.14.4:54230 &gt; 10.129.14.136:21 | CONNECT
+NSE: TCP 10.10.14.4:54232 &gt; 10.129.14.136:21 | CONNECT
+NSOCK INFO [11.4660s] nsock_trace_handler_callback(): Callback: READ SUCCESS for EID 50 [10.129.14.136:21] (41 bytes): 220 Welcome to HTB-Academy FTP service...
+NSOCK INFO [11.4660s] nsock_trace_handler_callback(): Callback: READ SUCCESS for EID 58 [10.129.14.136:21] (41 bytes): 220 Welcome to HTB-Academy FTP service...
+NSE: TCP 10.10.14.4:54228 &lt; 10.129.14.136:21 | 220 Welcome to HTB-Academy FTP service.
+</code></pre>
+<p>The scan history shows that four different parallel scans are running against the service, with various timeouts. For the NSE scripts, we see that our local machine uses other output ports (<code>54226</code>, <code>54228</code>, <code>54230</code>, <code>54232</code>) and first initiates the connection with the <code>CONNECT</code> command. From the first response from the server, we can see that we are receiving the banner from the server to our second NSE script (<code>54228</code>) from the target FTP server. If necessary, we can, of course, use other applications such as <code>netcat</code> or <code>telnet</code> to interact with the FTP server.</p>
+<h3>Service Interaction</h3>
+<pre><code class="language-bash">aymane0x90@htb[/htb]$ nc -nv 10.129.14.136 21
+</code></pre>
+<pre><code class="language-bash">aymane0x90@htb[/htb]$ telnet 10.129.14.136 21
+</code></pre>
+<p>It looks slightly different if the FTP server runs with TLS/SSL encryption. Because then we need a client that can handle TLS/SSL. For this, we can use the client <code>openssl</code> and communicate with the FTP server. The good thing about using <code>openssl</code> is that we can see the SSL certificate, which can also be helpful.</p>
+<pre><code class="language-bash">aymane0x90@htb[/htb]$ openssl s_client -connect 10.129.14.136:21 -starttls ftp
+
+CONNECTED(00000003)                                                                                      
+Can&#39;t use SSL_get_servername                        
+depth=0 C = US, ST = California, L = Sacramento, O = Inlanefreight, OU = Dev, CN = master.inlanefreight.htb, emailAddress = admin@inlanefreight.htb
+verify error:num=18:self signed certificate
+verify return:1
+
+depth=0 C = US, ST = California, L = Sacramento, O = Inlanefreight, OU = Dev, CN = master.inlanefreight.htb, emailAddress = admin@inlanefreight.htb
+verify return:1
+---                                                 
+Certificate chain
+ 0 s:C = US, ST = California, L = Sacramento, O = Inlanefreight, OU = Dev, CN = master.inlanefreight.htb, emailAddress = admin@inlanefreight.htb
+ 
+ i:C = US, ST = California, L = Sacramento, O = Inlanefreight, OU = Dev, CN = master.inlanefreight.htb, emailAddress = admin@inlanefreight.htb
+---
+ 
+Server certificate
+
+-----BEGIN CERTIFICATE-----
+
+MIIENTCCAx2gAwIBAgIUD+SlFZAWzX5yLs2q3ZcfdsRQqMYwDQYJKoZIhvcNAQEL
+...SNIP...
+</code></pre>
+<p>This is because the SSL certificate allows us to recognize the <code>hostname</code>, for example, and in most cases also an <code>email address</code> for the organization or company. In addition, if the company has several locations worldwide, certificates can also be created for specific locations, which can also be identified using the SSL certificate.</p>
+
+    </article>
+
+  <nav class="series">
+    <p class="prompt">$ ls ~/series/footprinting-services</p>
+    <ul>
+      <li><a href="nfs.html">Footprinting NFS</a></li>
+      <li class="current">Footprinting FTP &lt;- you are here</li>
+      <li><a href="dns.html">Footprinting DNS</a></li>
+    </ul>
+  </nav>
+
+  </main>
+
+  <script src="/post.js?v=1792492549120"></script>
+</body>
+</html>

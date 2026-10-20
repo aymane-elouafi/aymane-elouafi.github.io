@@ -1,0 +1,11 @@
+{
+  "name": "aymaneelouafi-site",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "build": "node build.mjs" },
+  "dependencies": {
+    "marked": "^16.4.1",
+    "node-html-parser": "^7.0.1"
+  }
+}

