@@ -1,5 +1,22 @@
 [
   {
+    "id": "smtp",
+    "title": "Footprinting SMTP",
+    "date": "2026-10-20",
+    "series": "Footprinting Services",
+    "tags": ["htb", "footprinting", "smtp", "email", "open-relay", "postfix", "enumeration"],
+    "description": "How SMTP works and its mail server chain (MUA/MSA/MTA/MDA), clear-text weaknesses, open relays, talking to it over telnet, user enumeration and Nmap scripts.",
+    "cheatsheet": [
+      { "cmd": "telnet <target> 25", "desc": "Connect to the SMTP server" },
+      { "cmd": "EHLO x   /   HELO x", "desc": "Start session, list supported extensions" },
+      { "cmd": "VRFY <user>", "desc": "Check if a user exists" },
+      { "cmd": "MAIL FROM: / RCPT TO: / DATA", "desc": "Send a mail by hand" },
+      { "cmd": "nmap -sC -sV -p25 <target>", "desc": "Footprint (smtp-commands script)" },
+      { "cmd": "nmap -p25 --script smtp-open-relay -v <target>", "desc": "Test for an open relay" },
+      { "cmd": "smtp-user-enum -M RCPT -U <wordlist> -D <domain> -t <target> -p 25", "desc": "Enumerate users (RCPT mode)" }
+    ]
+  },
+  {
     "id": "dns",
     "title": "Footprinting DNS",
     "date": "2026-10-20",

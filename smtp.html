@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Google Analytics (gtag.js) - counts your visitors -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-V2R1YY0P62"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-V2R1YY0P62');
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Footprinting SMTP · Aymane Elouafi</title>
+  <meta name="description" content="How SMTP works and its mail server chain (MUA/MSA/MTA/MDA), clear-text weaknesses, open relays, talking to it over telnet, user enumeration and Nmap scripts.">
+  <meta name="author" content="Aymane Elouafi">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="google-site-verification" content="P6WC3YGSehH9r2o-Lon_-tKZGpFiOWJjHD41vtJqLsk">
+  <link rel="canonical" href="https://aymaneelouafi.me/smtp.html">
+  <link rel="icon" href="/images/skull.svg">
+
+  <!-- Open Graph (Facebook, LinkedIn, Discord...) -->
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Footprinting SMTP · Aymane Elouafi">
+  <meta property="og:description" content="How SMTP works and its mail server chain (MUA/MSA/MTA/MDA), clear-text weaknesses, open relays, talking to it over telnet, user enumeration and Nmap scripts.">
+  <meta property="og:url" content="https://aymaneelouafi.me/smtp.html">
+  <meta property="og:site_name" content="Aymane Elouafi">
+  <meta property="og:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Footprinting SMTP · Aymane Elouafi">
+  <meta name="twitter:description" content="How SMTP works and its mail server chain (MUA/MSA/MTA/MDA), clear-text weaknesses, open relays, talking to it over telnet, user enumeration and Nmap scripts.">
+  <meta name="twitter:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Footprinting SMTP",
+  "description": "How SMTP works and its mail server chain (MUA/MSA/MTA/MDA), clear-text weaknesses, open relays, talking to it over telnet, user enumeration and Nmap scripts.",
+  "datePublished": "2026-10-20",
+  "dateModified": "2026-10-20",
+  "author": {
+    "@type": "Person",
+    "name": "Aymane Elouafi",
+    "url": "https://aymaneelouafi.me"
+  },
+  "publisher": {
+    "@type": "Person",
+    "name": "Aymane Elouafi",
+    "url": "https://aymaneelouafi.me"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://aymaneelouafi.me/smtp.html"
+  },
+  "url": "https://aymaneelouafi.me/smtp.html",
+  "image": "https://aymaneelouafi.me/images/og.png",
+  "keywords": "htb, footprinting, smtp, email, open-relay, postfix, enumeration",
+  "inLanguage": "en"
+}
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rubik+Glitch&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css?v=1792537084726">
+</head>
+<body>
+  <main class="container post">
+
+    <a class="back" href="/index.html">← cd ..</a>
+
+    <span class="series-label">Footprinting Services</span>
+    <h1>Footprinting SMTP</h1>
+    <p class="post-meta">2026-10-20 · #htb #footprinting #smtp #email #open-relay #postfix #enumeration</p>
+
+    <input id="post-search" class="search post-search" type="text"
+           placeholder="search in this post...  (Enter = next, Shift+Enter = previous, Esc = clear)"
+           autocomplete="off">
+    <p id="post-search-count" class="search-count" hidden></p>
+
+  <details class="cheatsheet">
+    <summary><span class="arrow">&#9656;</span> Cheat sheet &mdash; useful commands</summary>
+    <div class="cheat-body">
+      <div class="cheat-row">
+        <code>telnet &lt;target&gt; 25</code>
+        <span>Connect to the SMTP server</span>
+      </div>
+      <div class="cheat-row">
+        <code>EHLO x   /   HELO x</code>
+        <span>Start session, list supported extensions</span>
+      </div>
+      <div class="cheat-row">
+        <code>VRFY &lt;user&gt;</code>
+        <span>Check if a user exists</span>
+      </div>
+      <div class="cheat-row">
+        <code>MAIL FROM: / RCPT TO: / DATA</code>
+        <span>Send a mail by hand</span>
+      </div>
+      <div class="cheat-row">
+        <code>nmap -sC -sV -p25 &lt;target&gt;</code>
+        <span>Footprint (smtp-commands script)</span>
+      </div>
+      <div class="cheat-row">
+        <code>nmap -p25 --script smtp-open-relay -v &lt;target&gt;</code>
+        <span>Test for an open relay</span>
+      </div>
+      <div class="cheat-row">
+        <code>smtp-user-enum -M RCPT -U &lt;wordlist&gt; -D &lt;domain&gt; -t &lt;target&gt; -p 25</code>
+        <span>Enumerate users (RCPT mode)</span>
+      </div>
+    </div>
+  </details>
+
+
+
+    <article id="content">
+<p><strong>What SMTP is</strong></p>
+<ul>
+<li><strong>SMTP (Simple Mail Transfer Protocol)</strong> = the protocol for <strong>sending</strong> emails across an IP network.</li>
+<li>Used in two places: between an <strong>email client → outgoing mail server</strong>, and between <strong>two mail servers</strong>.</li>
+<li>It only <em>sends</em>. To <strong>fetch/read</strong> emails you use <strong>IMAP or POP3</strong> — SMTP is usually paired with one of those.</li>
+<li>Client-server based, but note: when two servers talk, one server acts as the &quot;client.&quot;</li>
+</ul>
+<p><strong>Ports</strong></p>
+<ul>
+<li><strong>Port 25</strong> — the default, classic SMTP port (server-to-server).</li>
+<li><strong>Port 587</strong> — modern port for mail from <strong>authenticated</strong> users; uses <strong>STARTTLS</strong> to upgrade a plaintext connection to encrypted mid-session.</li>
+<li><strong>Port 465</strong> — SMTP over SSL/TLS (encrypted from the start).</li>
+</ul>
+<p><strong>How a send works (basic flow)</strong></p>
+<ol>
+<li>Client authenticates (username + password).</li>
+<li>Client sends the server: sender address, recipient address, email content, etc.</li>
+<li>Connection closes.</li>
+<li>The server then forwards the email on toward the next SMTP server.</li>
+</ol>
+<p><strong>The security problem</strong></p>
+<ul>
+<li><strong>Plain SMTP is clear-text</strong> — commands, data, and login credentials all travel readable over the network unless SSL/TLS is added.</li>
+<li><strong>No sender verification by default</strong> — nobody checks that the sender address is real, so senders can be <strong>faked (mail spoofing)</strong>.</li>
+</ul>
+<p><strong>The mail server components (the chain) — this is the important part</strong></p>
+<ul>
+<li><strong>MUA (Mail User Agent)</strong> = the email client (e.g. Outlook). Splits the mail into a <strong>header</strong> + <strong>body</strong> and uploads it.</li>
+<li><strong>MSA (Mail Submission Agent)</strong> = checks the email&#39;s <strong>validity/origin</strong> before it&#39;s sent on. Also called a <strong>Relay server</strong>.</li>
+<li><strong>MTA (Mail Transfer Agent)</strong> = the core software that <strong>sends and receives</strong> email; checks size/spam, stores it, then looks up the recipient server&#39;s IP in <strong>DNS</strong>.</li>
+<li><strong>MDA (Mail Delivery Agent)</strong> = drops the final email into the <strong>recipient&#39;s mailbox</strong> (where POP3/IMAP then reads it).</li>
+<li><strong>Full chain:</strong> <code>MUA → MSA → MTA → MDA → Mailbox (POP3/IMAP)</code></li>
+</ul>
+<p><strong>The attack to remember: Open Relay</strong></p>
+<ul>
+<li>A misconfigured MSA/MTA that forwards mail for <strong>anyone</strong>, not just its own authorized users, is an <strong>open relay</strong>.</li>
+<li>Attackers abuse open relays to <strong>send mass spam with fake sender addresses</strong> and stay untraceable.</li>
+</ul>
+<p><strong>Two built-in weaknesses of SMTP</strong></p>
+<ol>
+<li><strong>No reliable delivery confirmation</strong> — the protocol technically allows it but doesn&#39;t standardize it, so you usually just get a plain English error message if it fails.</li>
+<li><strong>No sender authentication</strong> — makes spoofing and open-relay spam abuse easy.</li>
+</ol>
+<p><strong>Defenses against spoofing/spam</strong></p>
+<ul>
+<li><strong>SPF (Sender Policy Framework)</strong> and <strong>DKIM (DomainKeys)</strong> — verify that mail genuinely came from who it claims. Suspicious mail gets rejected or sent to <strong>quarantine/spam</strong>.</li>
+</ul>
+<p><strong>ESMTP (the modern version)</strong></p>
+<ul>
+<li><strong>ESMTP (Extended SMTP)</strong> = the upgraded SMTP everyone actually uses today (when people say &quot;SMTP&quot; they usually mean ESMTP).</li>
+<li>Starts with the <strong><code>EHLO</code></strong> command (instead of old <code>HELO</code>), then <strong><code>STARTTLS</code></strong> to turn on TLS encryption.</li>
+<li>Once encrypted, authentication (e.g. <code>AUTH PLAIN</code>) can be sent safely.</li>
+</ul>
+<h2>Default Configuration :</h2>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ cat /etc/postfix/main.cf | grep -v &quot;#&quot; | sed -r &quot;/^\s*$/d&quot;
+
+smtpd_banner = ESMTP Server 
+biff = no
+append_dot_mydomain = no
+readme_directory = no
+compatibility_level = 2
+smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache
+myhostname = mail1.inlanefreight.htb
+alias_maps = hash:/etc/aliases
+alias_database = hash:/etc/aliases
+smtp_generic_maps = hash:/etc/postfix/generic
+mydestination = $myhostname, localhost 
+masquerade_domains = $myhostname
+mynetworks = 127.0.0.0/8 10.129.0.0/16
+mailbox_size_limit = 0
+recipient_delimiter = +
+smtp_bind_address = 0.0.0.0
+inet_protocols = ipv4
+smtpd_helo_restrictions = reject_invalid_hostname
+home_mailbox = /home/postfix
+</code></pre>
+<p>The sending and communication are also done by special commands that cause the SMTP server to do what the user requires.</p>
+<table>
+<thead>
+<tr>
+<th><strong>Command</strong></th>
+<th><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>AUTH PLAIN</code></td>
+<td>AUTH is a service extension used to authenticate the client.</td>
+</tr>
+<tr>
+<td><code>HELO</code></td>
+<td>The client logs in with its computer name and thus starts the session.</td>
+</tr>
+<tr>
+<td><code>MAIL FROM</code></td>
+<td>The client names the email sender.</td>
+</tr>
+<tr>
+<td><code>RCPT TO</code></td>
+<td>The client names the email recipient.</td>
+</tr>
+<tr>
+<td><code>DATA</code></td>
+<td>The client initiates the transmission of the email.</td>
+</tr>
+<tr>
+<td><code>RSET</code></td>
+<td>The client aborts the initiated transmission but keeps the connection between client and server.</td>
+</tr>
+<tr>
+<td><code>VRFY</code></td>
+<td>The client checks if a mailbox is available for message transfer.</td>
+</tr>
+<tr>
+<td><code>EXPN</code></td>
+<td>The client also checks if a mailbox is available for messaging with this command.</td>
+</tr>
+<tr>
+<td><code>NOOP</code></td>
+<td>The client requests a response from the server to prevent disconnection due to time-out.</td>
+</tr>
+<tr>
+<td><code>QUIT</code></td>
+<td>The client terminates the session.</td>
+</tr>
+</tbody></table>
+<p>To interact with the SMTP server, we can use the <code>telnet</code> tool to initialize a TCP connection with the SMTP server. The actual initialization of the session is done with the command mentioned above, <code>HELO</code> or <code>EHLO</code>.</p>
+<h2>Telnet - HELO/EHLO</h2>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ telnet 10.129.14.128 25
+
+Trying 10.129.14.128...
+Connected to 10.129.14.128.
+Escape character is &#39;^]&#39;.
+220 ESMTP Server 
+
+
+HELO mail1.inlanefreight.htb
+
+250 mail1.inlanefreight.htb
+
+
+EHLO mail1
+
+250-mail1.inlanefreight.htb
+250-PIPELINING
+250-SIZE 10240000
+250-ETRN
+250-ENHANCEDSTATUSCODES
+250-8BITMIME
+250-DSN
+250-SMTPUTF8
+250 CHUNKING
+</code></pre>
+<p>The command <code>VRFY</code> can be used to enumerate existing users on the system. However, this does not always work. Depending on how the SMTP server is configured, the SMTP server may issue <code>code 252</code> and confirm the existence of a user that does not exist on the system. A list of all SMTP response codes can be found <a href="https://serversmtp.com/smtp-error/">here</a>.</p>
+<h2>Telnet - VRFY</h2>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ telnet 10.129.14.128 25
+
+Trying 10.129.14.128...
+Connected to 10.129.14.128.
+Escape character is &#39;^]&#39;.
+220 ESMTP Server 
+
+VRFY root
+
+252 2.0.0 root
+
+
+VRFY cry0l1t3
+
+252 2.0.0 cry0l1t3
+
+
+VRFY testuser
+
+252 2.0.0 testuser
+
+
+VRFY aaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+252 2.0.0 aaaaaaaaaaaaaaaaaaaaaaaaaaaa
+</code></pre>
+<p>Therefore, one should never entirely rely on the results of automatic tools. After all, they execute pre-configured commands, but none of the functions explicitly state how the administrator configures the tested server.</p>
+<p>Sometimes we may have to work through a web proxy. We can also make this web proxy connect to the SMTP server. The command that we would send would then look something like this: <code>CONNECT 10.129.14.128:25 HTTP/1.0</code></p>
+<p>All the commands we enter in the command line to send an email we know from every email client program like Thunderbird, Gmail, Outlook, and many others. We specify the <code>subject</code>, to whom the email should go, CC, BCC, and the information we want to share with others. Of course, the same works from the command line.</p>
+<h2>Send an Email</h2>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ telnet 10.129.14.128 25
+
+Trying 10.129.14.128...
+Connected to 10.129.14.128.
+Escape character is &#39;^]&#39;.
+220 ESMTP Server
+
+
+EHLO inlanefreight.htb
+
+250-mail1.inlanefreight.htb
+250-PIPELINING
+250-SIZE 10240000
+250-ETRN
+250-ENHANCEDSTATUSCODES
+250-8BITMIME
+250-DSN
+250-SMTPUTF8
+250 CHUNKING
+
+
+MAIL FROM: &lt;cry0l1t3@inlanefreight.htb&gt;
+
+250 2.1.0 Ok
+
+
+RCPT TO: &lt;mrb3n@inlanefreight.htb&gt; NOTIFY=success,failure
+
+250 2.1.5 Ok
+
+
+DATA
+
+354 End data with &lt;CR&gt;&lt;LF&gt;.&lt;CR&gt;&lt;LF&gt;
+
+From: &lt;cry0l1t3@inlanefreight.htb&gt;
+To: &lt;mrb3n@inlanefreight.htb&gt;
+Subject: DB
+Date: Tue, 28 Sept 2021 16:32:51 +0200
+Hey man, I am trying to access our XY-DB but the creds don&#39;t work. 
+Did you make any changes there?
+.
+
+250 2.0.0 Ok: queued as 6E1CF1681AB
+
+
+QUIT
+
+221 2.0.0 Bye
+Connection closed by foreign host.
+</code></pre>
+<p>The mail header is the carrier of a large amount of interesting information in an email. Among other things, it provides information about the sender and recipient, the time of sending and arrival, the stations the email passed on its way, the content and format of the message, and the sender and recipient.</p>
+<p>Some of this information is mandatory, such as sender information and when the email was created. Other information is optional. However, the email header does not contain any information necessary for technical delivery. It is transmitted as part of the transmission protocol. Both sender and recipient can access the header of an email, although it is not visible at first glance. The structure of an email header is defined by <a href="https://datatracker.ietf.org/doc/html/rfc5322">RFC 5322</a>.</p>
+<h2>Dangerous Settings :</h2>
+<p>To prevent the sent emails from being filtered by spam filters and not reaching the recipient, the sender can use a relay server that the recipient trusts. It is an SMTP server that is known and verified by all others. As a rule, the sender must authenticate himself to the relay server before using it.</p>
+<p>Often, administrators have no overview of which IP ranges they have to allow. This results in a misconfiguration of the SMTP server that we will still often find in external and internal penetration tests. Therefore, they allow all IP addresses not to cause errors in the email traffic and thus not to disturb or unintentionally interrupt the communication with potential and current customers.</p>
+<h2>Open Relay Configuration</h2>
+<pre><code>mynetworks = 0.0.0.0/0
+</code></pre>
+<p>With this setting, this SMTP server can send fake emails and thus initialize communication between multiple parties. Another attack possibility would be to spoof the email and read it.</p>
+<h2>Footprinting the Service</h2>
+<p>The default Nmap scripts include <code>smtp-commands</code>, which uses the <code>EHLO</code> command to list all possible commands that can be executed on the target SMTP server.</p>
+<h2>Nmap</h2>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap 10.129.14.128 -sC -sV -p25
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2021-09-27 17:56 CEST
+Nmap scan report for 10.129.14.128
+Host is up (0.00025s latency).
+
+PORT   STATE SERVICE VERSION
+25/tcp open  smtp    Postfix smtpd
+|_smtp-commands: mail1.inlanefreight.htb, PIPELINING, SIZE 10240000, VRFY, ETRN, ENHANCEDSTATUSCODES, 8BITMIME, DSN, SMTPUTF8, CHUNKING, 
+MAC Address: 00:00:00:00:00:00 (VMware)
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 14.09 seconds
+</code></pre>
+<p>However, we can also use the <a href="https://nmap.org/nsedoc/scripts/smtp-open-relay.html">smtp-open-relay</a> NSE script to identify the target SMTP server as an open relay using 16 different tests. If we also print out the output of the scan in detail, we will also be able to see which tests the script is running.</p>
+<h2>Nmap - Open Relay</h2>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap 10.129.14.128 -p25 --script smtp-open-relay -v
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2021-09-30 02:29 CEST
+NSE: Loaded 1 scripts for scanning.
+NSE: Script Pre-scanning.
+Initiating NSE at 02:29
+Completed NSE at 02:29, 0.00s elapsed
+Initiating ARP Ping Scan at 02:29
+Scanning 10.129.14.128 [1 port]
+Completed ARP Ping Scan at 02:29, 0.06s elapsed (1 total hosts)
+Initiating Parallel DNS resolution of 1 host. at 02:29
+Completed Parallel DNS resolution of 1 host. at 02:29, 0.03s elapsed
+Initiating SYN Stealth Scan at 02:29
+Scanning 10.129.14.128 [1 port]
+Discovered open port 25/tcp on 10.129.14.128
+Completed SYN Stealth Scan at 02:29, 0.06s elapsed (1 total ports)
+NSE: Script scanning 10.129.14.128.
+Initiating NSE at 02:29
+Completed NSE at 02:29, 0.07s elapsed
+Nmap scan report for 10.129.14.128
+Host is up (0.00020s latency).
+
+PORT   STATE SERVICE
+25/tcp open  smtp
+| smtp-open-relay: Server is an open relay (16/16 tests)
+|  MAIL FROM:&lt;&gt; -&gt; RCPT TO:&lt;relaytest@nmap.scanme.org&gt;
+|  MAIL FROM:&lt;antispam@nmap.scanme.org&gt; -&gt; RCPT TO:&lt;relaytest@nmap.scanme.org&gt;
+|  MAIL FROM:&lt;antispam@ESMTP&gt; -&gt; RCPT TO:&lt;relaytest@nmap.scanme.org&gt;
+|  MAIL FROM:&lt;antispam@[10.129.14.128]&gt; -&gt; RCPT TO:&lt;relaytest@nmap.scanme.org&gt;
+|  MAIL FROM:&lt;antispam@[10.129.14.128]&gt; -&gt; RCPT TO:&lt;relaytest%nmap.scanme.org@[10.129.14.128]&gt;
+|  MAIL FROM:&lt;antispam@[10.129.14.128]&gt; -&gt; RCPT TO:&lt;relaytest%nmap.scanme.org@ESMTP&gt;
+|  MAIL FROM:&lt;antispam@[10.129.14.128]&gt; -&gt; RCPT TO:&lt;&quot;relaytest@nmap.scanme.org&quot;&gt;
+|  MAIL FROM:&lt;antispam@[10.129.14.128]&gt; -&gt; RCPT TO:&lt;&quot;relaytest%nmap.scanme.org&quot;&gt;
+|  MAIL FROM:&lt;antispam@[10.129.14.128]&gt; -&gt; RCPT TO:&lt;relaytest@nmap.scanme.org@[10.129.14.128]&gt;
+|  MAIL FROM:&lt;antispam@[10.129.14.128]&gt; -&gt; RCPT TO:&lt;&quot;relaytest@nmap.scanme.org&quot;@[10.129.14.128]&gt;
+|  MAIL FROM:&lt;antispam@[10.129.14.128]&gt; -&gt; RCPT TO:&lt;relaytest@nmap.scanme.org@ESMTP&gt;
+|  MAIL FROM:&lt;antispam@[10.129.14.128]&gt; -&gt; RCPT TO:&lt;@[10.129.14.128]:relaytest@nmap.scanme.org&gt;
+|  MAIL FROM:&lt;antispam@[10.129.14.128]&gt; -&gt; RCPT TO:&lt;@ESMTP:relaytest@nmap.scanme.org&gt;
+|  MAIL FROM:&lt;antispam@[10.129.14.128]&gt; -&gt; RCPT TO:&lt;nmap.scanme.org!relaytest&gt;
+|  MAIL FROM:&lt;antispam@[10.129.14.128]&gt; -&gt; RCPT TO:&lt;nmap.scanme.org!relaytest@[10.129.14.128]&gt;
+|_ MAIL FROM:&lt;antispam@[10.129.14.128]&gt; -&gt; RCPT TO:&lt;nmap.scanme.org!relaytest@ESMTP&gt;
+MAC Address: 00:00:00:00:00:00 (VMware)
+
+NSE: Script Post-scanning.
+Initiating NSE at 02:29
+Completed NSE at 02:29, 0.00s elapsed
+Read data files from: /usr/bin/../share/nmap
+Nmap done: 1 IP address (1 host up) scanned in 0.48 seconds
+           Raw packets sent: 2 (72B) | Rcvd: 2 (72B)
+</code></pre>
+<hr>
+<h2>Automated Enumeration with smtp-user-enum</h2>
+<p>Use RCPT mode first. It is the most reliable across different server configurations. Provide the domain with -D to append it to usernames from the wordlist:</p>
+<pre><code class="language-shell">┌──(kali㉿kali)-[~]
+└─$smtp-user-enum -M RCPT -U /usr/share/seclists/Usernames/top-usernames-shortlist.txt -D $DOMAIN -t $TARGET_IP -p 25
+
+[*] Trying RCPT method...
+[+] admin@company.com exists
+[+] postmaster@company.com exists
+[+] info@company.com exists
+</code></pre>
+<pre><code class="language-shell">┌──(kali㉿kali)-[~]
+└─$smtp-user-enum -M VRFY -U /usr/share/seclists/Usernames/top-usernames-shortlist.txt -t $TARGET_IP -p 25
+</code></pre>
+<pre><code class="language-shell">┌──(kali㉿kali)-[~]
+└─$smtp-user-enum -M EXPN -U /usr/share/seclists/Usernames/top-usernames-shortlist.txt -t $TARGET_IP -p 25
+</code></pre>
+
+    </article>
+
+  <nav class="series">
+    <p class="prompt">$ ls ~/series/footprinting-services</p>
+    <ul>
+      <li><a href="nfs.html">Footprinting NFS</a></li>
+      <li><a href="ftp.html">Footprinting FTP</a></li>
+      <li><a href="dns.html">Footprinting DNS</a></li>
+      <li class="current">Footprinting SMTP &lt;- you are here</li>
+    </ul>
+  </nav>
+
+  </main>
+
+  <script src="/post.js?v=1792537084726"></script>
+</body>
+</html>
