@@ -23,6 +23,7 @@ const SITE = "https://aymaneelouafi.me";
 const AUTHOR = "Aymane Elouafi";
 const LINKEDIN = "https://www.linkedin.com/in/aymane-elouafi";
 const ROLE = "Cybersecurity Engineer";
+const GA_ID = "G-V2R1YY0P62"; // Google Analytics measurement ID
 
 const posts = JSON.parse(readFileSync("posts.json", "utf8"));
 
@@ -45,6 +46,15 @@ function head({ title, description, canonical, ogType, jsonld }) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Google Analytics (gtag.js) - counts your visitors -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=${GA_ID}"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', '${GA_ID}');
+  </script>
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${attr(title)}</title>
