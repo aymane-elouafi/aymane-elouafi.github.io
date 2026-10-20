@@ -20,7 +20,7 @@ import { parse } from "node-html-parser";
 
 // ---- settings you might change one day ----
 const SITE = "https://aymaneelouafi.me";
-const AUTHOR = "Aymane El Ouafi";
+const AUTHOR = "Aymane Elouafi";
 const LINKEDIN = "https://www.linkedin.com/in/aymane-elouafi";
 const ROLE = "Cybersecurity Engineer";
 
@@ -287,7 +287,7 @@ const home = `${head({
 
       <p class="prompt"><span class="user">root@aymane</span>:<span class="path">~</span># <span id="typed"></span><span class="cursor">█</span></p>
 
-      <h1 class="glitch" data-text="AYMANE EL OUAFI">AYMANE EL OUAFI</h1>
+      <h1 class="glitch" data-text="AYMANE ELOUAFI">AYMANE ELOUAFI</h1>
 
       <p class="bio">
         <span class="highlight">// cybersecurity engineer</span><br>
