@@ -94,8 +94,8 @@ ${JSON.stringify(jsonld, null, 2)}
 // ---- thin top bar: home link + the button that opens the side menu ----
 function topbar() {
   return `  <div class="topbar">
-    <a class="topbar-home" href="/index.html">~/aymane</a>
     <button class="menu-toggle" aria-label="Open menu" aria-expanded="false">☰ menu</button>
+    <a class="topbar-home" href="/index.html">~/aymane</a>
   </div>`;
 }
 
