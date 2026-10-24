@@ -748,6 +748,9 @@ hr {
   }
   body.menu-open .sidebar { transform: none; }
   body.menu-open .backdrop { display: block; }
+
+  /* start the menu below the top bar so the ☰ button doesn't cover its title */
+  .sidebar-inner { padding-top: 70px; }
 }
 
 /* ===== FOOTER ===== */
