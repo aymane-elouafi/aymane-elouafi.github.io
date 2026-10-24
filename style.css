@@ -610,6 +610,26 @@ hr {
   background: #0d0d16;
   border-right: 1px solid var(--pink);
   overflow-y: auto;
+  /* thin on-theme scrollbar instead of the white default */
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a3d #0d0d16;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: #0d0d16;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: #2a2a3d;
+  border-radius: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: var(--pink);
 }
 
 .sidebar-inner {
