@@ -1,5 +1,37 @@
 [
   {
+    "id": "oracle-tns",
+    "title": "Footprinting Oracle TNS",
+    "date": "2026-10-24",
+    "series": "Footprinting Services",
+    "tags": ["htb", "footprinting", "oracle", "tns", "database", "odat", "sqlplus", "enumeration"],
+    "description": "Oracle TNS and its config files, scanning port 1521, brute-forcing SIDs, enumerating with ODAT, logging in with sqlplus, dumping hashes and file upload to RCE.",
+    "cheatsheet": [
+      { "cmd": "nmap -p1521 -sV <target> --open", "desc": "Find the Oracle TNS listener" },
+      { "cmd": "nmap -p1521 --script oracle-sid-brute <target>", "desc": "Brute force the SID" },
+      { "cmd": "./odat.py all -s <target>", "desc": "Run every ODAT module (creds, misconfigs...)" },
+      { "cmd": "sqlplus <user>/<pass>@<target>/<SID>", "desc": "Log in to the database" },
+      { "cmd": "sqlplus <user>/<pass>@<target>/<SID> as sysdba", "desc": "Try logging in as sysdba" },
+      { "cmd": "select name, password from sys.user$;", "desc": "Dump password hashes" },
+      { "cmd": "./odat.py utlfile -s <target> -d <SID> -U <u> -P <p> --sysdba --putFile ...", "desc": "Upload a file (webshell to RCE)" }
+    ]
+  },
+  {
+    "id": "mssql",
+    "title": "Footprinting MSSQL",
+    "date": "2026-10-24",
+    "series": "Footprinting Services",
+    "tags": ["htb", "footprinting", "mssql", "sql-server", "database", "impacket", "windows", "enumeration"],
+    "description": "Microsoft SQL Server clients and default databases, Windows auth and named pipes, scanning port 1433 with Nmap/Metasploit, and connecting with mssqlclient.py.",
+    "cheatsheet": [
+      { "cmd": "nmap --script ms-sql-info,ms-sql-ntlm-info,ms-sql-empty-password -p1433 <target>", "desc": "Footprint MSSQL" },
+      { "cmd": "msf> use auxiliary/scanner/mssql/mssql_ping", "desc": "Metasploit MSSQL ping scan" },
+      { "cmd": "locate mssqlclient", "desc": "Find Impacket's mssqlclient.py" },
+      { "cmd": "python3 mssqlclient.py <user>@<target> -windows-auth", "desc": "Connect with Windows auth" },
+      { "cmd": "select name from sys.databases", "desc": "List the databases" }
+    ]
+  },
+  {
     "id": "mysql",
     "title": "Footprinting MySQL",
     "date": "2026-10-24",

