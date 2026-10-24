@@ -1,0 +1,212 @@
+[
+  {
+    "id": "recon",
+    "num": 1,
+    "title": "Information Gathering",
+    "summary": "Learn everything about the target before touching it hard: live hosts, open ports, running services and versions, and how the web app works. Most of a box is won here.",
+    "sections": [
+      {
+        "title": "Host Discovery & Port Scanning",
+        "steps": [
+          "Confirm the host is up (ping / nmap -sn)",
+          "Fast full TCP port sweep: nmap -p- --min-rate 10000",
+          "Deep scan the open ports: nmap -sV -sC -p<ports>",
+          "Scan top UDP ports (SNMP, DNS, TFTP...): nmap -sU --top-ports 100",
+          "Note every service + exact version for later CVE lookups"
+        ],
+        "posts": ["nmap"]
+      },
+      {
+        "title": "Service Enumeration / Footprinting",
+        "steps": [
+          "Enumerate each open service one by one",
+          "Check for anonymous / guest / null access",
+          "Grab banners, versions, certificates and config leaks",
+          "Pull usernames, shares, files and hostnames where possible"
+        ],
+        "series": "Footprinting Services"
+      },
+      {
+        "title": "Web Recon",
+        "steps": [
+          "Fingerprint the tech stack (whatweb, Wappalyzer, response headers)",
+          "Directory & file brute force (ffuf, feroxbuster, gobuster)",
+          "Virtual host & subdomain discovery (ffuf -H Host, gobuster vhost)",
+          "Read source, JS files, robots.txt, sitemap.xml and comments",
+          "Find login pages, upload forms and parameters to test later"
+        ],
+        "posts": []
+      }
+    ]
+  },
+  {
+    "id": "vuln",
+    "num": 2,
+    "title": "Vulnerability Assessment",
+    "summary": "Turn the enumeration data into a list of things that might be exploitable: known CVEs, web flaws and plain misconfigurations.",
+    "sections": [
+      {
+        "title": "Known Vulnerabilities (version → CVE)",
+        "steps": [
+          "Map each service version to public CVEs",
+          "searchsploit <product version>",
+          "Search Google / Exploit-DB / GitHub for PoCs",
+          "Prefer stable, well-understood exploits over noisy ones"
+        ],
+        "posts": []
+      },
+      {
+        "title": "Web Vulnerabilities",
+        "steps": [
+          "Test inputs for SQL injection",
+          "Test for XSS (reflected / stored / DOM)",
+          "Test for file inclusion (LFI / RFI) and path traversal",
+          "Test file upload restrictions and SSRF",
+          "Check authentication & access control (IDOR, broken auth)"
+        ],
+        "posts": []
+      },
+      {
+        "title": "Misconfigurations & Default Credentials",
+        "steps": [
+          "Try default / weak creds on every login and service",
+          "Look for exposed admin panels, debug pages and backups",
+          "Check for open shares, open relays and world-readable files"
+        ],
+        "posts": []
+      }
+    ]
+  },
+  {
+    "id": "exploit",
+    "num": 3,
+    "title": "Exploitation",
+    "summary": "Get your first foothold. Prepare the exploit, test it safely, and land a shell as some user on the target.",
+    "sections": [
+      {
+        "title": "Service / Network Exploitation",
+        "steps": [
+          "Run the chosen exploit against the service",
+          "Understand what the PoC does before firing it",
+          "Catch the shell (nc / rlwrap) and stabilise it"
+        ],
+        "posts": []
+      },
+      {
+        "title": "Web Exploitation",
+        "steps": [
+          "Turn a web flaw into code execution (webshell, SSTI, deserialization)",
+          "Abuse file upload or LFI-to-RCE chains",
+          "Use found credentials / tokens to reach admin features"
+        ],
+        "posts": []
+      },
+      {
+        "title": "Password Attacks",
+        "steps": [
+          "Online brute force / spraying (hydra, crackmapexec)",
+          "Crack captured hashes (hashcat, john)",
+          "Reuse found passwords across services"
+        ],
+        "posts": []
+      }
+    ]
+  },
+  {
+    "id": "post",
+    "num": 4,
+    "title": "Post-Exploitation",
+    "summary": "You have a shell. Enumerate from the inside, hunt for secrets, and escalate to root / SYSTEM.",
+    "sections": [
+      {
+        "title": "Local Enumeration",
+        "steps": [
+          "Who am I, my groups and my privileges",
+          "Run LinPEAS / WinPEAS and read the output",
+          "Check sudo -l, cron jobs, services, SUID/SGID and capabilities",
+          "List processes, open ports and installed software"
+        ],
+        "posts": []
+      },
+      {
+        "title": "Privilege Escalation (Linux / Windows)",
+        "steps": [
+          "Exploit misconfigs: sudo rules, SUID binaries, capabilities, writable paths",
+          "Windows: token privileges, unquoted service paths, AlwaysInstallElevated",
+          "Kernel exploits as a last resort"
+        ],
+        "posts": ["cap"]
+      },
+      {
+        "title": "Looting & Credential Hunting",
+        "steps": [
+          "Grab flags and sensitive files",
+          "Search configs, history, backups and DBs for passwords",
+          "Dump hashes / tokens for reuse (lateral movement)"
+        ],
+        "posts": []
+      }
+    ]
+  },
+  {
+    "id": "lateral",
+    "num": 5,
+    "title": "Lateral Movement",
+    "summary": "If more hosts are in scope, use what you looted to pivot through the internal network and reach new targets.",
+    "sections": [
+      {
+        "title": "Pivoting & Tunneling",
+        "steps": [
+          "Map the internal network from the foothold",
+          "Set up tunnels / proxies (ssh -L/-D, chisel, ligolo)",
+          "Reach services only exposed internally"
+        ],
+        "posts": []
+      },
+      {
+        "title": "Credential Reuse & Pass-the-Hash",
+        "steps": [
+          "Spray looted creds across internal hosts (crackmapexec)",
+          "Pass-the-hash / pass-the-ticket where NTLM/Kerberos allows",
+          "Repeat the full methodology on each new host"
+        ],
+        "posts": []
+      }
+    ]
+  },
+  {
+    "id": "ad",
+    "num": 6,
+    "title": "Active Directory",
+    "summary": "A dedicated track for AD environments (big for CPTS & OSCP). Enumerate the domain, abuse misconfigurations, and work toward Domain Admin.",
+    "sections": [
+      {
+        "title": "AD Enumeration",
+        "steps": [
+          "Enumerate users, groups, computers and shares (enum4linux-ng, ldapsearch, rpcclient)",
+          "Map the domain with BloodHound (SharpHound / bloodhound-python)",
+          "Find the attack paths to high-value targets"
+        ],
+        "posts": []
+      },
+      {
+        "title": "AD Attacks",
+        "steps": [
+          "AS-REP roasting (users without pre-auth)",
+          "Kerberoasting (crack service account tickets)",
+          "Abuse ACLs / delegation / GPO misconfigurations"
+        ],
+        "posts": []
+      },
+      {
+        "title": "Domain Dominance & Lateral Movement",
+        "steps": [
+          "Move with PtH / PtT via WinRM, WMI, SMBexec, PsExec",
+          "DCSync to dump domain hashes",
+          "Golden / Silver tickets for persistence"
+        ],
+        "posts": []
+      }
+    ]
+  }
+]

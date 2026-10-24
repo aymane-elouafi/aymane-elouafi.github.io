@@ -567,6 +567,117 @@ hr {
   margin: 50px 0;
 }
 
+/* ===== TOP NAV ===== */
+.topnav {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  gap: 24px;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 16px 20px 0;
+}
+
+.topnav a {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.topnav a:hover {
+  color: var(--cyan);
+}
+
+.topnav a.active {
+  color: var(--green);
+}
+
+/* ===== METHODOLOGY PAGE ===== */
+.methodology .phase {
+  margin-top: 55px;
+}
+
+.phase > h2 {
+  font-family: "Rubik Glitch", sans-serif;
+  font-weight: normal;
+  font-size: 1.9rem;
+  color: var(--pink);
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.phase .pnum {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  font-family: "Share Tech Mono", monospace;
+  font-size: 1.3rem;
+  color: #000;
+  background: var(--pink);
+}
+
+.phase-summary {
+  color: var(--muted);
+  margin: 0 0 20px;
+}
+
+.msection {
+  background: var(--card);
+  border-left: 4px solid var(--cyan);
+  padding: 14px 20px;
+  margin-bottom: 14px;
+}
+
+.msection h3 {
+  color: var(--cyan);
+  margin: 0 0 10px;
+  font-size: 1.15rem;
+}
+
+/* the "what to do" checklist */
+.steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.steps li {
+  position: relative;
+  padding-left: 26px;
+  margin-bottom: 7px;
+}
+
+.steps li::before {
+  content: "☐";
+  position: absolute;
+  left: 0;
+  color: var(--green);
+}
+
+/* links to the posts that cover this section */
+.mnotes {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--muted);
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.mnotes a {
+  color: var(--yellow);
+}
+
+/* give each phase's section border a different accent */
+.phase:nth-child(2n) .msection { border-left-color: var(--purple); }
+.phase:nth-child(3n) .msection { border-left-color: var(--yellow); }
+.phase:nth-child(3n) .msection h3 { color: var(--yellow); }
+.phase:nth-child(2n) .msection h3 { color: var(--purple); }
+
 /* ===== FOOTER ===== */
 footer {
   margin-top: 60px;

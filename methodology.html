@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Google Analytics (gtag.js) - counts your visitors -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-V2R1YY0P62"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-V2R1YY0P62');
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pentest Methodology · Aymane Elouafi</title>
+  <meta name="description" content="A phase-by-phase penetration testing methodology and checklist (recon, vuln assessment, exploitation, post-exploitation, lateral movement, Active Directory), with linked notes.">
+  <meta name="author" content="Aymane Elouafi">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="google-site-verification" content="P6WC3YGSehH9r2o-Lon_-tKZGpFiOWJjHD41vtJqLsk">
+  <link rel="canonical" href="https://aymaneelouafi.me/methodology.html">
+  <link rel="icon" href="/images/skull.svg">
+
+  <!-- Open Graph (Facebook, LinkedIn, Discord...) -->
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Pentest Methodology · Aymane Elouafi">
+  <meta property="og:description" content="A phase-by-phase penetration testing methodology and checklist (recon, vuln assessment, exploitation, post-exploitation, lateral movement, Active Directory), with linked notes.">
+  <meta property="og:url" content="https://aymaneelouafi.me/methodology.html">
+  <meta property="og:site_name" content="Aymane Elouafi">
+  <meta property="og:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Pentest Methodology · Aymane Elouafi">
+  <meta name="twitter:description" content="A phase-by-phase penetration testing methodology and checklist (recon, vuln assessment, exploitation, post-exploitation, lateral movement, Active Directory), with linked notes.">
+  <meta name="twitter:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Penetration Testing Methodology",
+  "description": "A phase-by-phase pentest methodology checklist: information gathering, vulnerability assessment, exploitation, post-exploitation, lateral movement and Active Directory.",
+  "author": {
+    "@type": "Person",
+    "name": "Aymane Elouafi",
+    "url": "https://aymaneelouafi.me"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://aymaneelouafi.me/methodology.html"
+  },
+  "url": "https://aymaneelouafi.me/methodology.html",
+  "inLanguage": "en"
+}
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rubik+Glitch&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css?v=1792848627958">
+</head>
+<body>
+  <nav class="topnav">
+    <a href="/index.html">~/whoami</a>
+    <a href="/methodology.html" class="active">~/methodology</a>
+  </nav>
+  <main class="container post methodology">
+
+    <h1>Pentest Methodology</h1>
+    <p class="post-meta">what to do at each step // my playbook for HTB, eJPT, CPTS &amp; OSCP</p>
+
+    <nav class="toc">
+      <p class="prompt">$ cat phases.txt</p>
+      <ul>
+      <li><a href="#phase-recon">1. Information Gathering</a></li>
+      <li><a href="#phase-vuln">2. Vulnerability Assessment</a></li>
+      <li><a href="#phase-exploit">3. Exploitation</a></li>
+      <li><a href="#phase-post">4. Post-Exploitation</a></li>
+      <li><a href="#phase-lateral">5. Lateral Movement</a></li>
+      <li><a href="#phase-ad">6. Active Directory</a></li>
+      </ul>
+    </nav>
+
+    <section class="phase" id="phase-recon">
+      <h2><span class="pnum">1</span> Information Gathering</h2>
+      <p class="phase-summary">Learn everything about the target before touching it hard: live hosts, open ports, running services and versions, and how the web app works. Most of a box is won here.</p>
+      <div class="msection">
+        <h3>Host Discovery &amp; Port Scanning</h3>
+        <ul class="steps">
+          <li>Confirm the host is up (ping / nmap -sn)</li>
+          <li>Fast full TCP port sweep: nmap -p- --min-rate 10000</li>
+          <li>Deep scan the open ports: nmap -sV -sC -p&lt;ports&gt;</li>
+          <li>Scan top UDP ports (SNMP, DNS, TFTP...): nmap -sU --top-ports 100</li>
+          <li>Note every service + exact version for later CVE lookups</li>
+        </ul>
+        <div class="mnotes">notes: <a href="nmap.html">Network Enumeration with Nmap</a></div>
+      </div>
+      <div class="msection">
+        <h3>Service Enumeration / Footprinting</h3>
+        <ul class="steps">
+          <li>Enumerate each open service one by one</li>
+          <li>Check for anonymous / guest / null access</li>
+          <li>Grab banners, versions, certificates and config leaks</li>
+          <li>Pull usernames, shares, files and hostnames where possible</li>
+        </ul>
+        <div class="mnotes">notes: <a href="nfs.html">Footprinting NFS</a> · <a href="ftp.html">Footprinting FTP</a> · <a href="dns.html">Footprinting DNS</a> · <a href="smtp.html">Footprinting SMTP</a> · <a href="imap-pop3.html">Footprinting IMAP / POP3</a> · <a href="snmp.html">Footprinting SNMP</a> · <a href="mysql.html">Footprinting MySQL</a></div>
+      </div>
+      <div class="msection">
+        <h3>Web Recon</h3>
+        <ul class="steps">
+          <li>Fingerprint the tech stack (whatweb, Wappalyzer, response headers)</li>
+          <li>Directory &amp; file brute force (ffuf, feroxbuster, gobuster)</li>
+          <li>Virtual host &amp; subdomain discovery (ffuf -H Host, gobuster vhost)</li>
+          <li>Read source, JS files, robots.txt, sitemap.xml and comments</li>
+          <li>Find login pages, upload forms and parameters to test later</li>
+        </ul>
+
+      </div>
+    </section>
+
+    <section class="phase" id="phase-vuln">
+      <h2><span class="pnum">2</span> Vulnerability Assessment</h2>
+      <p class="phase-summary">Turn the enumeration data into a list of things that might be exploitable: known CVEs, web flaws and plain misconfigurations.</p>
+      <div class="msection">
+        <h3>Known Vulnerabilities (version → CVE)</h3>
+        <ul class="steps">
+          <li>Map each service version to public CVEs</li>
+          <li>searchsploit &lt;product version&gt;</li>
+          <li>Search Google / Exploit-DB / GitHub for PoCs</li>
+          <li>Prefer stable, well-understood exploits over noisy ones</li>
+        </ul>
+
+      </div>
+      <div class="msection">
+        <h3>Web Vulnerabilities</h3>
+        <ul class="steps">
+          <li>Test inputs for SQL injection</li>
+          <li>Test for XSS (reflected / stored / DOM)</li>
+          <li>Test for file inclusion (LFI / RFI) and path traversal</li>
+          <li>Test file upload restrictions and SSRF</li>
+          <li>Check authentication &amp; access control (IDOR, broken auth)</li>
+        </ul>
+
+      </div>
+      <div class="msection">
+        <h3>Misconfigurations &amp; Default Credentials</h3>
+        <ul class="steps">
+          <li>Try default / weak creds on every login and service</li>
+          <li>Look for exposed admin panels, debug pages and backups</li>
+          <li>Check for open shares, open relays and world-readable files</li>
+        </ul>
+
+      </div>
+    </section>
+
+    <section class="phase" id="phase-exploit">
+      <h2><span class="pnum">3</span> Exploitation</h2>
+      <p class="phase-summary">Get your first foothold. Prepare the exploit, test it safely, and land a shell as some user on the target.</p>
+      <div class="msection">
+        <h3>Service / Network Exploitation</h3>
+        <ul class="steps">
+          <li>Run the chosen exploit against the service</li>
+          <li>Understand what the PoC does before firing it</li>
+          <li>Catch the shell (nc / rlwrap) and stabilise it</li>
+        </ul>
+
+      </div>
+      <div class="msection">
+        <h3>Web Exploitation</h3>
+        <ul class="steps">
+          <li>Turn a web flaw into code execution (webshell, SSTI, deserialization)</li>
+          <li>Abuse file upload or LFI-to-RCE chains</li>
+          <li>Use found credentials / tokens to reach admin features</li>
+        </ul>
+
+      </div>
+      <div class="msection">
+        <h3>Password Attacks</h3>
+        <ul class="steps">
+          <li>Online brute force / spraying (hydra, crackmapexec)</li>
+          <li>Crack captured hashes (hashcat, john)</li>
+          <li>Reuse found passwords across services</li>
+        </ul>
+
+      </div>
+    </section>
+
+    <section class="phase" id="phase-post">
+      <h2><span class="pnum">4</span> Post-Exploitation</h2>
+      <p class="phase-summary">You have a shell. Enumerate from the inside, hunt for secrets, and escalate to root / SYSTEM.</p>
+      <div class="msection">
+        <h3>Local Enumeration</h3>
+        <ul class="steps">
+          <li>Who am I, my groups and my privileges</li>
+          <li>Run LinPEAS / WinPEAS and read the output</li>
+          <li>Check sudo -l, cron jobs, services, SUID/SGID and capabilities</li>
+          <li>List processes, open ports and installed software</li>
+        </ul>
+
+      </div>
+      <div class="msection">
+        <h3>Privilege Escalation (Linux / Windows)</h3>
+        <ul class="steps">
+          <li>Exploit misconfigs: sudo rules, SUID binaries, capabilities, writable paths</li>
+          <li>Windows: token privileges, unquoted service paths, AlwaysInstallElevated</li>
+          <li>Kernel exploits as a last resort</li>
+        </ul>
+        <div class="mnotes">notes: <a href="cap.html">Cap - HTB Walkthrough</a></div>
+      </div>
+      <div class="msection">
+        <h3>Looting &amp; Credential Hunting</h3>
+        <ul class="steps">
+          <li>Grab flags and sensitive files</li>
+          <li>Search configs, history, backups and DBs for passwords</li>
+          <li>Dump hashes / tokens for reuse (lateral movement)</li>
+        </ul>
+
+      </div>
+    </section>
+
+    <section class="phase" id="phase-lateral">
+      <h2><span class="pnum">5</span> Lateral Movement</h2>
+      <p class="phase-summary">If more hosts are in scope, use what you looted to pivot through the internal network and reach new targets.</p>
+      <div class="msection">
+        <h3>Pivoting &amp; Tunneling</h3>
+        <ul class="steps">
+          <li>Map the internal network from the foothold</li>
+          <li>Set up tunnels / proxies (ssh -L/-D, chisel, ligolo)</li>
+          <li>Reach services only exposed internally</li>
+        </ul>
+
+      </div>
+      <div class="msection">
+        <h3>Credential Reuse &amp; Pass-the-Hash</h3>
+        <ul class="steps">
+          <li>Spray looted creds across internal hosts (crackmapexec)</li>
+          <li>Pass-the-hash / pass-the-ticket where NTLM/Kerberos allows</li>
+          <li>Repeat the full methodology on each new host</li>
+        </ul>
+
+      </div>
+    </section>
+
+    <section class="phase" id="phase-ad">
+      <h2><span class="pnum">6</span> Active Directory</h2>
+      <p class="phase-summary">A dedicated track for AD environments (big for CPTS &amp; OSCP). Enumerate the domain, abuse misconfigurations, and work toward Domain Admin.</p>
+      <div class="msection">
+        <h3>AD Enumeration</h3>
+        <ul class="steps">
+          <li>Enumerate users, groups, computers and shares (enum4linux-ng, ldapsearch, rpcclient)</li>
+          <li>Map the domain with BloodHound (SharpHound / bloodhound-python)</li>
+          <li>Find the attack paths to high-value targets</li>
+        </ul>
+
+      </div>
+      <div class="msection">
+        <h3>AD Attacks</h3>
+        <ul class="steps">
+          <li>AS-REP roasting (users without pre-auth)</li>
+          <li>Kerberoasting (crack service account tickets)</li>
+          <li>Abuse ACLs / delegation / GPO misconfigurations</li>
+        </ul>
+
+      </div>
+      <div class="msection">
+        <h3>Domain Dominance &amp; Lateral Movement</h3>
+        <ul class="steps">
+          <li>Move with PtH / PtT via WinRM, WMI, SMBexec, PsExec</li>
+          <li>DCSync to dump domain hashes</li>
+          <li>Golden / Silver tickets for persistence</li>
+        </ul>
+
+      </div>
+    </section>
+
+  </main>
+</body>
+</html>

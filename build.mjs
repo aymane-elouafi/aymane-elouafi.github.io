@@ -26,6 +26,7 @@ const ROLE = "Cybersecurity Engineer";
 const GA_ID = "G-V2R1YY0P62"; // Google Analytics measurement ID
 
 const posts = JSON.parse(readFileSync("posts.json", "utf8"));
+const methodology = JSON.parse(readFileSync("methodology.json", "utf8"));
 
 // changes on every build, so browsers always load the newest css/js
 // (instead of a stale cached copy) after you push an update
@@ -87,6 +88,17 @@ ${JSON.stringify(jsonld, null, 2)}
   <link href="https://fonts.googleapis.com/css2?family=Rubik+Glitch&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css?v=${VER}">
 </head>`;
+}
+
+// ---- top navigation bar, on every page ----
+// `active` is "home" or "methodology" so the current page is highlighted.
+function nav(active) {
+  const link = (href, id, label) =>
+    `<a href="${href}"${active === id ? ' class="active"' : ""}>${label}</a>`;
+  return `  <nav class="topnav">
+    ${link("/index.html", "home", "~/whoami")}
+    ${link("/methodology.html", "methodology", "~/methodology")}
+  </nav>`;
 }
 
 // ---- render one Markdown post into content HTML + extras ----
@@ -216,6 +228,7 @@ for (const post of posts) {
     jsonld,
   })}
 <body>
+${nav("")}
   <main class="container post">
 
     <a class="back" href="/index.html">← cd ..</a>
@@ -289,6 +302,7 @@ const home = `${head({
   <!-- Matrix rain in the background -->
   <canvas id="matrix"></canvas>
 
+${nav("home")}
   <main class="container">
 
     <!-- ===== WHOAMI ===== -->
@@ -352,10 +366,94 @@ writeFileSync("index.html", home);
 console.log("built index.html");
 
 // ============================================================
+//  Build the methodology page (the organized menu)
+// ============================================================
+// Collect the posts that belong to a section: a whole series (auto) and/or
+// an explicit list of post ids. Keeps the order newest-last within a series.
+function sectionPosts(section) {
+  const ids = [];
+  if (section.series) {
+    posts.filter(p => p.series === section.series).slice().reverse()
+      .forEach(p => ids.push(p.id));
+  }
+  if (section.posts) section.posts.forEach(id => ids.push(id));
+  return [...new Set(ids)].map(id => posts.find(p => p.id === id)).filter(Boolean);
+}
+
+const phaseIndex = methodology.map(ph =>
+  `      <li><a href="#phase-${ph.id}">${ph.num}. ${esc(ph.title)}</a></li>`).join("\n");
+
+const phasesHtml = methodology.map(ph => {
+  const sections = ph.sections.map(sec => {
+    const steps = sec.steps.map(s => `          <li>${esc(s)}</li>`).join("\n");
+    const linked = sectionPosts(sec);
+    const notes = linked.length
+      ? `        <div class="mnotes">notes: ${linked.map(p =>
+          `<a href="${p.id}.html">${esc(p.title)}</a>`).join(" · ")}</div>`
+      : "";
+    return `      <div class="msection">
+        <h3>${esc(sec.title)}</h3>
+        <ul class="steps">
+${steps}
+        </ul>
+${notes}
+      </div>`;
+  }).join("\n");
+
+  return `    <section class="phase" id="phase-${ph.id}">
+      <h2><span class="pnum">${ph.num}</span> ${esc(ph.title)}</h2>
+      <p class="phase-summary">${esc(ph.summary)}</p>
+${sections}
+    </section>`;
+}).join("\n\n");
+
+const methJsonld = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Penetration Testing Methodology",
+  "description": "A phase-by-phase pentest methodology checklist: information gathering, vulnerability assessment, exploitation, post-exploitation, lateral movement and Active Directory.",
+  "author": { "@type": "Person", "name": AUTHOR, "url": SITE },
+  "mainEntityOfPage": { "@type": "WebPage", "@id": SITE + "/methodology.html" },
+  "url": SITE + "/methodology.html",
+  "inLanguage": "en",
+};
+
+const methodologyPage = `${head({
+  title: `Pentest Methodology · ${AUTHOR}`,
+  description: "A phase-by-phase penetration testing methodology and checklist (recon, vuln assessment, exploitation, post-exploitation, lateral movement, Active Directory), with linked notes.",
+  canonical: SITE + "/methodology.html",
+  ogType: "article",
+  jsonld: methJsonld,
+})}
+<body>
+${nav("methodology")}
+  <main class="container post methodology">
+
+    <h1>Pentest Methodology</h1>
+    <p class="post-meta">what to do at each step // my playbook for HTB, eJPT, CPTS &amp; OSCP</p>
+
+    <nav class="toc">
+      <p class="prompt">$ cat phases.txt</p>
+      <ul>
+${phaseIndex}
+      </ul>
+    </nav>
+
+${phasesHtml}
+
+  </main>
+</body>
+</html>
+`;
+writeFileSync("methodology.html", methodologyPage);
+console.log("built methodology.html");
+
+// ============================================================
 //  sitemap.xml + robots.txt (helps Google find everything)
 // ============================================================
 const urls = [
   { loc: SITE + "/", lastmod: posts[0].date },
+  { loc: SITE + "/methodology.html", lastmod: posts[0].date },
   ...posts.map(p => ({ loc: `${SITE}/${p.id}.html`, lastmod: p.date })),
 ];
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
