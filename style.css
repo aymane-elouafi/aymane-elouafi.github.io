@@ -567,116 +567,168 @@ hr {
   margin: 50px 0;
 }
 
-/* ===== TOP NAV ===== */
-.topnav {
+/* ===== TOP BAR ===== */
+.topbar {
   position: relative;
-  z-index: 2;
+  z-index: 30;
   display: flex;
-  gap: 24px;
+  align-items: center;
+  justify-content: space-between;
   max-width: 760px;
   margin: 0 auto;
-  padding: 16px 20px 0;
+  padding: 14px 20px 0;
 }
 
-.topnav a {
-  color: var(--muted);
+.topbar-home {
+  color: var(--green);
   font-size: 0.95rem;
 }
 
-.topnav a:hover {
-  color: var(--cyan);
-}
-
-.topnav a.active {
+.menu-toggle {
+  background: #05050a;
+  border: 1px solid var(--green);
   color: var(--green);
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 6px 12px;
+  cursor: pointer;
 }
 
-/* ===== METHODOLOGY PAGE ===== */
-.methodology .phase {
-  margin-top: 55px;
-}
-
-.phase > h2 {
-  font-family: "Rubik Glitch", sans-serif;
-  font-weight: normal;
-  font-size: 1.9rem;
+.menu-toggle:hover {
+  border-color: var(--pink);
   color: var(--pink);
-  border: none;
+}
+
+/* ===== SIDE MENU ===== */
+.sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 25;
+  width: 290px;
+  height: 100vh;
+  background: #0d0d16;
+  border-left: 1px solid var(--pink);
+  overflow-y: auto;
+}
+
+.sidebar-inner {
+  padding: 24px 18px 60px;
+}
+
+.sidebar-title {
+  color: var(--muted);
+  margin: 0 0 14px;
+  font-size: 0.85rem;
+}
+
+/* each phase is a collapsible block */
+.nav-phase {
+  border-top: 1px solid #1a1a26;
+  padding: 8px 0;
+}
+
+.nav-phase > summary {
+  list-style: none;
+  cursor: pointer;
+  color: var(--cyan);
+  font-weight: bold;
+  padding: 4px 0;
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
+  gap: 10px;
 }
 
-.phase .pnum {
+.nav-phase > summary::-webkit-details-marker { display: none; }
+
+.nav-phase > summary:hover { color: var(--pink); }
+
+.nav-num {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 42px;
-  height: 42px;
+  width: 22px;
+  height: 22px;
   flex: 0 0 auto;
-  font-family: "Share Tech Mono", monospace;
-  font-size: 1.3rem;
+  font-size: 0.8rem;
   color: #000;
-  background: var(--pink);
+  background: var(--cyan);
 }
 
-.phase-summary {
+.nav-walk > summary { color: var(--yellow); }
+.nav-walk .nav-num { background: var(--yellow); }
+
+.nav-section {
+  margin: 8px 0 8px 10px;
+}
+
+.nav-sec-title {
+  display: block;
   color: var(--muted);
-  margin: 0 0 20px;
+  font-size: 0.8rem;
+  margin: 8px 0 4px;
 }
 
-.msection {
-  background: var(--card);
-  border-left: 4px solid var(--cyan);
-  padding: 14px 20px;
-  margin-bottom: 14px;
+.nav-section.empty .nav-sec-title::after {
+  content: " — soon";
+  opacity: 0.6;
 }
 
-.msection h3 {
-  color: var(--cyan);
-  margin: 0 0 10px;
-  font-size: 1.15rem;
-}
-
-/* the "what to do" checklist */
-.steps {
+.nav-section ul {
   list-style: none;
-  padding: 0;
   margin: 0;
+  padding-left: 12px;
 }
 
-.steps li {
-  position: relative;
-  padding-left: 26px;
-  margin-bottom: 7px;
+.nav-section li {
+  margin: 4px 0;
+  border-left: 1px solid #2a2a3d;
+  padding-left: 10px;
 }
 
-.steps li::before {
-  content: "☐";
-  position: absolute;
-  left: 0;
-  color: var(--green);
-}
-
-/* links to the posts that cover this section */
-.mnotes {
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px dashed var(--muted);
-  font-size: 0.9rem;
+.nav-section li.empty {
   color: var(--muted);
+  font-size: 0.85rem;
+  border: none;
 }
 
-.mnotes a {
-  color: var(--yellow);
+.nav-section a {
+  color: var(--text);
+  font-size: 0.9rem;
 }
 
-/* give each phase's section border a different accent */
-.phase:nth-child(2n) .msection { border-left-color: var(--purple); }
-.phase:nth-child(3n) .msection { border-left-color: var(--yellow); }
-.phase:nth-child(3n) .msection h3 { color: var(--yellow); }
-.phase:nth-child(2n) .msection h3 { color: var(--purple); }
+.nav-section a:hover { color: var(--cyan); }
+
+.nav-section a.current {
+  color: var(--pink);
+  font-weight: bold;
+}
+
+/* backdrop behind the drawer on small screens */
+.backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 24;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+/* --- WIDE SCREENS: sidebar is always visible, content shifts left --- */
+@media (min-width: 1080px) {
+  body { padding-right: 290px; }
+  .menu-toggle { display: none; }
+}
+
+/* --- NARROW SCREENS: sidebar is a drawer you open with the button --- */
+@media (max-width: 1079px) {
+  .sidebar {
+    transform: translateX(100%);
+    transition: transform 0.25s ease;
+    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.5);
+  }
+  body.menu-open .sidebar { transform: none; }
+  body.menu-open .backdrop { display: block; }
+}
 
 /* ===== FOOTER ===== */
 footer {

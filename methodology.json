@@ -135,7 +135,7 @@
           "Windows: token privileges, unquoted service paths, AlwaysInstallElevated",
           "Kernel exploits as a last resort"
         ],
-        "posts": ["cap"]
+        "posts": []
       },
       {
         "title": "Looting & Credential Hunting",

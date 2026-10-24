@@ -87,18 +87,77 @@ ${JSON.stringify(jsonld, null, 2)}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Rubik+Glitch&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css?v=${VER}">
+  <script defer src="/menu.js?v=${VER}"></script>
 </head>`;
 }
 
-// ---- top navigation bar, on every page ----
-// `active` is "home" or "methodology" so the current page is highlighted.
-function nav(active) {
-  const link = (href, id, label) =>
-    `<a href="${href}"${active === id ? ' class="active"' : ""}>${label}</a>`;
-  return `  <nav class="topnav">
-    ${link("/index.html", "home", "~/whoami")}
-    ${link("/methodology.html", "methodology", "~/methodology")}
-  </nav>`;
+// ---- thin top bar: home link + the button that opens the side menu ----
+function topbar() {
+  return `  <div class="topbar">
+    <a class="topbar-home" href="/index.html">~/aymane</a>
+    <button class="menu-toggle" aria-label="Open menu" aria-expanded="false">☰ menu</button>
+  </div>`;
+}
+
+// ---- the side menu (right sidebar): methodology parts + their posts,
+//      plus an HTB Walkthroughs part. `currentId` highlights the open post. ----
+function sidebar(currentId) {
+  // posts tagged "walkthrough" go in their own part at the bottom
+  const walkthroughs = posts.filter(p => (p.tags || []).includes("walkthrough"));
+
+  const postLink = p =>
+    `<li><a href="${p.id}.html"${p.id === currentId ? ' class="current"' : ""}>${esc(p.title)}</a></li>`;
+
+  // resolve the posts under a methodology section (series auto + explicit ids)
+  const secPosts = sec => {
+    const ids = [];
+    if (sec.series) posts.filter(p => p.series === sec.series).slice().reverse().forEach(p => ids.push(p.id));
+    if (sec.posts) sec.posts.forEach(id => ids.push(id));
+    return [...new Set(ids)].map(id => posts.find(p => p.id === id))
+      .filter(Boolean).filter(p => !(p.tags || []).includes("walkthrough"));
+  };
+
+  const phasesHtml = methodology.map(ph => {
+    // a phase opens by default if it (or the current post) has something in it
+    const phasePosts = ph.sections.flatMap(secPosts);
+    const open = phasePosts.length > 0 || phasePosts.some(p => p.id === currentId);
+
+    const sections = ph.sections.map(sec => {
+      const list = secPosts(sec);
+      if (!list.length) {
+        return `        <div class="nav-section empty"><span class="nav-sec-title">${esc(sec.title)}</span></div>`;
+      }
+      return `        <div class="nav-section">
+          <span class="nav-sec-title">${esc(sec.title)}</span>
+          <ul>
+${list.map(postLink).map(s => "            " + s).join("\n")}
+          </ul>
+        </div>`;
+    }).join("\n");
+
+    return `    <details class="nav-phase"${open ? " open" : ""}>
+      <summary><span class="nav-num">${ph.num}</span> ${esc(ph.title)}</summary>
+${sections}
+    </details>`;
+  }).join("\n");
+
+  const walkHtml = `    <details class="nav-phase nav-walk"${walkthroughs.some(p => p.id === currentId) ? " open" : ""}>
+      <summary><span class="nav-num">★</span> HTB Walkthroughs</summary>
+      <div class="nav-section">
+        <ul>
+${(walkthroughs.length ? walkthroughs.map(postLink) : ["<li class=\"empty\">(soon)</li>"]).map(s => "          " + s).join("\n")}
+        </ul>
+      </div>
+    </details>`;
+
+  return `  <div class="backdrop" id="backdrop"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner">
+      <p class="sidebar-title">// methodology &amp; notes</p>
+${phasesHtml}
+${walkHtml}
+    </div>
+  </aside>`;
 }
 
 // ---- render one Markdown post into content HTML + extras ----
@@ -228,7 +287,8 @@ for (const post of posts) {
     jsonld,
   })}
 <body>
-${nav("")}
+${topbar()}
+${sidebar(post.id)}
   <main class="container post">
 
     <a class="back" href="/index.html">← cd ..</a>
@@ -302,7 +362,8 @@ const home = `${head({
   <!-- Matrix rain in the background -->
   <canvas id="matrix"></canvas>
 
-${nav("home")}
+${topbar()}
+${sidebar("")}
   <main class="container">
 
     <!-- ===== WHOAMI ===== -->
@@ -366,94 +427,10 @@ writeFileSync("index.html", home);
 console.log("built index.html");
 
 // ============================================================
-//  Build the methodology page (the organized menu)
-// ============================================================
-// Collect the posts that belong to a section: a whole series (auto) and/or
-// an explicit list of post ids. Keeps the order newest-last within a series.
-function sectionPosts(section) {
-  const ids = [];
-  if (section.series) {
-    posts.filter(p => p.series === section.series).slice().reverse()
-      .forEach(p => ids.push(p.id));
-  }
-  if (section.posts) section.posts.forEach(id => ids.push(id));
-  return [...new Set(ids)].map(id => posts.find(p => p.id === id)).filter(Boolean);
-}
-
-const phaseIndex = methodology.map(ph =>
-  `      <li><a href="#phase-${ph.id}">${ph.num}. ${esc(ph.title)}</a></li>`).join("\n");
-
-const phasesHtml = methodology.map(ph => {
-  const sections = ph.sections.map(sec => {
-    const steps = sec.steps.map(s => `          <li>${esc(s)}</li>`).join("\n");
-    const linked = sectionPosts(sec);
-    const notes = linked.length
-      ? `        <div class="mnotes">notes: ${linked.map(p =>
-          `<a href="${p.id}.html">${esc(p.title)}</a>`).join(" · ")}</div>`
-      : "";
-    return `      <div class="msection">
-        <h3>${esc(sec.title)}</h3>
-        <ul class="steps">
-${steps}
-        </ul>
-${notes}
-      </div>`;
-  }).join("\n");
-
-  return `    <section class="phase" id="phase-${ph.id}">
-      <h2><span class="pnum">${ph.num}</span> ${esc(ph.title)}</h2>
-      <p class="phase-summary">${esc(ph.summary)}</p>
-${sections}
-    </section>`;
-}).join("\n\n");
-
-const methJsonld = {
-  "@context": "https://schema.org",
-  "@type": "Article",
-  "headline": "Penetration Testing Methodology",
-  "description": "A phase-by-phase pentest methodology checklist: information gathering, vulnerability assessment, exploitation, post-exploitation, lateral movement and Active Directory.",
-  "author": { "@type": "Person", "name": AUTHOR, "url": SITE },
-  "mainEntityOfPage": { "@type": "WebPage", "@id": SITE + "/methodology.html" },
-  "url": SITE + "/methodology.html",
-  "inLanguage": "en",
-};
-
-const methodologyPage = `${head({
-  title: `Pentest Methodology · ${AUTHOR}`,
-  description: "A phase-by-phase penetration testing methodology and checklist (recon, vuln assessment, exploitation, post-exploitation, lateral movement, Active Directory), with linked notes.",
-  canonical: SITE + "/methodology.html",
-  ogType: "article",
-  jsonld: methJsonld,
-})}
-<body>
-${nav("methodology")}
-  <main class="container post methodology">
-
-    <h1>Pentest Methodology</h1>
-    <p class="post-meta">what to do at each step // my playbook for HTB, eJPT, CPTS &amp; OSCP</p>
-
-    <nav class="toc">
-      <p class="prompt">$ cat phases.txt</p>
-      <ul>
-${phaseIndex}
-      </ul>
-    </nav>
-
-${phasesHtml}
-
-  </main>
-</body>
-</html>
-`;
-writeFileSync("methodology.html", methodologyPage);
-console.log("built methodology.html");
-
-// ============================================================
 //  sitemap.xml + robots.txt (helps Google find everything)
 // ============================================================
 const urls = [
   { loc: SITE + "/", lastmod: posts[0].date },
-  { loc: SITE + "/methodology.html", lastmod: posts[0].date },
   ...posts.map(p => ({ loc: `${SITE}/${p.id}.html`, lastmod: p.date })),
 ];
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
