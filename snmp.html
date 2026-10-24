@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Google Analytics (gtag.js) - counts your visitors -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-V2R1YY0P62"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-V2R1YY0P62');
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Footprinting SNMP · Aymane Elouafi</title>
+  <meta name="description" content="How SNMP works (MIB, OIDs, versions and community strings), its plaintext weakness, and footprinting with snmpwalk, onesixtyone and braa.">
+  <meta name="author" content="Aymane Elouafi">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="google-site-verification" content="P6WC3YGSehH9r2o-Lon_-tKZGpFiOWJjHD41vtJqLsk">
+  <link rel="canonical" href="https://aymaneelouafi.me/snmp.html">
+  <link rel="icon" href="/images/skull.svg">
+
+  <!-- Open Graph (Facebook, LinkedIn, Discord...) -->
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Footprinting SNMP · Aymane Elouafi">
+  <meta property="og:description" content="How SNMP works (MIB, OIDs, versions and community strings), its plaintext weakness, and footprinting with snmpwalk, onesixtyone and braa.">
+  <meta property="og:url" content="https://aymaneelouafi.me/snmp.html">
+  <meta property="og:site_name" content="Aymane Elouafi">
+  <meta property="og:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Footprinting SNMP · Aymane Elouafi">
+  <meta name="twitter:description" content="How SNMP works (MIB, OIDs, versions and community strings), its plaintext weakness, and footprinting with snmpwalk, onesixtyone and braa.">
+  <meta name="twitter:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Footprinting SNMP",
+  "description": "How SNMP works (MIB, OIDs, versions and community strings), its plaintext weakness, and footprinting with snmpwalk, onesixtyone and braa.",
+  "datePublished": "2026-10-24",
+  "dateModified": "2026-10-24",
+  "author": {
+    "@type": "Person",
+    "name": "Aymane Elouafi",
+    "url": "https://aymaneelouafi.me"
+  },
+  "publisher": {
+    "@type": "Person",
+    "name": "Aymane Elouafi",
+    "url": "https://aymaneelouafi.me"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://aymaneelouafi.me/snmp.html"
+  },
+  "url": "https://aymaneelouafi.me/snmp.html",
+  "image": "https://aymaneelouafi.me/images/og.png",
+  "keywords": "htb, footprinting, snmp, mib, oid, community-string, enumeration",
+  "inLanguage": "en"
+}
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rubik+Glitch&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css?v=1792848127940">
+</head>
+<body>
+  <main class="container post">
+
+    <a class="back" href="/index.html">← cd ..</a>
+
+    <span class="series-label">Footprinting Services</span>
+    <h1>Footprinting SNMP</h1>
+    <p class="post-meta">2026-10-24 · #htb #footprinting #snmp #mib #oid #community-string #enumeration</p>
+
+    <input id="post-search" class="search post-search" type="text"
+           placeholder="search in this post...  (Enter = next, Shift+Enter = previous, Esc = clear)"
+           autocomplete="off">
+    <p id="post-search-count" class="search-count" hidden></p>
+
+  <details class="cheatsheet">
+    <summary><span class="arrow">&#9656;</span> Cheat sheet &mdash; useful commands</summary>
+    <div class="cheat-body">
+      <div class="cheat-row">
+        <code>snmpwalk -v2c -c public &lt;target&gt;</code>
+        <span>Walk the MIB with the 'public' community (v2c)</span>
+      </div>
+      <div class="cheat-row">
+        <code>snmpwalk -v2c -c public &lt;target&gt; &lt;OID&gt;</code>
+        <span>Walk a specific OID subtree</span>
+      </div>
+      <div class="cheat-row">
+        <code>onesixtyone -c &lt;wordlist&gt; &lt;target&gt;</code>
+        <span>Brute force community strings</span>
+      </div>
+      <div class="cheat-row">
+        <code>braa &lt;community&gt;@&lt;target&gt;:.1.3.6.*</code>
+        <span>Brute force OIDs fast once you know the string</span>
+      </div>
+    </div>
+  </details>
+
+
+
+    <article id="content">
+<p><strong>What SNMP is</strong></p>
+<ul>
+<li><strong>SNMP (Simple Network Management Protocol)</strong> = a protocol for <strong>monitoring and managing network devices</strong> remotely.</li>
+<li>Can also <strong>change configs and settings</strong> remotely, not just read info.</li>
+<li>Runs on tons of devices: routers, switches, servers, IoT devices, and more.</li>
+<li>Current version is <strong>SNMPv3</strong> (more secure, but more complex to use).</li>
+</ul>
+<p><strong>Ports &amp; how it works (key bits)</strong></p>
+<ul>
+<li><strong>UDP port 161</strong> — normal queries/commands: the client requests info or <strong>sets values</strong> on the device to change settings.</li>
+<li><strong>UDP port 162</strong> — <strong>traps</strong>: these flip the usual direction. Instead of the client asking, the <strong>server pushes</strong> an unrequested alert to the client when a specific event happens on the device.</li>
+<li>For client and server to exchange values, every SNMP object needs a <strong>unique address known to both sides</strong> (see OIDs below).</li>
+</ul>
+<p><strong>MIB (Management Information Base)</strong></p>
+<ul>
+<li>A <strong>text file</strong> that lists all the queryable SNMP objects of a device, in a standardized <strong>tree hierarchy</strong>.</li>
+<li>Exists so SNMP works <strong>across manufacturers</strong> / any client-server combo.</li>
+<li>Written in <strong>ASN.1-based ASCII</strong> format.</li>
+<li>Important: the MIB holds <strong>no actual data</strong> — it&#39;s a map that explains <em>where</em> to find each piece of info, what it&#39;s called, its data type, access rights, and what values to expect.</li>
+</ul>
+<p><strong>OID (Object Identifier)</strong></p>
+<ul>
+<li>An <strong>OID = one node</strong> in that tree, identified by a <strong>sequence of numbers in dot notation</strong> (e.g. <code>1.3.6.1.2.1...</code>).</li>
+<li>The <strong>longer the number chain, the more specific</strong> the info it points to.</li>
+<li>Many nodes are just branches pointing to the ones below them.</li>
+</ul>
+<p><strong>The versions (and their security)</strong></p>
+<ul>
+<li><strong>SNMPv1</strong>: the original. <strong>No authentication, no encryption</strong> — anyone on the network can read/modify data, all sent in plain text.</li>
+<li><strong>SNMPv2 (v2c)</strong>: &quot;c&quot; = community-based. Security is <strong>no better than v1</strong> — the community string is still sent in <strong>plain text, no encryption</strong>.</li>
+<li><strong>SNMPv3</strong>: big security upgrade — adds <strong>authentication (username + password)</strong> and <strong>encryption</strong> (via pre-shared key). Downside: much more complex to configure.</li>
+</ul>
+<p><strong>Community Strings</strong></p>
+<ul>
+<li>Community strings = basically <strong>passwords</strong> that decide whether you&#39;re allowed to view/change the requested info.</li>
+<li>Many organizations <strong>still run SNMPv2</strong> because upgrading to v3 is complex — but the services must stay up.</li>
+<li><strong>The weakness:</strong> v1/v2 send the community string in <strong>plain text</strong> every time, so anyone sniffing the network can <strong>intercept and read it</strong> — then use it to query or reconfigure devices.</li>
+<li>This gap (old SNMP + plaintext community strings) is exactly what you&#39;ll exploit during enumeration.</li>
+</ul>
+<h2>Default Configuration</h2>
+<p>The default configuration of the SNMP daemon defines the basic settings for the service, which include the IP addresses, ports, MIB, OIDs, authentication, and community strings.</p>
+<h2>SNMP Daemon Config</h2>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ cat /etc/snmp/snmpd.conf | grep -v &quot;#&quot; | sed -r &#39;/^\s*$/d&#39;
+
+sysLocation    Sitting on the Dock of the Bay
+sysContact     Me &lt;me@example.org&gt;
+sysServices    72
+master  agentx
+agentaddress  127.0.0.1,[::1]
+view   systemonly  included   .1.3.6.1.2.1.1
+view   systemonly  included   .1.3.6.1.2.1.25.1
+rocommunity  public default -V systemonly
+rocommunity6 public default -V systemonly
+rouser authPrivUser authpriv -V systemonly
+</code></pre>
+<h2>Dangerous Settings</h2>
+<table>
+<thead>
+<tr>
+<th><strong>Settings</strong></th>
+<th><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>rwuser noauth</code></td>
+<td>Provides access to the full OID tree without authentication.</td>
+</tr>
+<tr>
+<td><code>rwcommunity &lt;community string&gt; &lt;IPv4 address&gt;</code></td>
+<td>Provides access to the full OID tree regardless of where the requests were sent from.</td>
+</tr>
+<tr>
+<td><code>rwcommunity6 &lt;community string&gt; &lt;IPv6 address&gt;</code></td>
+<td>Same access as with <code>rwcommunity</code> with the difference of using IPv6.</td>
+</tr>
+</tbody></table>
+<h2>Footprinting the Service</h2>
+<p>For footprinting SNMP, we can use tools like <code>snmpwalk</code>, <code>onesixtyone</code>, and <code>braa</code>. <code>Snmpwalk</code> is used to query the OIDs with their information. <code>Onesixtyone</code> can be used to brute-force the names of the community strings since they can be named arbitrarily by the administrator. Since these community strings can be bound to any source, identifying the existing community strings can take quite some time.</p>
+<h2>SNMPwalk</h2>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ snmpwalk -v2c -c public 10.129.14.128
+
+iso.3.6.1.2.1.1.1.0 = STRING: &quot;Linux htb 5.11.0-34-generic #36~20.04.1-Ubuntu SMP Fri Aug 27 08:06:32 UTC 2021 x86_64&quot;
+iso.3.6.1.2.1.1.2.0 = OID: iso.3.6.1.4.1.8072.3.2.10
+iso.3.6.1.2.1.1.3.0 = Timeticks: (5134) 0:00:51.34
+iso.3.6.1.2.1.1.4.0 = STRING: &quot;mrb3n@inlanefreight.htb&quot;
+iso.3.6.1.2.1.1.5.0 = STRING: &quot;htb&quot;
+iso.3.6.1.2.1.1.6.0 = STRING: &quot;Sitting on the Dock of the Bay&quot;
+iso.3.6.1.2.1.1.7.0 = INTEGER: 72
+iso.3.6.1.2.1.1.8.0 = Timeticks: (0) 0:00:00.00
+iso.3.6.1.2.1.1.9.1.2.1 = OID: iso.3.6.1.6.3.10.3.1.1
+iso.3.6.1.2.1.1.9.1.2.2 = OID: iso.3.6.1.6.3.11.3.1.1
+iso.3.6.1.2.1.1.9.1.3.1 = STRING: &quot;The SNMP Management Architecture MIB.&quot;
+iso.3.6.1.2.1.1.9.1.3.2 = STRING: &quot;The MIB for Message Processing and Dispatching.&quot;
+iso.3.6.1.2.1.25.1.1.0 = Timeticks: (3676678) 10:12:46.78
+iso.3.6.1.2.1.25.1.4.0 = STRING: &quot;BOOT_IMAGE=/boot/vmlinuz-5.11.0-34-generic root=UUID=9a6a5c52-f92a-42ea-8ddf-940d7e0f4223 ro quiet splash&quot;
+
+...SNIP...
+
+iso.3.6.1.2.1.25.6.3.1.2.1234 = STRING: &quot;procps_2:3.3.16-1ubuntu2.3_amd64&quot;
+iso.3.6.1.2.1.25.6.3.1.2.1235 = STRING: &quot;proftpd-basic_1.3.6c-2_amd64&quot;
+iso.3.6.1.2.1.25.6.3.1.2.1243 = STRING: &quot;python3_3.8.2-0ubuntu2_amd64&quot;
+iso.3.6.1.2.1.25.6.3.1.2.1246 = STRING: &quot;python3-apt_2.0.0ubuntu0.20.04.6_amd64&quot; 
+
+...SNIP...
+</code></pre>
+<p>In the case of a misconfiguration, we would get approximately the same results from <code>snmpwalk</code> as just shown above. Once we know the community string and the SNMP service that does not require authentication (versions 1, 2c), we can query internal system information like in the previous example.</p>
+<p>Here we recognize some Python packages that have been installed on the system. If we do not know the community string, we can use <code>onesixtyone</code> and <code>SecLists</code> wordlists to identify these community strings.</p>
+<h2>OneSixtyOne</h2>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo apt install onesixtyone
+aymane0x90@htb[/htb]$ onesixtyone -c /opt/useful/seclists/Discovery/SNMP/snmp.txt 10.129.14.128
+
+Scanning 1 hosts, 3220 communities
+10.129.14.128 [public] Linux htb 5.11.0-37-generic #41~20.04.2-Ubuntu SMP Fri Sep 24 09:06:38 UTC 2021 x86_64
+</code></pre>
+<p>Often, when certain community strings are bound to specific IP addresses, they are named with the hostname of the host, and sometimes even symbols are added to these names to make them more challenging to identify. However, if we imagine an extensive network with over 100 different servers managed using SNMP, the labels, in that case, will have some pattern to them. Therefore, we can use different rules to guess them. We can use the tool <a href="https://secf00tprint.github.io/blog/passwords/crunch/advanced/en">crunch</a> to create custom wordlists.</p>
+<p>Once we know a community string, we can use it with <a href="https://github.com/mteg/braa">braa</a> to brute-force the individual OIDs and enumerate the information behind them.</p>
+<h2>Braa</h2>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo apt install braa
+aymane0x90@htb[/htb]$ braa &lt;community string&gt;@&lt;IP&gt;:.1.3.6.*   # Syntax
+aymane0x90@htb[/htb]$ braa public@10.129.14.128:.1.3.6.*
+
+10.129.14.128:20ms:.1.3.6.1.2.1.1.1.0:Linux htb 5.11.0-34-generic #36~20.04.1-Ubuntu SMP Fri Aug 27 08:06:32 UTC 2021 x86_64
+10.129.14.128:20ms:.1.3.6.1.2.1.1.2.0:.1.3.6.1.4.1.8072.3.2.10
+10.129.14.128:20ms:.1.3.6.1.2.1.1.3.0:548
+10.129.14.128:20ms:.1.3.6.1.2.1.1.4.0:mrb3n@inlanefreight.htb
+10.129.14.128:20ms:.1.3.6.1.2.1.1.5.0:htb
+10.129.14.128:20ms:.1.3.6.1.2.1.1.6.0:US
+10.129.14.128:20ms:.1.3.6.1.2.1.1.7.0:78
+...SNIP...
+</code></pre>
+
+    </article>
+
+  <nav class="series">
+    <p class="prompt">$ ls ~/series/footprinting-services</p>
+    <ul>
+      <li><a href="nfs.html">Footprinting NFS</a></li>
+      <li><a href="ftp.html">Footprinting FTP</a></li>
+      <li><a href="dns.html">Footprinting DNS</a></li>
+      <li><a href="smtp.html">Footprinting SMTP</a></li>
+      <li><a href="imap-pop3.html">Footprinting IMAP / POP3</a></li>
+      <li class="current">Footprinting SNMP &lt;- you are here</li>
+      <li><a href="mysql.html">Footprinting MySQL</a></li>
+    </ul>
+  </nav>
+
+  </main>
+
+  <script src="/post.js?v=1792848127940"></script>
+</body>
+</html>

@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Google Analytics (gtag.js) - counts your visitors -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-V2R1YY0P62"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-V2R1YY0P62');
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Footprinting MySQL · Aymane Elouafi</title>
+  <meta name="description" content="MySQL/MariaDB basics, default config and dangerous settings, scanning port 3306 with Nmap scripts, logging in and navigating databases and tables.">
+  <meta name="author" content="Aymane Elouafi">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="google-site-verification" content="P6WC3YGSehH9r2o-Lon_-tKZGpFiOWJjHD41vtJqLsk">
+  <link rel="canonical" href="https://aymaneelouafi.me/mysql.html">
+  <link rel="icon" href="/images/skull.svg">
+
+  <!-- Open Graph (Facebook, LinkedIn, Discord...) -->
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Footprinting MySQL · Aymane Elouafi">
+  <meta property="og:description" content="MySQL/MariaDB basics, default config and dangerous settings, scanning port 3306 with Nmap scripts, logging in and navigating databases and tables.">
+  <meta property="og:url" content="https://aymaneelouafi.me/mysql.html">
+  <meta property="og:site_name" content="Aymane Elouafi">
+  <meta property="og:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Footprinting MySQL · Aymane Elouafi">
+  <meta name="twitter:description" content="MySQL/MariaDB basics, default config and dangerous settings, scanning port 3306 with Nmap scripts, logging in and navigating databases and tables.">
+  <meta name="twitter:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Footprinting MySQL",
+  "description": "MySQL/MariaDB basics, default config and dangerous settings, scanning port 3306 with Nmap scripts, logging in and navigating databases and tables.",
+  "datePublished": "2026-10-24",
+  "dateModified": "2026-10-24",
+  "author": {
+    "@type": "Person",
+    "name": "Aymane Elouafi",
+    "url": "https://aymaneelouafi.me"
+  },
+  "publisher": {
+    "@type": "Person",
+    "name": "Aymane Elouafi",
+    "url": "https://aymaneelouafi.me"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://aymaneelouafi.me/mysql.html"
+  },
+  "url": "https://aymaneelouafi.me/mysql.html",
+  "image": "https://aymaneelouafi.me/images/og.png",
+  "keywords": "htb, footprinting, mysql, mariadb, database, sql, enumeration",
+  "inLanguage": "en"
+}
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rubik+Glitch&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css?v=1792848127940">
+</head>
+<body>
+  <main class="container post">
+
+    <a class="back" href="/index.html">← cd ..</a>
+
+    <span class="series-label">Footprinting Services</span>
+    <h1>Footprinting MySQL</h1>
+    <p class="post-meta">2026-10-24 · #htb #footprinting #mysql #mariadb #database #sql #enumeration</p>
+
+    <input id="post-search" class="search post-search" type="text"
+           placeholder="search in this post...  (Enter = next, Shift+Enter = previous, Esc = clear)"
+           autocomplete="off">
+    <p id="post-search-count" class="search-count" hidden></p>
+
+  <details class="cheatsheet">
+    <summary><span class="arrow">&#9656;</span> Cheat sheet &mdash; useful commands</summary>
+    <div class="cheat-body">
+      <div class="cheat-row">
+        <code>nmap -sV -sC -p3306 --script mysql* &lt;target&gt;</code>
+        <span>Footprint MySQL (info, users, empty password)</span>
+      </div>
+      <div class="cheat-row">
+        <code>mysql -u root -h &lt;target&gt;</code>
+        <span>Try connecting with no password</span>
+      </div>
+      <div class="cheat-row">
+        <code>mysql -u &lt;user&gt; -p&lt;password&gt; -h &lt;target&gt;</code>
+        <span>Connect (no space after -p)</span>
+      </div>
+      <div class="cheat-row">
+        <code>show databases;</code>
+        <span>List all databases</span>
+      </div>
+      <div class="cheat-row">
+        <code>use &lt;db&gt;;  show tables;</code>
+        <span>Pick a database, list its tables</span>
+      </div>
+      <div class="cheat-row">
+        <code>show columns from &lt;table&gt;;</code>
+        <span>List a table's columns</span>
+      </div>
+      <div class="cheat-row">
+        <code>select * from &lt;table&gt;;</code>
+        <span>Dump a table</span>
+      </div>
+    </div>
+  </details>
+
+
+
+    <article id="content">
+<p><code>MySQL</code> is an open-source SQL relational database management system developed and supported by Oracle. A database is simply a structured collection of data organized for easy use and retrieval. The database system can quickly process large amounts of data with high performance. Within the database, data storage is done in a manner to take up as little space as possible. The database is controlled using the <a href="https://www.w3schools.com/sql/sql_intro.asp">SQL database language</a>. MySQL works according to the <code>client-server principle</code> and consists of a MySQL server and one or more MySQL clients. The MySQL server is the actual database management system. It takes care of data storage and distribution. The data is stored in tables with different columns, rows, and data types. These databases are often exported or backed up as a single <code>.sql</code> file, for example <code>wordpress.sql</code>.</p>
+<h2>MySQL Clients</h2>
+<p>The MySQL clients can retrieve and edit the data using structured queries to the database engine. Inserting, deleting, modifying, and retrieving data, is done using the SQL database language. Therefore, MySQL is suitable for managing many different databases to which clients can send multiple queries simultaneously. Depending on the use of the database, access is possible via an internal network or the public Internet.</p>
+<p>One of the best examples of database usage is the CMS WordPress. WordPress stores all created posts, usernames, and passwords in their own database, which is only accessible from the localhost. However, there are database structures that are distributed across multiple servers also.</p>
+<h2>MySQL Databases</h2>
+<p>MySQL is ideally suited for applications such as <code>dynamic websites</code>, where efficient syntax and high response speed are essential. It is often combined with a Linux OS, PHP, and an Apache web server and is also known in this combination as <a href="https://en.wikipedia.org/wiki/LAMP_(software_bundle)">LAMP</a> (Linux, Apache, MySQL, PHP), or when using Nginx, as <a href="https://lemp.io/">LEMP</a>. In a web hosting with MySQL database, this serves as a central instance in which content required by PHP scripts is stored. Among these are:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Headers</td>
+<td>Texts</td>
+<td>Meta tags</td>
+<td>Forms</td>
+</tr>
+<tr>
+<td>Customers</td>
+<td>Usernames</td>
+<td>Administrators</td>
+<td>Moderators</td>
+</tr>
+<tr>
+<td>Email addresses</td>
+<td>User information</td>
+<td>Permissions</td>
+<td>Passwords</td>
+</tr>
+<tr>
+<td>External/Internal links</td>
+<td>Links to Files</td>
+<td>Specific contents</td>
+<td>Values</td>
+</tr>
+</tbody></table>
+<p>Sensitive data such as passwords can be stored in their plain-text form by MySQL; however, they are generally encrypted beforehand by the PHP scripts using secure methods such as <a href="https://en.citizendium.org/wiki/One-way_encryption">One-Way-Encryption</a>.</p>
+<h2>MySQL Commands</h2>
+<p>A MySQL database translates the commands internally into executable code and performs the requested actions. The web application informs the user if an error occurs during processing, which various <code>SQL injections</code> can provoke. Often, these error descriptions contain important information and confirm, among other things, that the web application interacts with the database in a different way than the developers intended.</p>
+<p>The web application sends the generated information back to the client if the data is processed correctly. This information can be the data extracts from a table or records needed for further processing with logins, search functions, etc. SQL commands can display, modify, add or delete rows in tables. In addition, SQL can also change the structure of tables, create or delete relationships and indexes, and manage users.</p>
+<p><code>MariaDB</code>, which is often connected with MySQL, is a fork of the original MySQL code. This is because the chief developer of MySQL left the company <code>MySQL AB</code> after it was acquired by <code>Oracle</code> and developed another open-source SQL database management system based on the source code of MySQL and called it MariaDB.</p>
+<h2>Default Configuration</h2>
+<p>The management of SQL databases and their configurations is a vast topic. It is so large that entire professions, such as <code>database administrator</code>, deal with almost nothing but databases. These structures become very large quickly, and their planning can become complicated. Among other things, DB management is a core competency for <code>software developers</code> but also <code>information security analysts</code>.</p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo apt install mysql-server -y
+aymane0x90@htb[/htb]$ cat /etc/mysql/mysql.conf.d/mysqld.cnf | grep -v &quot;#&quot; | sed -r &#39;/^\s*$/d&#39;
+
+[client]
+port        = 3306
+socket      = /var/run/mysqld/mysqld.sock
+
+[mysqld_safe]
+pid-file    = /var/run/mysqld/mysqld.pid
+socket      = /var/run/mysqld/mysqld.sock
+nice        = 0
+
+[mysqld]
+skip-host-cache
+skip-name-resolve
+user        = mysql
+pid-file    = /var/run/mysqld/mysqld.pid
+socket      = /var/run/mysqld/mysqld.sock
+port        = 3306
+basedir     = /usr
+datadir     = /var/lib/mysql
+tmpdir      = /tmp
+lc-messages-dir = /usr/share/mysql
+explicit_defaults_for_timestamp
+
+symbolic-links=0
+
+!includedir /etc/mysql/conf.d/
+</code></pre>
+<h2>Dangerous Settings</h2>
+<p>The main options that are security-relevant are:</p>
+<table>
+<thead>
+<tr>
+<th><strong>Settings</strong></th>
+<th><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>user</code></td>
+<td>Sets which user the MySQL service will run as.</td>
+</tr>
+<tr>
+<td><code>password</code></td>
+<td>Sets the password for the MySQL user.</td>
+</tr>
+<tr>
+<td><code>admin_address</code></td>
+<td>The IP address on which to listen for TCP/IP connections on the administrative network interface.</td>
+</tr>
+<tr>
+<td><code>debug</code></td>
+<td>This variable indicates the current debugging settings.</td>
+</tr>
+<tr>
+<td><code>sql_warnings</code></td>
+<td>This variable controls whether single-row INSERT statements produce an information string if warnings occur.</td>
+</tr>
+<tr>
+<td><code>secure_file_priv</code></td>
+<td>This variable is used to limit the effect of data import and export operations.</td>
+</tr>
+</tbody></table>
+<p>The settings <code>user</code>, <code>password</code>, and <code>admin_address</code> are security-relevant because the entries are made in plain text. Often, the rights for the configuration file of the MySQL server are not assigned correctly. If we get another way to read files or even a shell, we can see the file and the username and password for the MySQL server. Suppose there are no other security measures to prevent unauthorized access. In that case, the entire database and all the existing customers&#39; information, email addresses, passwords, and personal data can be viewed and even edited.</p>
+<p>The <code>debug</code> and <code>sql_warnings</code> settings provide verbose information output in case of errors, which are essential for the administrator but should not be seen by others. This information often contains sensitive content, which could be detected by trial and error to identify further attack possibilities. These error messages are often displayed directly on web applications. Accordingly, the SQL injections could be manipulated even to have the MySQL server execute system commands.</p>
+<h2>Footprinting the Service</h2>
+<p>There are many reasons why a MySQL server could be accessed from an external network. Nevertheless, it is far from being one of the best practices, and we can always find databases that we can reach. Often, these settings were only meant to be temporary but were forgotten by the administrators. This server setup could also be used as a workaround due to a technical problem. Usually, the MySQL server runs on <code>TCP port 3306</code>, and we can scan this port with <code>Nmap</code> to get more detailed information.</p>
+<h2>Scanning MySQL Server</h2>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap 10.129.14.128 -sV -sC -p3306 --script mysql*
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2021-09-21 00:53 CEST
+Nmap scan report for 10.129.14.128
+Host is up (0.00021s latency).
+
+PORT     STATE SERVICE     VERSION
+3306/tcp open  nagios-nsca Nagios NSCA
+| mysql-brute: 
+|   Accounts: 
+|     root:&lt;empty&gt; - Valid credentials
+|_  Statistics: Performed 45010 guesses in 5 seconds, average tps: 9002.0
+|_mysql-databases: ERROR: Script execution failed (use -d to debug)
+|_mysql-dump-hashes: ERROR: Script execution failed (use -d to debug)
+| mysql-empty-password: 
+|_  root account has empty password
+| mysql-enum: 
+|   Valid usernames: 
+|     root:&lt;empty&gt; - Valid credentials
+|     netadmin:&lt;empty&gt; - Valid credentials
+|     guest:&lt;empty&gt; - Valid credentials
+|     user:&lt;empty&gt; - Valid credentials
+|     web:&lt;empty&gt; - Valid credentials
+|     sysadmin:&lt;empty&gt; - Valid credentials
+|     administrator:&lt;empty&gt; - Valid credentials
+|     webadmin:&lt;empty&gt; - Valid credentials
+|     admin:&lt;empty&gt; - Valid credentials
+|     test:&lt;empty&gt; - Valid credentials
+|_  Statistics: Performed 10 guesses in 1 seconds, average tps: 10.0
+| mysql-info: 
+|   Protocol: 10
+|   Version: 8.0.26-0ubuntu0.20.04.1
+|   Thread ID: 13
+|   Capabilities flags: 65535
+|   Status: Autocommit
+|   Salt: YTSgMfqvx\x0F\x7F\x16\&amp;\x1EAeK&gt;0
+|_  Auth Plugin Name: caching_sha2_password
+|_mysql-users: ERROR: Script execution failed (use -d to debug)
+|_mysql-variables: ERROR: Script execution failed (use -d to debug)
+|_mysql-vuln-cve2012-2122: ERROR: Script execution failed (use -d to debug)
+MAC Address: 00:00:00:00:00:00 (VMware)
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 11.21 seconds
+</code></pre>
+<p>As with all our scans, we must be careful with the results and manually confirm the information obtained because some of the information might turn out to be a false-positive. This scan above is an excellent example of this, as we know for a fact that the target MySQL server does not use an empty password for the user <code>root</code>, but a fixed password. We can test this with the following command:</p>
+<h2>Interaction with the MySQL Server</h2>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ mysql -u root -h 10.129.14.132
+
+ERROR 1045 (28000): Access denied for user &#39;root&#39;@&#39;10.129.14.1&#39; (using password: NO)
+</code></pre>
+<p>For example, if we use a password that we have guessed or found through our research, we will be able to log in to the MySQL server and execute some commands.</p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ mysql -u root -pP4SSw0rd -h 10.129.14.128
+
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MySQL connection id is 150165
+Server version: 8.0.27-0ubuntu0.20.04.1 (Ubuntu)
+Type &#39;help;&#39; or &#39;\h&#39; for help. Type &#39;\c&#39; to clear the current input statement.
+
+MySQL [(none)]&gt; show databases;
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mysql              |
+| performance_schema |
+| sys                |
++--------------------+
+4 rows in set (0.006 sec)
+
+
+MySQL [(none)]&gt; select version();
++-------------------------+
+| version()               |
++-------------------------+
+| 8.0.27-0ubuntu0.20.04.1 |
++-------------------------+
+1 row in set (0.001 sec)
+
+
+MySQL [(none)]&gt; use mysql;
+MySQL [mysql]&gt; show tables;
++------------------------------------------------------+
+| Tables_in_mysql                                      |
++------------------------------------------------------+
+| columns_priv                                         |
+| component                                            |
+| db                                                   |
+| default_roles                                        |
+| engine_cost                                          |
+| func                                                 |
+...SNIP...
+| user                                                 |
++------------------------------------------------------+
+37 rows in set (0.002 sec)
+</code></pre>
+<p>If we look at the existing databases, we will see several already exist. The most important databases for the MySQL server are the <code>system schema</code> (<code>sys</code>) and <code>information schema</code> (<code>information_schema</code>). The system schema contains tables, information, and metadata necessary for management.</p>
+<pre><code class="language-shell">mysql&gt; use sys;
+mysql&gt; show tables;  
+
++-----------------------------------------------+
+| Tables_in_sys                                 |
++-----------------------------------------------+
+| host_summary                                  |
+| host_summary_by_file_io                       |
+| host_summary_by_file_io_type                  |
+| host_summary_by_stages                        |
+| innodb_buffer_stats_by_schema                 |
+| innodb_buffer_stats_by_table                  |
+| innodb_lock_waits                             |
+...SNIP...
+| x$waits_global_by_latency                     |
++-----------------------------------------------+
+
+
+mysql&gt; select host, unique_users from host_summary;
+
++-------------+--------------+                   
+| host        | unique_users |                   
++-------------+--------------+                   
+| 10.129.14.1 |            1 |                   
+| localhost   |            2 |                   
++-------------+--------------+                   
+2 rows in set (0,01 sec)
+</code></pre>
+<p>The <code>information schema</code> is also a database that contains metadata. However, this metadata is mainly retrieved from the <code>system schema</code> database. The reason for the existence of these two is the ANSI/ISO standard that has been established. <code>System schema</code> is a Microsoft system catalog for SQL servers and contains much more information than the <code>information schema</code>.</p>
+<p>Some of the commands we should remember and write down for working with MySQL databases are described below in the table.</p>
+<table>
+<thead>
+<tr>
+<th><strong>Command</strong></th>
+<th><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>mysql -u &lt;user&gt; -p&lt;password&gt; -h &lt;IP address&gt;</code></td>
+<td>Connect to the MySQL server. There should <strong>not</strong> be a space between the &#39;-p&#39; flag, and the password.</td>
+</tr>
+<tr>
+<td><code>show databases;</code></td>
+<td>Show all databases.</td>
+</tr>
+<tr>
+<td><code>use &lt;database&gt;;</code></td>
+<td>Select one of the existing databases.</td>
+</tr>
+<tr>
+<td><code>show tables;</code></td>
+<td>Show all available tables in the selected database.</td>
+</tr>
+<tr>
+<td><code>show columns from &lt;table&gt;;</code></td>
+<td>Show all columns in the selected table.</td>
+</tr>
+<tr>
+<td><code>select * from &lt;table&gt;;</code></td>
+<td>Show everything in the desired table.</td>
+</tr>
+<tr>
+<td><code>select * from &lt;table&gt; where &lt;column&gt; = &quot;&lt;string&gt;&quot;;</code></td>
+<td>Search for needed <code>string</code> in the desired table.</td>
+</tr>
+</tbody></table>
+
+    </article>
+
+  <nav class="series">
+    <p class="prompt">$ ls ~/series/footprinting-services</p>
+    <ul>
+      <li><a href="nfs.html">Footprinting NFS</a></li>
+      <li><a href="ftp.html">Footprinting FTP</a></li>
+      <li><a href="dns.html">Footprinting DNS</a></li>
+      <li><a href="smtp.html">Footprinting SMTP</a></li>
+      <li><a href="imap-pop3.html">Footprinting IMAP / POP3</a></li>
+      <li><a href="snmp.html">Footprinting SNMP</a></li>
+      <li class="current">Footprinting MySQL &lt;- you are here</li>
+    </ul>
+  </nav>
+
+  </main>
+
+  <script src="/post.js?v=1792848127940"></script>
+</body>
+</html>

@@ -1,5 +1,52 @@
 [
   {
+    "id": "mysql",
+    "title": "Footprinting MySQL",
+    "date": "2026-10-24",
+    "series": "Footprinting Services",
+    "tags": ["htb", "footprinting", "mysql", "mariadb", "database", "sql", "enumeration"],
+    "description": "MySQL/MariaDB basics, default config and dangerous settings, scanning port 3306 with Nmap scripts, logging in and navigating databases and tables.",
+    "cheatsheet": [
+      { "cmd": "nmap -sV -sC -p3306 --script mysql* <target>", "desc": "Footprint MySQL (info, users, empty password)" },
+      { "cmd": "mysql -u root -h <target>", "desc": "Try connecting with no password" },
+      { "cmd": "mysql -u <user> -p<password> -h <target>", "desc": "Connect (no space after -p)" },
+      { "cmd": "show databases;", "desc": "List all databases" },
+      { "cmd": "use <db>;  show tables;", "desc": "Pick a database, list its tables" },
+      { "cmd": "show columns from <table>;", "desc": "List a table's columns" },
+      { "cmd": "select * from <table>;", "desc": "Dump a table" }
+    ]
+  },
+  {
+    "id": "snmp",
+    "title": "Footprinting SNMP",
+    "date": "2026-10-24",
+    "series": "Footprinting Services",
+    "tags": ["htb", "footprinting", "snmp", "mib", "oid", "community-string", "enumeration"],
+    "description": "How SNMP works (MIB, OIDs, versions and community strings), its plaintext weakness, and footprinting with snmpwalk, onesixtyone and braa.",
+    "cheatsheet": [
+      { "cmd": "snmpwalk -v2c -c public <target>", "desc": "Walk the MIB with the 'public' community (v2c)" },
+      { "cmd": "snmpwalk -v2c -c public <target> <OID>", "desc": "Walk a specific OID subtree" },
+      { "cmd": "onesixtyone -c <wordlist> <target>", "desc": "Brute force community strings" },
+      { "cmd": "braa <community>@<target>:.1.3.6.*", "desc": "Brute force OIDs fast once you know the string" }
+    ]
+  },
+  {
+    "id": "imap-pop3",
+    "title": "Footprinting IMAP / POP3",
+    "date": "2026-10-24",
+    "series": "Footprinting Services",
+    "tags": ["htb", "footprinting", "imap", "pop3", "email", "dovecot", "enumeration"],
+    "description": "How IMAP and POP3 work and differ, their commands and dangerous settings, scanning ports 110/143/993/995, and talking to them with curl and openssl.",
+    "cheatsheet": [
+      { "cmd": "nmap -sV -sC -p110,143,993,995 <target>", "desc": "Footprint IMAP/POP3 (certs, capabilities)" },
+      { "cmd": "curl -k 'imaps://<target>' --user <user>:<pass>", "desc": "List mailboxes over IMAPS" },
+      { "cmd": "curl -k 'imaps://<target>' --user <user>:<pass> -v", "desc": "Verbose: see the TLS cert and banner" },
+      { "cmd": "openssl s_client -connect <target>:imaps", "desc": "Interact with IMAP over TLS" },
+      { "cmd": "openssl s_client -connect <target>:pop3s", "desc": "Interact with POP3 over TLS" },
+      { "cmd": "1 LOGIN <user> <pass>   /   1 LIST \"\" *", "desc": "IMAP: log in, list all folders" }
+    ]
+  },
+  {
     "id": "smtp",
     "title": "Footprinting SMTP",
     "date": "2026-10-20",
