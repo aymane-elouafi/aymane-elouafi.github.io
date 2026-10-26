@@ -95,7 +95,7 @@ ${JSON.stringify(jsonld, null, 2)}
 function topbar() {
   return `  <div class="topbar">
     <button class="menu-toggle" aria-label="Open menu" aria-expanded="false">☰ menu</button>
-    <a class="topbar-home" href="/index.html">~/aymane</a>
+    <a class="topbar-home" href="/">~/aymane</a>
   </div>`;
 }
 
@@ -291,7 +291,7 @@ ${topbar()}
 ${sidebar(post.id)}
   <main class="container post">
 
-    <a class="back" href="/index.html">← cd ..</a>
+    <a class="back" href="/">← cd ..</a>
 
     ${post.series ? `<span class="series-label">${esc(post.series)}</span>` : ""}
     <h1>${esc(post.title)}</h1>
