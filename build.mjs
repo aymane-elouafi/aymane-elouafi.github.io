@@ -22,6 +22,9 @@ import { parse } from "node-html-parser";
 const SITE = "https://aymaneelouafi.me";
 const AUTHOR = "Aymane Elouafi";
 const LINKEDIN = "https://www.linkedin.com/in/aymane-elouafi";
+const GITHUB = "https://github.com/aymane-elouafi";
+// add more profile URLs here (HTB, X/Twitter...) to strengthen identity
+const SAME_AS = [LINKEDIN, GITHUB];
 const ROLE = "Cybersecurity Engineer";
 const GA_ID = "G-V2R1YY0P62"; // Google Analytics measurement ID
 
@@ -338,18 +341,36 @@ function card(post) {
         </li>`;
 }
 
+const homeDesc = `${AUTHOR} - ${ROLE} interested in offensive and defensive security: penetration testing, detection engineering, SOC operations and incident response. Write-ups and notes.`;
+
 const homeJsonld = {
   "@context": "https://schema.org",
-  "@type": "Person",
-  "name": AUTHOR,
-  "jobTitle": ROLE,
-  "url": SITE,
-  "sameAs": [LINKEDIN],
-  "knowsAbout": ["Penetration Testing", "Detection Engineering", "SOC Operations",
-    "Incident Response", "Offensive Security", "Defensive Security"],
+  "@graph": [
+    {
+      "@type": "Person",
+      "@id": SITE + "/#person",
+      "name": AUTHOR,
+      "alternateName": ["Aymane El Ouafi", "aymaneelouafi"],
+      "jobTitle": ROLE,
+      "description": `${AUTHOR} is a cybersecurity engineer interested in offensive and defensive security — penetration testing, detection engineering, SOC operations and incident response.`,
+      "url": SITE,
+      "image": SITE + "/images/og.png",
+      "sameAs": SAME_AS,
+      "knowsAbout": ["Penetration Testing", "Detection Engineering", "SOC Operations",
+        "Incident Response", "Offensive Security", "Defensive Security",
+        "Hack The Box", "Cybersecurity"],
+    },
+    {
+      "@type": "WebSite",
+      "@id": SITE + "/#website",
+      "url": SITE,
+      "name": AUTHOR,
+      "description": homeDesc,
+      "author": { "@id": SITE + "/#person" },
+      "inLanguage": "en",
+    },
+  ],
 };
-
-const homeDesc = `${AUTHOR} - ${ROLE} interested in offensive and defensive security: penetration testing, detection engineering, SOC operations and incident response. Write-ups and notes.`;
 
 const home = `${head({
   title: `${AUTHOR} · ${ROLE}`,
@@ -376,11 +397,13 @@ ${sidebar("")}
 
       <p class="bio">
         <span class="highlight">// cybersecurity engineer</span><br>
-        I like breaking things and catching the people who break things.
-        Interested in both <span class="pink">offensive</span> and <span class="cyan">defensive</span> security.
-        Lately I've been spending a lot of time on
-        <a href="https://www.hackthebox.com" target="_blank" rel="noopener">Hack The Box</a>.
-        This is where I write down what I learn so I don't lose it.
+        I'm <strong>Aymane Elouafi</strong>, a cybersecurity engineer interested in both
+        <span class="pink">offensive</span> and <span class="cyan">defensive</span> security —
+        penetration testing, detection engineering, SOC operations and incident response.
+        I like breaking things and catching the people who break things. Lately I've been
+        spending a lot of time on
+        <a href="https://www.hackthebox.com" target="_blank" rel="noopener">Hack The Box</a>,
+        and this is where I write down what I learn so I don't lose it.
       </p>
 
       <ul class="tags">
