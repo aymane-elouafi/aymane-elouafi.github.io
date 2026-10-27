@@ -88,7 +88,8 @@ ${JSON.stringify(jsonld, null, 2)}
   </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Rubik+Glitch&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css?v=${VER}">
   <script defer src="/menu.js?v=${VER}"></script>
 </head>`;
@@ -380,62 +381,58 @@ const home = `${head({
   jsonld: homeJsonld,
 })}
 <body>
-  <!-- Matrix rain in the background -->
-  <canvas id="matrix"></canvas>
-
 ${topbar()}
 ${sidebar("")}
-  <main class="container">
+  <main class="container home">
 
-    <!-- ===== WHOAMI ===== -->
-    <section class="whoami">
-      <img class="skull" src="/images/skull.svg" alt="pixel skull logo" width="90" height="90">
-
-      <p class="prompt"><span class="user">root@aymane</span>:<span class="path">~</span># <span id="typed"></span><span class="cursor">█</span></p>
-
-      <h1 class="glitch" data-text="AYMANE ELOUAFI">AYMANE ELOUAFI</h1>
+    <!-- ===== INTRO ===== -->
+    <header class="intro">
+      <p class="prompt"><span class="accent">aymane@sec</span>:~$ whoami</p>
+      <h1>Aymane Elouafi</h1>
+      <p class="role">Cybersecurity Engineer</p>
 
       <p class="bio">
-        <span class="highlight">// cybersecurity engineer</span><br>
-        I'm <strong>Aymane Elouafi</strong>, a cybersecurity engineer interested in both
-        <span class="pink">offensive</span> and <span class="cyan">defensive</span> security —
-        penetration testing, detection engineering, SOC operations and incident response.
-        I like breaking things and catching the people who break things. Lately I've been
-        spending a lot of time on
+        I'm Aymane Elouafi, a cybersecurity engineer interested in both offensive and
+        defensive security — penetration testing, detection engineering, SOC operations
+        and incident response. I like breaking things and catching the people who break
+        things. Lately I've been spending a lot of time on
         <a href="https://www.hackthebox.com" target="_blank" rel="noopener">Hack The Box</a>,
         and this is where I write down what I learn so I don't lose it.
       </p>
 
       <ul class="tags">
-        <li class="tag pink">Penetration Testing</li>
-        <li class="tag cyan">Detection Engineering</li>
-        <li class="tag yellow">SOC Operations</li>
-        <li class="tag purple">Incident Response</li>
+        <li>Penetration Testing</li>
+        <li>Detection Engineering</li>
+        <li>SOC Operations</li>
+        <li>Incident Response</li>
       </ul>
-    </section>
 
-    <!-- ===== BLOG ===== -->
+      <p class="links">
+        <a href="${LINKEDIN}" target="_blank" rel="noopener">LinkedIn</a>
+        <a href="${GITHUB}" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://www.hackthebox.com" target="_blank" rel="noopener">Hack The Box</a>
+      </p>
+    </header>
+
+    <!-- ===== NOTES ===== -->
     <section class="blog">
-      <h2 class="prompt"><span class="user">root@aymane</span>:<span class="path">~/posts</span># grep -ri</h2>
-
-      <input id="search" class="search" type="text" placeholder="search... (nmap, -sV, zone transfer)" autocomplete="off">
-      <p id="no-results" class="no-results" hidden>grep: no match found ¯\\_(ツ)_/¯</p>
+      <div class="blog-head">
+        <h2>Notes &amp; write-ups</h2>
+        <input id="search" class="search" type="text" placeholder="Search notes…" autocomplete="off">
+      </div>
+      <p id="no-results" class="no-results" hidden>No matching notes.</p>
 
       <ul id="post-list" class="post-list">
 ${posts.map(card).join("\n")}
       </ul>
     </section>
 
-    <!-- ===== CONTACT ===== -->
-    <section class="contact">
-      <p class="prompt">&gt; establishing secure connection...</p>
-      <h2>WANT TO TALK?</h2>
-      <p>Questions, opportunities or just want to say hi. Reach me on LinkedIn.</p>
-      <a class="button" href="${LINKEDIN}" target="_blank" rel="noopener">CONNECT ON LINKEDIN</a>
-    </section>
-
     <footer>
-      <p>© <span id="year"></span> ${AUTHOR} // hack the planet</p>
+      <span>© <span id="year"></span> ${AUTHOR}</span>
+      <span class="foot-links">
+        <a href="${LINKEDIN}" target="_blank" rel="noopener">LinkedIn</a>
+        <a href="${GITHUB}" target="_blank" rel="noopener">GitHub</a>
+      </span>
     </footer>
 
   </main>
