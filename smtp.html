@@ -37,37 +37,65 @@
   <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "BlogPosting",
-  "headline": "Footprinting SMTP",
-  "description": "How SMTP works and its mail server chain (MUA/MSA/MTA/MDA), clear-text weaknesses, open relays, talking to it over telnet, user enumeration and Nmap scripts.",
-  "datePublished": "2026-10-20",
-  "dateModified": "2026-10-20",
-  "author": {
-    "@type": "Person",
-    "name": "Aymane Elouafi",
-    "url": "https://aymaneelouafi.me"
-  },
-  "publisher": {
-    "@type": "Person",
-    "name": "Aymane Elouafi",
-    "url": "https://aymaneelouafi.me"
-  },
-  "mainEntityOfPage": {
-    "@type": "WebPage",
-    "@id": "https://aymaneelouafi.me/smtp.html"
-  },
-  "url": "https://aymaneelouafi.me/smtp.html",
-  "image": "https://aymaneelouafi.me/images/og.png",
-  "keywords": "htb, footprinting, smtp, email, open-relay, postfix, enumeration",
-  "inLanguage": "en"
+  "@graph": [
+    {
+      "@type": "BlogPosting",
+      "headline": "Footprinting SMTP",
+      "description": "How SMTP works and its mail server chain (MUA/MSA/MTA/MDA), clear-text weaknesses, open relays, talking to it over telnet, user enumeration and Nmap scripts.",
+      "datePublished": "2026-10-20",
+      "dateModified": "2026-10-20",
+      "author": {
+        "@type": "Person",
+        "name": "Aymane Elouafi",
+        "@id": "https://aymaneelouafi.me/#person",
+        "url": "https://aymaneelouafi.me"
+      },
+      "publisher": {
+        "@type": "Person",
+        "name": "Aymane Elouafi",
+        "url": "https://aymaneelouafi.me"
+      },
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "https://aymaneelouafi.me/smtp.html"
+      },
+      "url": "https://aymaneelouafi.me/smtp.html",
+      "image": "https://aymaneelouafi.me/images/og.png",
+      "keywords": "htb, footprinting, smtp, email, open-relay, postfix, enumeration",
+      "articleSection": "Footprinting Services",
+      "inLanguage": "en"
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Aymane Elouafi",
+          "item": "https://aymaneelouafi.me/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Footprinting Services"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Footprinting SMTP",
+          "item": "https://aymaneelouafi.me/smtp.html"
+        }
+      ]
+    }
+  ]
 }
   </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css?v=1793101531178">
-  <script defer src="/menu.js?v=1793101531178"></script>
+  <link rel="stylesheet" href="/style.css?v=1793185669780">
+  <script defer src="/menu.js?v=1793185669780"></script>
 </head>
 <body>
   <div class="topbar">
@@ -541,6 +569,6 @@ Nmap done: 1 IP address (1 host up) scanned in 0.48 seconds
 
   </main>
 
-  <script src="/post.js?v=1793101531178"></script>
+  <script src="/post.js?v=1793185669780"></script>
 </body>
 </html>

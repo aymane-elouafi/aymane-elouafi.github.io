@@ -267,20 +267,32 @@ for (const post of posts) {
     series: post.series || "", tags: post.tags, date: post.date, text: searchText,
   });
 
+  // Breadcrumb: Home > [Series] > Title  — helps Google show structured
+  // breadcrumbs under the result and understand the site hierarchy.
+  const crumbs = [{ "@type": "ListItem", "position": 1, "name": AUTHOR, "item": SITE + "/" }];
+  if (post.series) crumbs.push({ "@type": "ListItem", "position": 2, "name": post.series });
+  crumbs.push({ "@type": "ListItem", "position": crumbs.length + 1, "name": post.title, "item": canonical });
+
   const jsonld = {
     "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    "headline": post.title,
-    "description": post.description,
-    "datePublished": post.date,
-    "dateModified": post.date,
-    "author": { "@type": "Person", "name": AUTHOR, "url": SITE },
-    "publisher": { "@type": "Person", "name": AUTHOR, "url": SITE },
-    "mainEntityOfPage": { "@type": "WebPage", "@id": canonical },
-    "url": canonical,
-    "image": `${SITE}/images/og.png`,
-    "keywords": post.tags.join(", "),
-    "inLanguage": "en",
+    "@graph": [
+      {
+        "@type": "BlogPosting",
+        "headline": post.title,
+        "description": post.description,
+        "datePublished": post.date,
+        "dateModified": post.date,
+        "author": { "@type": "Person", "name": AUTHOR, "@id": SITE + "/#person", "url": SITE },
+        "publisher": { "@type": "Person", "name": AUTHOR, "url": SITE },
+        "mainEntityOfPage": { "@type": "WebPage", "@id": canonical },
+        "url": canonical,
+        "image": `${SITE}/images/og.png`,
+        "keywords": post.tags.join(", "),
+        "articleSection": post.series || "Notes",
+        "inLanguage": "en",
+      },
+      { "@type": "BreadcrumbList", "itemListElement": crumbs },
+    ],
   };
 
   const page = `${head({

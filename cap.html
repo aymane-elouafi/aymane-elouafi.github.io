@@ -37,37 +37,60 @@
   <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "BlogPosting",
-  "headline": "Cap - HTB Walkthrough",
-  "description": "Easy Linux box: IDOR to grab a pcap, FTP creds in clear text, SSH as nathan, then root through python3.8 with cap_setuid.",
-  "datePublished": "2026-10-19",
-  "dateModified": "2026-10-19",
-  "author": {
-    "@type": "Person",
-    "name": "Aymane Elouafi",
-    "url": "https://aymaneelouafi.me"
-  },
-  "publisher": {
-    "@type": "Person",
-    "name": "Aymane Elouafi",
-    "url": "https://aymaneelouafi.me"
-  },
-  "mainEntityOfPage": {
-    "@type": "WebPage",
-    "@id": "https://aymaneelouafi.me/cap.html"
-  },
-  "url": "https://aymaneelouafi.me/cap.html",
-  "image": "https://aymaneelouafi.me/images/og.png",
-  "keywords": "htb, walkthrough, linux, idor, wireshark, capabilities, privesc",
-  "inLanguage": "en"
+  "@graph": [
+    {
+      "@type": "BlogPosting",
+      "headline": "Cap - HTB Walkthrough",
+      "description": "Easy Linux box: IDOR to grab a pcap, FTP creds in clear text, SSH as nathan, then root through python3.8 with cap_setuid.",
+      "datePublished": "2026-10-19",
+      "dateModified": "2026-10-19",
+      "author": {
+        "@type": "Person",
+        "name": "Aymane Elouafi",
+        "@id": "https://aymaneelouafi.me/#person",
+        "url": "https://aymaneelouafi.me"
+      },
+      "publisher": {
+        "@type": "Person",
+        "name": "Aymane Elouafi",
+        "url": "https://aymaneelouafi.me"
+      },
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "https://aymaneelouafi.me/cap.html"
+      },
+      "url": "https://aymaneelouafi.me/cap.html",
+      "image": "https://aymaneelouafi.me/images/og.png",
+      "keywords": "htb, walkthrough, linux, idor, wireshark, capabilities, privesc",
+      "articleSection": "Notes",
+      "inLanguage": "en"
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Aymane Elouafi",
+          "item": "https://aymaneelouafi.me/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Cap - HTB Walkthrough",
+          "item": "https://aymaneelouafi.me/cap.html"
+        }
+      ]
+    }
+  ]
 }
   </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css?v=1793101531178">
-  <script defer src="/menu.js?v=1793101531178"></script>
+  <link rel="stylesheet" href="/style.css?v=1793185669780">
+  <script defer src="/menu.js?v=1793185669780"></script>
 </head>
 <body>
   <div class="topbar">
@@ -348,6 +371,6 @@ ftp&gt; exit
 
   </main>
 
-  <script src="/post.js?v=1793101531178"></script>
+  <script src="/post.js?v=1793185669780"></script>
 </body>
 </html>
