@@ -23,8 +23,9 @@ const SITE = "https://aymaneelouafi.me";
 const AUTHOR = "Aymane Elouafi";
 const LINKEDIN = "https://www.linkedin.com/in/aymane-elouafi";
 const GITHUB = "https://github.com/aymane-elouafi";
-// add more profile URLs here (HTB, X/Twitter...) to strengthen identity
-const SAME_AS = [LINKEDIN, GITHUB];
+const HTB = "https://profile.hackthebox.com/profile/019fc7ef-cecd-73b9-839f-3b4b881896dc";
+// add more profile URLs here (X/Twitter...) to strengthen identity
+const SAME_AS = [LINKEDIN, GITHUB, HTB];
 const ROLE = "Cybersecurity Engineer";
 const GA_ID = "G-V2R1YY0P62"; // Google Analytics measurement ID
 
