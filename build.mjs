@@ -67,7 +67,10 @@ function head({ title, description, canonical, ogType, jsonld }) {
   <meta name="robots" content="index, follow, max-image-preview:large">
   <meta name="google-site-verification" content="P6WC3YGSehH9r2o-Lon_-tKZGpFiOWJjHD41vtJqLsk">
   <link rel="canonical" href="${attr(canonical)}">
-  <link rel="icon" href="/images/skull.svg">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-512.png" type="image/png" sizes="512x512">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
   <!-- Open Graph (Facebook, LinkedIn, Discord...) -->
   <meta property="og:type" content="${ogType}">
