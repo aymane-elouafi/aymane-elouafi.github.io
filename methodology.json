@@ -99,6 +99,7 @@
           "Abuse file upload or LFI-to-RCE chains",
           "Use found credentials / tokens to reach admin features"
         ],
+        "series": "Web Attacks",
         "posts": []
       },
       {

