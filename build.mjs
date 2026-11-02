@@ -466,7 +466,7 @@ ${posts.map(card).join("\n")}
   </main>
 
   <!-- search index for the home page search bar -->
-  <script id="posts-data" type="application/json">${JSON.stringify(searchIndex)}</script>
+  <script id="posts-data" type="application/json">${JSON.stringify(searchIndex).replace(/</g, "\\u003c")}</script>
   <script src="/home.js?v=${VER}"></script>
 </body>
 </html>
