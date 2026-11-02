@@ -438,7 +438,7 @@ ${sidebar("")}
       <p class="links">
         <a href="${LINKEDIN}" target="_blank" rel="noopener">LinkedIn</a>
         <a href="${GITHUB}" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://www.hackthebox.com" target="_blank" rel="noopener">Hack The Box</a>
+        <a href="${HTB}" target="_blank" rel="noopener">Hack The Box</a>
       </p>
     </header>
 
