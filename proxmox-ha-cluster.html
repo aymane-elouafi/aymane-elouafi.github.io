@@ -97,8 +97,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css?v=1793614329955">
-  <script defer src="/menu.js?v=1793614329955"></script>
+  <link rel="stylesheet" href="/style.css?v=1793614956650">
+  <script defer src="/menu.js?v=1793614956650"></script>
 </head>
 <body>
   <div class="topbar">
@@ -206,7 +206,7 @@
 
 
     <article id="content">
-<p>My initiation internship project at <strong>SNRT</strong> (Morocco&#39;s national broadcasting company),<br>during the first year of the engineering cycle (IRIC, ENSA Khouribga). The goal: design and<br>deploy a <strong>high-availability, fault-tolerant Proxmox VE cluster</strong> on physical servers, backed<br>by <strong>shared NAS storage</strong> — so a virtual machine keeps running even if a whole host fails.</p>
+<p>My initiation internship project at <strong>SNRT</strong> (Morocco&#39;s national broadcasting company), during the first year of the engineering cycle (IRIC, ENSA Khouribga). The goal: design and deploy a <strong>high-availability, fault-tolerant Proxmox VE cluster</strong> on physical servers, backed by <strong>shared NAS storage</strong> — so a virtual machine keeps running even if a whole host fails.</p>
 <p class="pdf-actions"><a class="pdf-button" href="/files/proxmox-ha-cluster-nas.pdf" target="_blank" rel="noopener">⬇ Download the full report — PDF, 94 pages (French)</a></p>
 
 <blockquote>
@@ -216,22 +216,22 @@
 <p>The report starts from the fundamentals and builds up to a working cluster:</p>
 <ul>
 <li><strong>Virtualization</strong> — virtual machines, hypervisors (type 1 vs type 2), and why they matter.</li>
-<li><strong>Clustering &amp; high availability</strong> — what a cluster is, how HA works, and the role of<br><strong>quorum</strong> in keeping a cluster consistent.</li>
+<li><strong>Clustering &amp; high availability</strong> — what a cluster is, how HA works, and the role of <strong>quorum</strong> in keeping a cluster consistent.</li>
 <li><strong>Shared storage</strong> — SAN vs <strong>NAS</strong>, and <strong>RAID</strong> levels for redundancy.</li>
 <li><strong>Proxmox VE</strong> — the open-source virtualization platform, its features, and installation.</li>
 </ul>
 <h2>The build</h2>
-<p>The practical core deploys a <strong>two-node Proxmox VE cluster</strong> on physical servers with a shared<br><strong>NAS over NFS</strong>, plus everything needed to run it in production:</p>
+<p>The practical core deploys a <strong>two-node Proxmox VE cluster</strong> on physical servers with a shared <strong>NAS over NFS</strong>, plus everything needed to run it in production:</p>
 <ul>
-<li><strong>Physical architecture &amp; network plan</strong> — two servers (managed through a KVM switch) and<br>the IP addressing scheme.</li>
+<li><strong>Physical architecture &amp; network plan</strong> — two servers (managed through a KVM switch) and the IP addressing scheme.</li>
 <li><strong>Cluster configuration</strong> — installing Proxmox on both nodes and joining them into a cluster.</li>
-<li><strong>The two-node quorum problem</strong> — a 2-node cluster can&#39;t form a majority on its own, which<br>makes HA unstable; the report explains why and configures a fix so the surviving node keeps<br>running after a failure.</li>
-<li><strong>Shared NAS via NFS</strong> — configuring the NAS and adding it as cluster storage, so VM disks<br>live on shared storage and can move between nodes.</li>
+<li><strong>The two-node quorum problem</strong> — a 2-node cluster can&#39;t form a majority on its own, which makes HA unstable; the report explains why and configures a fix so the surviving node keeps running after a failure.</li>
+<li><strong>Shared NAS via NFS</strong> — configuring the NAS and adding it as cluster storage, so VM disks live on shared storage and can move between nodes.</li>
 <li><strong>Networking &amp; firewall</strong> — a private NAT network and the Proxmox VE firewall.</li>
 <li><strong>Users &amp; permissions</strong> — groups, user accounts and role-based access.</li>
 </ul>
 <h2>Tests &amp; validation</h2>
-<p>The cluster is validated against the scenarios that matter for a broadcaster that can&#39;t afford<br>downtime:</p>
+<p>The cluster is validated against the scenarios that matter for a broadcaster that can&#39;t afford downtime:</p>
 <ul>
 <li><strong>High Availability</strong> — kill a node and watch its VMs restart automatically on the other.</li>
 <li><strong>Live migration</strong> — move a running VM between nodes with no downtime.</li>
@@ -242,8 +242,7 @@
 <hr>
 <h3>Read the full report</h3>
 <object class="pdf-view" data="/files/proxmox-ha-cluster-nas.pdf" type="application/pdf">
-  <p>Your browser can't display the embedded PDF.
-  <a href="/files/proxmox-ha-cluster-nas.pdf">Download the report here</a>.</p>
+  <p>Your browser can't display the embedded PDF. <a href="/files/proxmox-ha-cluster-nas.pdf">Download the report here</a>.</p>
 </object>
 
     </article>
@@ -259,6 +258,6 @@
 
   </main>
 
-  <script src="/post.js?v=1793614329955"></script>
+  <script src="/post.js?v=1793614956650"></script>
 </body>
 </html>

@@ -97,8 +97,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css?v=1793614329955">
-  <script defer src="/menu.js?v=1793614329955"></script>
+  <link rel="stylesheet" href="/style.css?v=1793614956650">
+  <script defer src="/menu.js?v=1793614956650"></script>
 </head>
 <body>
   <div class="topbar">
@@ -206,38 +206,37 @@
 
 
     <article id="content">
-<p>A hands-on project (IRIC2, ENSA Khouribga) building a complete <strong>hyper-converged,<br>high-availability private cloud</strong> from the ground up: a <strong>three-node Proxmox VE cluster</strong> with<br><strong>Ceph</strong> distributed storage, <strong>VXLAN</strong> network isolation, and <strong>Prometheus + Grafana</strong><br>monitoring. The goal was an infrastructure that survives hardware failure and isolates tenant<br>workloads securely — the way a modern private cloud is actually built.</p>
+<p>A hands-on project (IRIC2, ENSA Khouribga) building a complete <strong>hyper-converged, high-availability private cloud</strong> from the ground up: a <strong>three-node Proxmox VE cluster</strong> with <strong>Ceph</strong> distributed storage, <strong>VXLAN</strong> network isolation, and <strong>Prometheus + Grafana</strong> monitoring. The goal was an infrastructure that survives hardware failure and isolates tenant workloads securely — the way a modern private cloud is actually built.</p>
 <p class="pdf-actions"><a class="pdf-button" href="/files/proxmox-ceph-vxlan-cluster.pdf" target="_blank" rel="noopener">⬇ Download the full report — PDF, 47 pages</a></p>
 
 <h2>Architecture</h2>
 <ul>
-<li><strong>Three Proxmox VE nodes</strong> form the hypervisor layer and the Corosync cluster, sharing a<br>heartbeat and quorum so the cluster stays consistent.</li>
-<li><strong>Ceph</strong> provides a distributed, software-defined storage backend across all three nodes,<br>eliminating the single point of failure that local disks would create.</li>
+<li><strong>Three Proxmox VE nodes</strong> form the hypervisor layer and the Corosync cluster, sharing a heartbeat and quorum so the cluster stays consistent.</li>
+<li><strong>Ceph</strong> provides a distributed, software-defined storage backend across all three nodes, eliminating the single point of failure that local disks would create.</li>
 <li>A <strong>VXLAN overlay</strong> stretches an isolated Layer 2 tenant network across the Layer 3 nodes.</li>
 <li><strong>Prometheus + Grafana</strong> give real-time visibility into cluster health and network use.</li>
 </ul>
 <h2>Distributed storage with Ceph</h2>
-<p>Instead of VM disks living on one server, Ceph spreads every block across the nodes using the<br><strong>CRUSH</strong> algorithm, with its three daemon types — <strong>OSD</strong> (stores the data), <strong>MON</strong><br>(maintains the cluster map and quorum) and <strong>MGR</strong> (runtime metrics). OSDs were created from<br>raw disks on each node and pooled into shared storage added to the Proxmox datacenter. This<br>buys two things that standalone servers can&#39;t:</p>
+<p>Instead of VM disks living on one server, Ceph spreads every block across the nodes using the <strong>CRUSH</strong> algorithm, with its three daemon types — <strong>OSD</strong> (stores the data), <strong>MON</strong> (maintains the cluster map and quorum) and <strong>MGR</strong> (runtime metrics). OSDs were created from raw disks on each node and pooled into shared storage added to the Proxmox datacenter. This buys two things that standalone servers can&#39;t:</p>
 <ul>
 <li><strong>Fault tolerance</strong> — every block is replicated, so losing a node doesn&#39;t lose data.</li>
-<li><strong>Zero-downtime live migration</strong> — because the disk is already on shared storage, a running<br>VM moves between nodes seamlessly.</li>
+<li><strong>Zero-downtime live migration</strong> — because the disk is already on shared storage, a running VM moves between nodes seamlessly.</li>
 </ul>
 <h2>Network isolation with VXLAN</h2>
-<p>The challenge in a clustered environment is giving tenants an isolated Layer 2 network across<br>physically separate hosts. Each node acts as a <strong>VTEP</strong> (VXLAN Tunnel Endpoint): a packet<br>from a VM on one node is <strong>encapsulated</strong> into UDP, routed over the physical underlay, and<br><strong>decapsulated</strong> on the destination node onto the isolated bridge. The report also documents a<br>real debugging story — VMs initially couldn&#39;t talk across nodes, traced to the Linux bridge&#39;s<br>security/filtering mechanisms, and fixed.</p>
+<p>The challenge in a clustered environment is giving tenants an isolated Layer 2 network across physically separate hosts. Each node acts as a <strong>VTEP</strong> (VXLAN Tunnel Endpoint): a packet from a VM on one node is <strong>encapsulated</strong> into UDP, routed over the physical underlay, and <strong>decapsulated</strong> on the destination node onto the isolated bridge. The report also documents a real debugging story — VMs initially couldn&#39;t talk across nodes, traced to the Linux bridge&#39;s security/filtering mechanisms, and fixed.</p>
 <h2>HA &amp; failover testing</h2>
 <p>The cluster is validated by actually breaking it:</p>
 <ul>
 <li>A VM is placed under <strong>Proxmox HA</strong> management and verified running on a node.</li>
 <li><strong>Live migration</strong> is tested with continuous ping (replies stay consistent through the move).</li>
-<li>A node is failed, and the stack reacts automatically: <strong>Corosync</strong> detects the heartbeat loss<br>within seconds, <strong>quorum</strong> is maintained by the surviving majority, <strong>Ceph</strong> rebalances, and<br>the <strong>HA manager</strong> fences and relocates the VM to a healthy node.</li>
+<li>A node is failed, and the stack reacts automatically: <strong>Corosync</strong> detects the heartbeat loss within seconds, <strong>quorum</strong> is maintained by the surviving majority, <strong>Ceph</strong> rebalances, and the <strong>HA manager</strong> fences and relocates the VM to a healthy node.</li>
 </ul>
 <h2>Tech stack</h2>
-<p><code>Proxmox VE</code> · <code>Ceph</code> (OSD / MON / MGR, CRUSH) · <code>VXLAN</code> / SDN · <code>Corosync</code> · <code>Prometheus</code><br>· <code>Grafana</code> · high availability · live migration</p>
+<p><code>Proxmox VE</code> · <code>Ceph</code> (OSD / MON / MGR, CRUSH) · <code>VXLAN</code> / SDN · <code>Corosync</code> · <code>Prometheus</code> · <code>Grafana</code> · high availability · live migration</p>
 <hr>
 <h3>Read the full report</h3>
 <object class="pdf-view" data="/files/proxmox-ceph-vxlan-cluster.pdf" type="application/pdf">
-  <p>Your browser can't display the embedded PDF.
-  <a href="/files/proxmox-ceph-vxlan-cluster.pdf">Download the report here</a>.</p>
+  <p>Your browser can't display the embedded PDF. <a href="/files/proxmox-ceph-vxlan-cluster.pdf">Download the report here</a>.</p>
 </object>
 
     </article>
@@ -253,6 +252,6 @@
 
   </main>
 
-  <script src="/post.js?v=1793614329955"></script>
+  <script src="/post.js?v=1793614956650"></script>
 </body>
 </html>

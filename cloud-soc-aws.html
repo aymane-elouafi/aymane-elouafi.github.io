@@ -97,8 +97,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css?v=1793614329955">
-  <script defer src="/menu.js?v=1793614329955"></script>
+  <link rel="stylesheet" href="/style.css?v=1793614956650">
+  <script defer src="/menu.js?v=1793614956650"></script>
 </head>
 <body>
   <div class="topbar">
@@ -206,46 +206,45 @@
 
 
     <article id="content">
-<p>My end-of-year engineering project (IRIC, ENSA Khouribga), carried out during a two-month<br>internship at <strong>Devoteam CyberTrust</strong>. I built a small but realistic <strong>cloud-native Security<br>Operations Center (SOC)</strong> on AWS and took a <strong>purple-teaming</strong> approach to it: realistic<br>attacks are simulated across the cloud stack and, in the same motion, the detections that<br>catch them are engineered — offence and defence developed together.</p>
+<p>My end-of-year engineering project (IRIC, ENSA Khouribga), carried out during a two-month internship at <strong>Devoteam CyberTrust</strong>. I built a small but realistic <strong>cloud-native Security Operations Center (SOC)</strong> on AWS and took a <strong>purple-teaming</strong> approach to it: realistic attacks are simulated across the cloud stack and, in the same motion, the detections that catch them are engineered — offence and defence developed together.</p>
 <p class="pdf-actions"><a class="pdf-button" href="/files/cloud-native-soc-aws.pdf" target="_blank" rel="noopener">⬇ Download the full report — PDF, 99 pages</a></p>
 
 <h2>The idea</h2>
-<p>Cloud environments dissolve the single network perimeter into many trust boundaries, and the<br>attacks that matter most abuse <strong>identity and trust</strong> rather than breach a firewall. So instead<br>of a classic &quot;scan and patch&quot; lab, I built a deliberately vulnerable AWS environment, attacked<br>it end to end, and engineered a detection in <strong>Wazuh</strong> for every stage — each rule mapped to<br><strong>MITRE ATT&amp;CK</strong>.</p>
+<p>Cloud environments dissolve the single network perimeter into many trust boundaries, and the attacks that matter most abuse <strong>identity and trust</strong> rather than breach a firewall. So instead of a classic &quot;scan and patch&quot; lab, I built a deliberately vulnerable AWS environment, attacked it end to end, and engineered a detection in <strong>Wazuh</strong> for every stage — each rule mapped to <strong>MITRE ATT&amp;CK</strong>.</p>
 <h2>The lab</h2>
-<p>A single VPC with three subnets models three actors (a public web tier, a private workload<br>tier, and an isolated SOC tier). The deliberately vulnerable surface includes:</p>
+<p>A single VPC with three subnets models three actors (a public web tier, a private workload tier, and an isolated SOC tier). The deliberately vulnerable surface includes:</p>
 <ul>
 <li>A web app (<strong>OWASP Juice Shop</strong>) behind <strong>Nginx + the ModSecurity WAF</strong> on EC2 + Docker.</li>
 <li><strong>EC2</strong> and <strong>AWS Lambda</strong> (serverless) workloads.</li>
 <li><strong>IAM</strong> roles and instance profiles, <strong>AWS STS</strong>, and <strong>Cognito</strong> for identity.</li>
 <li>Sensitive data in <strong>S3</strong>, <strong>RDS</strong>, and <strong>DynamoDB</strong>, plus <strong>Secrets Manager</strong>.</li>
 <li><strong>API Gateway</strong> and <strong>SQS</strong> for application integration.</li>
-<li>Full telemetry from <strong>CloudTrail</strong> and <strong>CloudWatch Logs</strong>, shipped into a <strong>Wazuh</strong> SIEM<br>alongside a Shuffle / Cortex / DFIR-IRIS analyst toolchain.</li>
+<li>Full telemetry from <strong>CloudTrail</strong> and <strong>CloudWatch Logs</strong>, shipped into a <strong>Wazuh</strong> SIEM alongside a Shuffle / Cortex / DFIR-IRIS analyst toolchain.</li>
 </ul>
 <h2>The four attack scenarios</h2>
 <p>Each scenario is attacked step by step, and every step is caught by a detection:</p>
 <ol>
-<li><strong>Web exploitation &amp; brute force</strong> against Juice Shop — SQLi, NoSQL injection, LFI, SSRF,<br>XSS and XXE, all surfaced through ModSecurity audit logs decoded into Wazuh.</li>
-<li><strong>SSRF → cloud credential theft</strong> — an SSRF flaw reaches the EC2 metadata service<br>(<strong>IMDSv1</strong>) and steals the instance role&#39;s credentials to read S3.</li>
-<li><strong>Container escape → full cloud compromise</strong> — a misconfigured Docker container escapes<br>to the host, reaches IMDS through host networking (showing that <strong>IMDSv2 alone doesn&#39;t<br>stop a host-level attacker</strong>), and pivots into the cloud account.</li>
-<li><strong>Serverless confused-deputy identity pivot</strong> — one Lambda is tricked into using its<br>privileged identity on behalf of the attacker; the decision is made in one function and<br>executed in another.</li>
+<li><strong>Web exploitation &amp; brute force</strong> against OWASP Juice Shop — SQLi, NoSQL injection, LFI, SSRF, XSS and XXE, all surfaced through ModSecurity audit logs decoded into Wazuh.</li>
+<li><strong>SSRF → cloud credential theft</strong> — an SSRF flaw reaches the EC2 metadata service (<strong>IMDSv1</strong>) and steals the instance role&#39;s credentials to read S3.</li>
+<li><strong>Container escape → full cloud compromise</strong> — a misconfigured Docker container escapes to the host, reaches IMDS through host networking (showing that <strong>IMDSv2 alone doesn&#39;t stop a host-level attacker</strong>), and pivots into the cloud account.</li>
+<li><strong>Serverless confused-deputy identity pivot</strong> — one Lambda is tricked into using its privileged identity on behalf of the attacker; the decision is made in one function and executed in another.</li>
 </ol>
 <h2>Detection engineering</h2>
-<p>The defensive core is the real contribution: for every attack stage, a Wazuh rule and a<br>dedicated <strong>decoder</strong> that extracts fields from ModSecurity and AWS JSON telemetry, each<br>mapped to the matching <strong>MITRE ATT&amp;CK</strong> technique. A few lessons that recurred:</p>
+<p>The defensive core is the real contribution: for every attack stage, a Wazuh rule and a dedicated <strong>decoder</strong> that extracts fields from ModSecurity and AWS JSON telemetry, each mapped to the matching <strong>MITRE ATT&amp;CK</strong> technique. A few lessons that recurred:</p>
 <ul>
-<li><strong>In the cloud, identity is the perimeter</strong>, and <strong>CloudTrail</strong> is the single most valuable<br>detection source.</li>
-<li>JSON telemetry is only useful once each source has a <strong>dedicated decoder</strong> that actually<br>extracts its fields.</li>
-<li>CloudTrail writes <strong>global-service events (IAM, STS) to <code>us-east-1</code></strong> regardless of the<br>account&#39;s Region — ignore that Region and your detection sees nothing.</li>
-<li><strong>IMDSv2</strong> is a real improvement but does <strong>not</strong> stop a host-level attacker who reaches the<br>metadata service through a host-networked container.</li>
+<li><strong>In the cloud, identity is the perimeter</strong>, and <strong>CloudTrail</strong> is the single most valuable detection source.</li>
+<li>JSON telemetry is only useful once each source has a <strong>dedicated decoder</strong> that actually extracts its fields.</li>
+<li>CloudTrail writes <strong>global-service events (IAM, STS) to <code>us-east-1</code></strong> regardless of the account&#39;s Region — ignore that Region and your detection sees nothing.</li>
+<li><strong>IMDSv2</strong> is a real improvement but does <strong>not</strong> stop a host-level attacker who reaches the metadata service through a host-networked container.</li>
 </ul>
 <h2>AI-augmented triage (experiment)</h2>
-<p>On top of the detections, I built an experimental triage layer: Wazuh alerts flow through<br><strong>Shuffle</strong> orchestration and <strong>Cortex</strong> enrichment to a <strong>local language model</strong> acting as a<br>Tier-1 analyst, which drafts a correlated, colour-coded <strong>DFIR-IRIS</strong> case for a human — one<br>living case per multi-stage campaign, with a grounded assessment and ATT&amp;CK mapping. It<br>works as a proof of concept, but I deliberately present it as <strong>early work</strong>: the model isn&#39;t<br>security-trained, uses no retrieval grounding, and reasons only over the single alert it&#39;s<br>handed. Making it query Wazuh and investigate hosts itself would need an agentic system —<br>with the human firmly in the loop — and is left to future work.</p>
+<p>On top of the detections, I built an experimental triage layer: Wazuh alerts flow through <strong>Shuffle</strong> orchestration and <strong>Cortex</strong> enrichment to a <strong>local language model</strong> acting as a Tier-1 analyst, which drafts a correlated, colour-coded <strong>DFIR-IRIS</strong> case for a human — one living case per multi-stage campaign, with a grounded assessment and ATT&amp;CK mapping. It works as a proof of concept, but I deliberately present it as <strong>early work</strong>: the model isn&#39;t security-trained, uses no retrieval grounding, and reasons only over the single alert it&#39;s handed. Making it query Wazuh and investigate hosts itself would need an agentic system — with the human firmly in the loop — and is left to future work.</p>
 <h2>Tech stack</h2>
-<p><code>AWS</code> · <code>Wazuh</code> · <code>ModSecurity</code> · <code>CloudTrail</code> / <code>CloudWatch</code> · <code>Docker</code> · <code>OWASP Juice Shop</code><br>· <code>MITRE ATT&amp;CK</code> · <code>Shuffle</code> · <code>Cortex</code> · <code>DFIR-IRIS</code> · local LLM</p>
+<p><code>AWS</code> · <code>Wazuh</code> · <code>ModSecurity</code> · <code>CloudTrail</code> / <code>CloudWatch</code> · <code>Docker</code> · <code>OWASP Juice Shop</code> · <code>MITRE ATT&amp;CK</code> · <code>Shuffle</code> · <code>Cortex</code> · <code>DFIR-IRIS</code> · local LLM</p>
 <hr>
 <h3>Read the full report</h3>
 <object class="pdf-view" data="/files/cloud-native-soc-aws.pdf" type="application/pdf">
-  <p>Your browser can't display the embedded PDF.
-  <a href="/files/cloud-native-soc-aws.pdf">Download the report here</a>.</p>
+  <p>Your browser can't display the embedded PDF. <a href="/files/cloud-native-soc-aws.pdf">Download the report here</a>.</p>
 </object>
 
     </article>
@@ -261,6 +260,6 @@
 
   </main>
 
-  <script src="/post.js?v=1793614329955"></script>
+  <script src="/post.js?v=1793614956650"></script>
 </body>
 </html>
