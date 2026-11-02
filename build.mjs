@@ -110,8 +110,9 @@ function topbar() {
 // ---- the side menu (right sidebar): methodology parts + their posts,
 //      plus an HTB Walkthroughs part. `currentId` highlights the open post. ----
 function sidebar(currentId) {
-  // posts tagged "walkthrough" go in their own part at the bottom
+  // posts tagged "walkthrough" / "project" get their own parts at the bottom
   const walkthroughs = posts.filter(p => (p.tags || []).includes("walkthrough"));
+  const projects = posts.filter(p => (p.tags || []).includes("project"));
 
   const postLink = p =>
     `<li><a href="${p.id}.html"${p.id === currentId ? ' class="current"' : ""}>${esc(p.title)}</a></li>`;
@@ -122,7 +123,8 @@ function sidebar(currentId) {
     if (sec.series) posts.filter(p => p.series === sec.series).slice().reverse().forEach(p => ids.push(p.id));
     if (sec.posts) sec.posts.forEach(id => ids.push(id));
     return [...new Set(ids)].map(id => posts.find(p => p.id === id))
-      .filter(Boolean).filter(p => !(p.tags || []).includes("walkthrough"));
+      .filter(Boolean)
+      .filter(p => !(p.tags || []).includes("walkthrough") && !(p.tags || []).includes("project"));
   };
 
   const phasesHtml = methodology.map(ph => {
@@ -149,6 +151,15 @@ ${sections}
     </details>`;
   }).join("\n");
 
+  const projectsHtml = `    <details class="nav-phase nav-projects"${projects.some(p => p.id === currentId) ? " open" : ""}>
+      <summary><span class="nav-num">▣</span> Projects</summary>
+      <div class="nav-section">
+        <ul>
+${(projects.length ? projects.map(postLink) : ["<li class=\"empty\">(soon)</li>"]).map(s => "          " + s).join("\n")}
+        </ul>
+      </div>
+    </details>`;
+
   const walkHtml = `    <details class="nav-phase nav-walk"${walkthroughs.some(p => p.id === currentId) ? " open" : ""}>
       <summary><span class="nav-num">★</span> HTB Walkthroughs</summary>
       <div class="nav-section">
@@ -163,6 +174,7 @@ ${(walkthroughs.length ? walkthroughs.map(postLink) : ["<li class=\"empty\">(soo
     <div class="sidebar-inner">
       <p class="sidebar-title">// methodology &amp; notes</p>
 ${phasesHtml}
+${projectsHtml}
 ${walkHtml}
     </div>
   </aside>`;

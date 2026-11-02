@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Google Analytics (gtag.js) - counts your visitors -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-V2R1YY0P62"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-V2R1YY0P62');
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cloud-Native SOC on AWS — Purple Teaming &amp; Detection Engineering · Aymane Elouafi</title>
+  <meta name="description" content="My end-of-year internship project at Devoteam CyberTrust: a cloud-native SOC on AWS — four attack scenarios across the cloud stack, a Wazuh detection engineered for every stage mapped to MITRE ATT&amp;CK, and an experimental AI-augmented triage layer.">
+  <meta name="author" content="Aymane Elouafi">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="google-site-verification" content="P6WC3YGSehH9r2o-Lon_-tKZGpFiOWJjHD41vtJqLsk">
+  <link rel="canonical" href="https://aymaneelouafi.me/cloud-soc-aws.html">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-512.png" type="image/png" sizes="512x512">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <!-- Open Graph (Facebook, LinkedIn, Discord...) -->
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Cloud-Native SOC on AWS — Purple Teaming &amp; Detection Engineering · Aymane Elouafi">
+  <meta property="og:description" content="My end-of-year internship project at Devoteam CyberTrust: a cloud-native SOC on AWS — four attack scenarios across the cloud stack, a Wazuh detection engineered for every stage mapped to MITRE ATT&amp;CK, and an experimental AI-augmented triage layer.">
+  <meta property="og:url" content="https://aymaneelouafi.me/cloud-soc-aws.html">
+  <meta property="og:site_name" content="Aymane Elouafi">
+  <meta property="og:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Cloud-Native SOC on AWS — Purple Teaming &amp; Detection Engineering · Aymane Elouafi">
+  <meta name="twitter:description" content="My end-of-year internship project at Devoteam CyberTrust: a cloud-native SOC on AWS — four attack scenarios across the cloud stack, a Wazuh detection engineered for every stage mapped to MITRE ATT&amp;CK, and an experimental AI-augmented triage layer.">
+  <meta name="twitter:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BlogPosting",
+      "headline": "Cloud-Native SOC on AWS — Purple Teaming & Detection Engineering",
+      "description": "My end-of-year internship project at Devoteam CyberTrust: a cloud-native SOC on AWS — four attack scenarios across the cloud stack, a Wazuh detection engineered for every stage mapped to MITRE ATT&CK, and an experimental AI-augmented triage layer.",
+      "datePublished": "2026-06-20",
+      "dateModified": "2026-06-20",
+      "author": {
+        "@type": "Person",
+        "name": "Aymane Elouafi",
+        "@id": "https://aymaneelouafi.me/#person",
+        "url": "https://aymaneelouafi.me"
+      },
+      "publisher": {
+        "@type": "Person",
+        "name": "Aymane Elouafi",
+        "url": "https://aymaneelouafi.me"
+      },
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "https://aymaneelouafi.me/cloud-soc-aws.html"
+      },
+      "url": "https://aymaneelouafi.me/cloud-soc-aws.html",
+      "image": "https://aymaneelouafi.me/images/og.png",
+      "keywords": "project, cloud-security, aws, soc, detection-engineering, purple-team, wazuh, mitre-attack",
+      "articleSection": "Projects",
+      "inLanguage": "en"
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Aymane Elouafi",
+          "item": "https://aymaneelouafi.me/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Projects"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Cloud-Native SOC on AWS — Purple Teaming & Detection Engineering",
+          "item": "https://aymaneelouafi.me/cloud-soc-aws.html"
+        }
+      ]
+    }
+  ]
+}
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css?v=1793612999907">
+  <script defer src="/menu.js?v=1793612999907"></script>
+</head>
+<body>
+  <div class="topbar">
+    <button class="menu-toggle" aria-label="Open menu" aria-expanded="false">☰ menu</button>
+    <a class="topbar-home" href="/">~/aymane</a>
+  </div>
+  <div class="backdrop" id="backdrop"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner">
+      <p class="sidebar-title">// methodology &amp; notes</p>
+    <details class="nav-phase" open>
+      <summary><span class="nav-num">1</span> Information Gathering</summary>
+        <div class="nav-section">
+          <span class="nav-sec-title">Host Discovery &amp; Port Scanning</span>
+          <ul>
+            <li><a href="nmap.html">Network Enumeration with Nmap</a></li>
+          </ul>
+        </div>
+        <div class="nav-section">
+          <span class="nav-sec-title">Service Enumeration / Footprinting</span>
+          <ul>
+            <li><a href="nfs.html">Footprinting NFS</a></li>
+            <li><a href="ftp.html">Footprinting FTP</a></li>
+            <li><a href="dns.html">Footprinting DNS</a></li>
+            <li><a href="smtp.html">Footprinting SMTP</a></li>
+            <li><a href="imap-pop3.html">Footprinting IMAP / POP3</a></li>
+            <li><a href="snmp.html">Footprinting SNMP</a></li>
+            <li><a href="mysql.html">Footprinting MySQL</a></li>
+            <li><a href="mssql.html">Footprinting MSSQL</a></li>
+            <li><a href="oracle-tns.html">Footprinting Oracle TNS</a></li>
+            <li><a href="ipmi.html">Footprinting IPMI</a></li>
+          </ul>
+        </div>
+        <div class="nav-section empty"><span class="nav-sec-title">Web Recon</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">2</span> Vulnerability Assessment</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Known Vulnerabilities (version → CVE)</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Web Vulnerabilities</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Misconfigurations &amp; Default Credentials</span></div>
+    </details>
+    <details class="nav-phase" open>
+      <summary><span class="nav-num">3</span> Exploitation</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Service / Network Exploitation</span></div>
+        <div class="nav-section">
+          <span class="nav-sec-title">Web Exploitation</span>
+          <ul>
+            <li><a href="wordpress.html">Hacking WordPress</a></li>
+          </ul>
+        </div>
+        <div class="nav-section empty"><span class="nav-sec-title">Password Attacks</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">4</span> Post-Exploitation</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Local Enumeration</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Privilege Escalation (Linux / Windows)</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Looting &amp; Credential Hunting</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">5</span> Lateral Movement</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Pivoting &amp; Tunneling</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Credential Reuse &amp; Pass-the-Hash</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">6</span> Active Directory</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">AD Enumeration</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">AD Attacks</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Domain Dominance &amp; Lateral Movement</span></div>
+    </details>
+    <details class="nav-phase nav-projects" open>
+      <summary><span class="nav-num">▣</span> Projects</summary>
+      <div class="nav-section">
+        <ul>
+          <li><a href="cloud-soc-aws.html" class="current">Cloud-Native SOC on AWS — Purple Teaming &amp; Detection Engineering</a></li>
+          <li><a href="proxmox-ceph-vxlan.html">Hyper-Converged Proxmox Cluster — Ceph, VXLAN &amp; Grafana</a></li>
+          <li><a href="proxmox-ha-cluster.html">High-Availability Proxmox VE Cluster with Shared NAS</a></li>
+        </ul>
+      </div>
+    </details>
+    <details class="nav-phase nav-walk">
+      <summary><span class="nav-num">★</span> HTB Walkthroughs</summary>
+      <div class="nav-section">
+        <ul>
+          <li><a href="cap.html">Cap - HTB Walkthrough</a></li>
+        </ul>
+      </div>
+    </details>
+    </div>
+  </aside>
+  <main class="container post">
+
+    <a class="back" href="/">← cd ..</a>
+
+    <span class="series-label">Projects</span>
+    <h1>Cloud-Native SOC on AWS — Purple Teaming &amp; Detection Engineering</h1>
+    <p class="post-meta">2026-06-20 · #project #cloud-security #aws #soc #detection-engineering #purple-team #wazuh #mitre-attack</p>
+
+    <input id="post-search" class="search post-search" type="text"
+           placeholder="search in this post...  (Enter = next, Shift+Enter = previous, Esc = clear)"
+           autocomplete="off">
+    <p id="post-search-count" class="search-count" hidden></p>
+
+
+
+
+
+    <article id="content">
+<p>My end-of-year engineering project (IRIC, ENSA Khouribga), carried out during a two-month<br>internship at <strong>Devoteam CyberTrust</strong>. I built a small but realistic <strong>cloud-native Security<br>Operations Center (SOC)</strong> on AWS and took a <strong>purple-teaming</strong> approach to it: realistic<br>attacks are simulated across the cloud stack and, in the same motion, the detections that<br>catch them are engineered — offence and defence developed together.</p>
+<p class="pdf-actions"><a class="pdf-button" href="/files/cloud-native-soc-aws.pdf" target="_blank" rel="noopener">⬇ Download the full report — PDF, 99 pages</a></p>
+
+<h2>The idea</h2>
+<p>Cloud environments dissolve the single network perimeter into many trust boundaries, and the<br>attacks that matter most abuse <strong>identity and trust</strong> rather than breach a firewall. So instead<br>of a classic &quot;scan and patch&quot; lab, I built a deliberately vulnerable AWS environment, attacked<br>it end to end, and engineered a detection in <strong>Wazuh</strong> for every stage — each rule mapped to<br><strong>MITRE ATT&amp;CK</strong>.</p>
+<h2>The lab</h2>
+<p>A single VPC with three subnets models three actors (a public web tier, a private workload<br>tier, and an isolated SOC tier). The deliberately vulnerable surface includes:</p>
+<ul>
+<li>A web app (<strong>OWASP Juice Shop</strong>) behind <strong>Nginx + the ModSecurity WAF</strong> on EC2 + Docker.</li>
+<li><strong>EC2</strong> and <strong>AWS Lambda</strong> (serverless) workloads.</li>
+<li><strong>IAM</strong> roles and instance profiles, <strong>AWS STS</strong>, and <strong>Cognito</strong> for identity.</li>
+<li>Sensitive data in <strong>S3</strong>, <strong>RDS</strong>, and <strong>DynamoDB</strong>, plus <strong>Secrets Manager</strong>.</li>
+<li><strong>API Gateway</strong> and <strong>SQS</strong> for application integration.</li>
+<li>Full telemetry from <strong>CloudTrail</strong> and <strong>CloudWatch Logs</strong>, shipped into a <strong>Wazuh</strong> SIEM<br>alongside a Shuffle / Cortex / DFIR-IRIS analyst toolchain.</li>
+</ul>
+<h2>The four attack scenarios</h2>
+<p>Each scenario is attacked step by step, and every step is caught by a detection:</p>
+<ol>
+<li><strong>Web exploitation &amp; brute force</strong> against Juice Shop — SQLi, NoSQL injection, LFI, SSRF,<br>XSS and XXE, all surfaced through ModSecurity audit logs decoded into Wazuh.</li>
+<li><strong>SSRF → cloud credential theft</strong> — an SSRF flaw reaches the EC2 metadata service<br>(<strong>IMDSv1</strong>) and steals the instance role&#39;s credentials to read S3.</li>
+<li><strong>Container escape → full cloud compromise</strong> — a misconfigured Docker container escapes<br>to the host, reaches IMDS through host networking (showing that <strong>IMDSv2 alone doesn&#39;t<br>stop a host-level attacker</strong>), and pivots into the cloud account.</li>
+<li><strong>Serverless confused-deputy identity pivot</strong> — one Lambda is tricked into using its<br>privileged identity on behalf of the attacker; the decision is made in one function and<br>executed in another.</li>
+</ol>
+<h2>Detection engineering</h2>
+<p>The defensive core is the real contribution: for every attack stage, a Wazuh rule and a<br>dedicated <strong>decoder</strong> that extracts fields from ModSecurity and AWS JSON telemetry, each<br>mapped to the matching <strong>MITRE ATT&amp;CK</strong> technique. A few lessons that recurred:</p>
+<ul>
+<li><strong>In the cloud, identity is the perimeter</strong>, and <strong>CloudTrail</strong> is the single most valuable<br>detection source.</li>
+<li>JSON telemetry is only useful once each source has a <strong>dedicated decoder</strong> that actually<br>extracts its fields.</li>
+<li>CloudTrail writes <strong>global-service events (IAM, STS) to <code>us-east-1</code></strong> regardless of the<br>account&#39;s Region — ignore that Region and your detection sees nothing.</li>
+<li><strong>IMDSv2</strong> is a real improvement but does <strong>not</strong> stop a host-level attacker who reaches the<br>metadata service through a host-networked container.</li>
+</ul>
+<h2>AI-augmented triage (experiment)</h2>
+<p>On top of the detections, I built an experimental triage layer: Wazuh alerts flow through<br><strong>Shuffle</strong> orchestration and <strong>Cortex</strong> enrichment to a <strong>local language model</strong> acting as a<br>Tier-1 analyst, which drafts a correlated, colour-coded <strong>DFIR-IRIS</strong> case for a human — one<br>living case per multi-stage campaign, with a grounded assessment and ATT&amp;CK mapping. It<br>works as a proof of concept, but I deliberately present it as <strong>early work</strong>: the model isn&#39;t<br>security-trained, uses no retrieval grounding, and reasons only over the single alert it&#39;s<br>handed. Making it query Wazuh and investigate hosts itself would need an agentic system —<br>with the human firmly in the loop — and is left to future work.</p>
+<h2>Tech stack</h2>
+<p><code>AWS</code> · <code>Wazuh</code> · <code>ModSecurity</code> · <code>CloudTrail</code> / <code>CloudWatch</code> · <code>Docker</code> · <code>OWASP Juice Shop</code><br>· <code>MITRE ATT&amp;CK</code> · <code>Shuffle</code> · <code>Cortex</code> · <code>DFIR-IRIS</code> · local LLM</p>
+<hr>
+<h3>Read the full report</h3>
+<object class="pdf-view" data="/files/cloud-native-soc-aws.pdf" type="application/pdf">
+  <p>Your browser can't display the embedded PDF.
+  <a href="/files/cloud-native-soc-aws.pdf">Download the report here</a>.</p>
+</object>
+
+    </article>
+
+  <nav class="series">
+    <p class="prompt">$ ls ~/series/projects</p>
+    <ul>
+      <li><a href="proxmox-ha-cluster.html">High-Availability Proxmox VE Cluster with Shared NAS</a></li>
+      <li><a href="proxmox-ceph-vxlan.html">Hyper-Converged Proxmox Cluster — Ceph, VXLAN &amp; Grafana</a></li>
+      <li class="current">Cloud-Native SOC on AWS — Purple Teaming &amp; Detection Engineering &lt;- you are here</li>
+    </ul>
+  </nav>
+
+  </main>
+
+  <script src="/post.js?v=1793612999907"></script>
+</body>
+</html>

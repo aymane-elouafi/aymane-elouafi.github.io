@@ -1,5 +1,29 @@
 [
   {
+    "id": "cloud-soc-aws",
+    "title": "Cloud-Native SOC on AWS — Purple Teaming & Detection Engineering",
+    "date": "2026-06-20",
+    "series": "Projects",
+    "tags": ["project", "cloud-security", "aws", "soc", "detection-engineering", "purple-team", "wazuh", "mitre-attack"],
+    "description": "My end-of-year internship project at Devoteam CyberTrust: a cloud-native SOC on AWS — four attack scenarios across the cloud stack, a Wazuh detection engineered for every stage mapped to MITRE ATT&CK, and an experimental AI-augmented triage layer."
+  },
+  {
+    "id": "proxmox-ceph-vxlan",
+    "title": "Hyper-Converged Proxmox Cluster — Ceph, VXLAN & Grafana",
+    "date": "2026-04-15",
+    "series": "Projects",
+    "tags": ["project", "virtualization", "proxmox", "ceph", "vxlan", "high-availability", "monitoring"],
+    "description": "Building a 3-node high-availability Proxmox VE cluster from the ground up: Ceph distributed storage, a VXLAN isolated overlay network, Prometheus/Grafana monitoring, and tested HA failover and live migration."
+  },
+  {
+    "id": "proxmox-ha-cluster",
+    "title": "High-Availability Proxmox VE Cluster with Shared NAS",
+    "date": "2025-07-15",
+    "series": "Projects",
+    "tags": ["project", "virtualization", "proxmox", "high-availability", "nas", "clustering", "snrt"],
+    "description": "My initiation internship at SNRT: designing and deploying a fault-tolerant 2-node Proxmox VE cluster backed by shared NAS storage — covering virtualization, clustering, quorum, the 2-node HA problem, and validation with HA and live-migration tests."
+  },
+  {
     "id": "wordpress",
     "title": "Hacking WordPress",
     "date": "2026-11-01",

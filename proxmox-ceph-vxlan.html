@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Google Analytics (gtag.js) - counts your visitors -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-V2R1YY0P62"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-V2R1YY0P62');
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hyper-Converged Proxmox Cluster — Ceph, VXLAN &amp; Grafana · Aymane Elouafi</title>
+  <meta name="description" content="Building a 3-node high-availability Proxmox VE cluster from the ground up: Ceph distributed storage, a VXLAN isolated overlay network, Prometheus/Grafana monitoring, and tested HA failover and live migration.">
+  <meta name="author" content="Aymane Elouafi">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="google-site-verification" content="P6WC3YGSehH9r2o-Lon_-tKZGpFiOWJjHD41vtJqLsk">
+  <link rel="canonical" href="https://aymaneelouafi.me/proxmox-ceph-vxlan.html">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-512.png" type="image/png" sizes="512x512">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <!-- Open Graph (Facebook, LinkedIn, Discord...) -->
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Hyper-Converged Proxmox Cluster — Ceph, VXLAN &amp; Grafana · Aymane Elouafi">
+  <meta property="og:description" content="Building a 3-node high-availability Proxmox VE cluster from the ground up: Ceph distributed storage, a VXLAN isolated overlay network, Prometheus/Grafana monitoring, and tested HA failover and live migration.">
+  <meta property="og:url" content="https://aymaneelouafi.me/proxmox-ceph-vxlan.html">
+  <meta property="og:site_name" content="Aymane Elouafi">
+  <meta property="og:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Hyper-Converged Proxmox Cluster — Ceph, VXLAN &amp; Grafana · Aymane Elouafi">
+  <meta name="twitter:description" content="Building a 3-node high-availability Proxmox VE cluster from the ground up: Ceph distributed storage, a VXLAN isolated overlay network, Prometheus/Grafana monitoring, and tested HA failover and live migration.">
+  <meta name="twitter:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BlogPosting",
+      "headline": "Hyper-Converged Proxmox Cluster — Ceph, VXLAN & Grafana",
+      "description": "Building a 3-node high-availability Proxmox VE cluster from the ground up: Ceph distributed storage, a VXLAN isolated overlay network, Prometheus/Grafana monitoring, and tested HA failover and live migration.",
+      "datePublished": "2026-04-15",
+      "dateModified": "2026-04-15",
+      "author": {
+        "@type": "Person",
+        "name": "Aymane Elouafi",
+        "@id": "https://aymaneelouafi.me/#person",
+        "url": "https://aymaneelouafi.me"
+      },
+      "publisher": {
+        "@type": "Person",
+        "name": "Aymane Elouafi",
+        "url": "https://aymaneelouafi.me"
+      },
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "https://aymaneelouafi.me/proxmox-ceph-vxlan.html"
+      },
+      "url": "https://aymaneelouafi.me/proxmox-ceph-vxlan.html",
+      "image": "https://aymaneelouafi.me/images/og.png",
+      "keywords": "project, virtualization, proxmox, ceph, vxlan, high-availability, monitoring",
+      "articleSection": "Projects",
+      "inLanguage": "en"
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Aymane Elouafi",
+          "item": "https://aymaneelouafi.me/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Projects"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Hyper-Converged Proxmox Cluster — Ceph, VXLAN & Grafana",
+          "item": "https://aymaneelouafi.me/proxmox-ceph-vxlan.html"
+        }
+      ]
+    }
+  ]
+}
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css?v=1793612999907">
+  <script defer src="/menu.js?v=1793612999907"></script>
+</head>
+<body>
+  <div class="topbar">
+    <button class="menu-toggle" aria-label="Open menu" aria-expanded="false">☰ menu</button>
+    <a class="topbar-home" href="/">~/aymane</a>
+  </div>
+  <div class="backdrop" id="backdrop"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner">
+      <p class="sidebar-title">// methodology &amp; notes</p>
+    <details class="nav-phase" open>
+      <summary><span class="nav-num">1</span> Information Gathering</summary>
+        <div class="nav-section">
+          <span class="nav-sec-title">Host Discovery &amp; Port Scanning</span>
+          <ul>
+            <li><a href="nmap.html">Network Enumeration with Nmap</a></li>
+          </ul>
+        </div>
+        <div class="nav-section">
+          <span class="nav-sec-title">Service Enumeration / Footprinting</span>
+          <ul>
+            <li><a href="nfs.html">Footprinting NFS</a></li>
+            <li><a href="ftp.html">Footprinting FTP</a></li>
+            <li><a href="dns.html">Footprinting DNS</a></li>
+            <li><a href="smtp.html">Footprinting SMTP</a></li>
+            <li><a href="imap-pop3.html">Footprinting IMAP / POP3</a></li>
+            <li><a href="snmp.html">Footprinting SNMP</a></li>
+            <li><a href="mysql.html">Footprinting MySQL</a></li>
+            <li><a href="mssql.html">Footprinting MSSQL</a></li>
+            <li><a href="oracle-tns.html">Footprinting Oracle TNS</a></li>
+            <li><a href="ipmi.html">Footprinting IPMI</a></li>
+          </ul>
+        </div>
+        <div class="nav-section empty"><span class="nav-sec-title">Web Recon</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">2</span> Vulnerability Assessment</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Known Vulnerabilities (version → CVE)</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Web Vulnerabilities</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Misconfigurations &amp; Default Credentials</span></div>
+    </details>
+    <details class="nav-phase" open>
+      <summary><span class="nav-num">3</span> Exploitation</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Service / Network Exploitation</span></div>
+        <div class="nav-section">
+          <span class="nav-sec-title">Web Exploitation</span>
+          <ul>
+            <li><a href="wordpress.html">Hacking WordPress</a></li>
+          </ul>
+        </div>
+        <div class="nav-section empty"><span class="nav-sec-title">Password Attacks</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">4</span> Post-Exploitation</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Local Enumeration</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Privilege Escalation (Linux / Windows)</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Looting &amp; Credential Hunting</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">5</span> Lateral Movement</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Pivoting &amp; Tunneling</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Credential Reuse &amp; Pass-the-Hash</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">6</span> Active Directory</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">AD Enumeration</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">AD Attacks</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Domain Dominance &amp; Lateral Movement</span></div>
+    </details>
+    <details class="nav-phase nav-projects" open>
+      <summary><span class="nav-num">▣</span> Projects</summary>
+      <div class="nav-section">
+        <ul>
+          <li><a href="cloud-soc-aws.html">Cloud-Native SOC on AWS — Purple Teaming &amp; Detection Engineering</a></li>
+          <li><a href="proxmox-ceph-vxlan.html" class="current">Hyper-Converged Proxmox Cluster — Ceph, VXLAN &amp; Grafana</a></li>
+          <li><a href="proxmox-ha-cluster.html">High-Availability Proxmox VE Cluster with Shared NAS</a></li>
+        </ul>
+      </div>
+    </details>
+    <details class="nav-phase nav-walk">
+      <summary><span class="nav-num">★</span> HTB Walkthroughs</summary>
+      <div class="nav-section">
+        <ul>
+          <li><a href="cap.html">Cap - HTB Walkthrough</a></li>
+        </ul>
+      </div>
+    </details>
+    </div>
+  </aside>
+  <main class="container post">
+
+    <a class="back" href="/">← cd ..</a>
+
+    <span class="series-label">Projects</span>
+    <h1>Hyper-Converged Proxmox Cluster — Ceph, VXLAN &amp; Grafana</h1>
+    <p class="post-meta">2026-04-15 · #project #virtualization #proxmox #ceph #vxlan #high-availability #monitoring</p>
+
+    <input id="post-search" class="search post-search" type="text"
+           placeholder="search in this post...  (Enter = next, Shift+Enter = previous, Esc = clear)"
+           autocomplete="off">
+    <p id="post-search-count" class="search-count" hidden></p>
+
+
+
+
+
+    <article id="content">
+<p>A hands-on project (IRIC2, ENSA Khouribga) building a complete <strong>hyper-converged,<br>high-availability private cloud</strong> from the ground up: a <strong>three-node Proxmox VE cluster</strong> with<br><strong>Ceph</strong> distributed storage, <strong>VXLAN</strong> network isolation, and <strong>Prometheus + Grafana</strong><br>monitoring. The goal was an infrastructure that survives hardware failure and isolates tenant<br>workloads securely — the way a modern private cloud is actually built.</p>
+<p class="pdf-actions"><a class="pdf-button" href="/files/proxmox-ceph-vxlan-cluster.pdf" target="_blank" rel="noopener">⬇ Download the full report — PDF, 47 pages</a></p>
+
+<h2>Architecture</h2>
+<ul>
+<li><strong>Three Proxmox VE nodes</strong> form the hypervisor layer and the Corosync cluster, sharing a<br>heartbeat and quorum so the cluster stays consistent.</li>
+<li><strong>Ceph</strong> provides a distributed, software-defined storage backend across all three nodes,<br>eliminating the single point of failure that local disks would create.</li>
+<li>A <strong>VXLAN overlay</strong> stretches an isolated Layer 2 tenant network across the Layer 3 nodes.</li>
+<li><strong>Prometheus + Grafana</strong> give real-time visibility into cluster health and network use.</li>
+</ul>
+<h2>Distributed storage with Ceph</h2>
+<p>Instead of VM disks living on one server, Ceph spreads every block across the nodes using the<br><strong>CRUSH</strong> algorithm, with its three daemon types — <strong>OSD</strong> (stores the data), <strong>MON</strong><br>(maintains the cluster map and quorum) and <strong>MGR</strong> (runtime metrics). OSDs were created from<br>raw disks on each node and pooled into shared storage added to the Proxmox datacenter. This<br>buys two things that standalone servers can&#39;t:</p>
+<ul>
+<li><strong>Fault tolerance</strong> — every block is replicated, so losing a node doesn&#39;t lose data.</li>
+<li><strong>Zero-downtime live migration</strong> — because the disk is already on shared storage, a running<br>VM moves between nodes seamlessly.</li>
+</ul>
+<h2>Network isolation with VXLAN</h2>
+<p>The challenge in a clustered environment is giving tenants an isolated Layer 2 network across<br>physically separate hosts. Each node acts as a <strong>VTEP</strong> (VXLAN Tunnel Endpoint): a packet<br>from a VM on one node is <strong>encapsulated</strong> into UDP, routed over the physical underlay, and<br><strong>decapsulated</strong> on the destination node onto the isolated bridge. The report also documents a<br>real debugging story — VMs initially couldn&#39;t talk across nodes, traced to the Linux bridge&#39;s<br>security/filtering mechanisms, and fixed.</p>
+<h2>HA &amp; failover testing</h2>
+<p>The cluster is validated by actually breaking it:</p>
+<ul>
+<li>A VM is placed under <strong>Proxmox HA</strong> management and verified running on a node.</li>
+<li><strong>Live migration</strong> is tested with continuous ping (replies stay consistent through the move).</li>
+<li>A node is failed, and the stack reacts automatically: <strong>Corosync</strong> detects the heartbeat loss<br>within seconds, <strong>quorum</strong> is maintained by the surviving majority, <strong>Ceph</strong> rebalances, and<br>the <strong>HA manager</strong> fences and relocates the VM to a healthy node.</li>
+</ul>
+<h2>Tech stack</h2>
+<p><code>Proxmox VE</code> · <code>Ceph</code> (OSD / MON / MGR, CRUSH) · <code>VXLAN</code> / SDN · <code>Corosync</code> · <code>Prometheus</code><br>· <code>Grafana</code> · high availability · live migration</p>
+<hr>
+<h3>Read the full report</h3>
+<object class="pdf-view" data="/files/proxmox-ceph-vxlan-cluster.pdf" type="application/pdf">
+  <p>Your browser can't display the embedded PDF.
+  <a href="/files/proxmox-ceph-vxlan-cluster.pdf">Download the report here</a>.</p>
+</object>
+
+    </article>
+
+  <nav class="series">
+    <p class="prompt">$ ls ~/series/projects</p>
+    <ul>
+      <li><a href="proxmox-ha-cluster.html">High-Availability Proxmox VE Cluster with Shared NAS</a></li>
+      <li class="current">Hyper-Converged Proxmox Cluster — Ceph, VXLAN &amp; Grafana &lt;- you are here</li>
+      <li><a href="cloud-soc-aws.html">Cloud-Native SOC on AWS — Purple Teaming &amp; Detection Engineering</a></li>
+    </ul>
+  </nav>
+
+  </main>
+
+  <script src="/post.js?v=1793612999907"></script>
+</body>
+</html>

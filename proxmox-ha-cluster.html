@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Google Analytics (gtag.js) - counts your visitors -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-V2R1YY0P62"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-V2R1YY0P62');
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>High-Availability Proxmox VE Cluster with Shared NAS · Aymane Elouafi</title>
+  <meta name="description" content="My initiation internship at SNRT: designing and deploying a fault-tolerant 2-node Proxmox VE cluster backed by shared NAS storage — covering virtualization, clustering, quorum, the 2-node HA problem, and validation with HA and live-migration tests.">
+  <meta name="author" content="Aymane Elouafi">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="google-site-verification" content="P6WC3YGSehH9r2o-Lon_-tKZGpFiOWJjHD41vtJqLsk">
+  <link rel="canonical" href="https://aymaneelouafi.me/proxmox-ha-cluster.html">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-512.png" type="image/png" sizes="512x512">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <!-- Open Graph (Facebook, LinkedIn, Discord...) -->
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="High-Availability Proxmox VE Cluster with Shared NAS · Aymane Elouafi">
+  <meta property="og:description" content="My initiation internship at SNRT: designing and deploying a fault-tolerant 2-node Proxmox VE cluster backed by shared NAS storage — covering virtualization, clustering, quorum, the 2-node HA problem, and validation with HA and live-migration tests.">
+  <meta property="og:url" content="https://aymaneelouafi.me/proxmox-ha-cluster.html">
+  <meta property="og:site_name" content="Aymane Elouafi">
+  <meta property="og:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="High-Availability Proxmox VE Cluster with Shared NAS · Aymane Elouafi">
+  <meta name="twitter:description" content="My initiation internship at SNRT: designing and deploying a fault-tolerant 2-node Proxmox VE cluster backed by shared NAS storage — covering virtualization, clustering, quorum, the 2-node HA problem, and validation with HA and live-migration tests.">
+  <meta name="twitter:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BlogPosting",
+      "headline": "High-Availability Proxmox VE Cluster with Shared NAS",
+      "description": "My initiation internship at SNRT: designing and deploying a fault-tolerant 2-node Proxmox VE cluster backed by shared NAS storage — covering virtualization, clustering, quorum, the 2-node HA problem, and validation with HA and live-migration tests.",
+      "datePublished": "2025-07-15",
+      "dateModified": "2025-07-15",
+      "author": {
+        "@type": "Person",
+        "name": "Aymane Elouafi",
+        "@id": "https://aymaneelouafi.me/#person",
+        "url": "https://aymaneelouafi.me"
+      },
+      "publisher": {
+        "@type": "Person",
+        "name": "Aymane Elouafi",
+        "url": "https://aymaneelouafi.me"
+      },
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "https://aymaneelouafi.me/proxmox-ha-cluster.html"
+      },
+      "url": "https://aymaneelouafi.me/proxmox-ha-cluster.html",
+      "image": "https://aymaneelouafi.me/images/og.png",
+      "keywords": "project, virtualization, proxmox, high-availability, nas, clustering, snrt",
+      "articleSection": "Projects",
+      "inLanguage": "en"
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Aymane Elouafi",
+          "item": "https://aymaneelouafi.me/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Projects"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "High-Availability Proxmox VE Cluster with Shared NAS",
+          "item": "https://aymaneelouafi.me/proxmox-ha-cluster.html"
+        }
+      ]
+    }
+  ]
+}
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css?v=1793612999907">
+  <script defer src="/menu.js?v=1793612999907"></script>
+</head>
+<body>
+  <div class="topbar">
+    <button class="menu-toggle" aria-label="Open menu" aria-expanded="false">☰ menu</button>
+    <a class="topbar-home" href="/">~/aymane</a>
+  </div>
+  <div class="backdrop" id="backdrop"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner">
+      <p class="sidebar-title">// methodology &amp; notes</p>
+    <details class="nav-phase" open>
+      <summary><span class="nav-num">1</span> Information Gathering</summary>
+        <div class="nav-section">
+          <span class="nav-sec-title">Host Discovery &amp; Port Scanning</span>
+          <ul>
+            <li><a href="nmap.html">Network Enumeration with Nmap</a></li>
+          </ul>
+        </div>
+        <div class="nav-section">
+          <span class="nav-sec-title">Service Enumeration / Footprinting</span>
+          <ul>
+            <li><a href="nfs.html">Footprinting NFS</a></li>
+            <li><a href="ftp.html">Footprinting FTP</a></li>
+            <li><a href="dns.html">Footprinting DNS</a></li>
+            <li><a href="smtp.html">Footprinting SMTP</a></li>
+            <li><a href="imap-pop3.html">Footprinting IMAP / POP3</a></li>
+            <li><a href="snmp.html">Footprinting SNMP</a></li>
+            <li><a href="mysql.html">Footprinting MySQL</a></li>
+            <li><a href="mssql.html">Footprinting MSSQL</a></li>
+            <li><a href="oracle-tns.html">Footprinting Oracle TNS</a></li>
+            <li><a href="ipmi.html">Footprinting IPMI</a></li>
+          </ul>
+        </div>
+        <div class="nav-section empty"><span class="nav-sec-title">Web Recon</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">2</span> Vulnerability Assessment</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Known Vulnerabilities (version → CVE)</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Web Vulnerabilities</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Misconfigurations &amp; Default Credentials</span></div>
+    </details>
+    <details class="nav-phase" open>
+      <summary><span class="nav-num">3</span> Exploitation</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Service / Network Exploitation</span></div>
+        <div class="nav-section">
+          <span class="nav-sec-title">Web Exploitation</span>
+          <ul>
+            <li><a href="wordpress.html">Hacking WordPress</a></li>
+          </ul>
+        </div>
+        <div class="nav-section empty"><span class="nav-sec-title">Password Attacks</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">4</span> Post-Exploitation</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Local Enumeration</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Privilege Escalation (Linux / Windows)</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Looting &amp; Credential Hunting</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">5</span> Lateral Movement</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Pivoting &amp; Tunneling</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Credential Reuse &amp; Pass-the-Hash</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">6</span> Active Directory</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">AD Enumeration</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">AD Attacks</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Domain Dominance &amp; Lateral Movement</span></div>
+    </details>
+    <details class="nav-phase nav-projects" open>
+      <summary><span class="nav-num">▣</span> Projects</summary>
+      <div class="nav-section">
+        <ul>
+          <li><a href="cloud-soc-aws.html">Cloud-Native SOC on AWS — Purple Teaming &amp; Detection Engineering</a></li>
+          <li><a href="proxmox-ceph-vxlan.html">Hyper-Converged Proxmox Cluster — Ceph, VXLAN &amp; Grafana</a></li>
+          <li><a href="proxmox-ha-cluster.html" class="current">High-Availability Proxmox VE Cluster with Shared NAS</a></li>
+        </ul>
+      </div>
+    </details>
+    <details class="nav-phase nav-walk">
+      <summary><span class="nav-num">★</span> HTB Walkthroughs</summary>
+      <div class="nav-section">
+        <ul>
+          <li><a href="cap.html">Cap - HTB Walkthrough</a></li>
+        </ul>
+      </div>
+    </details>
+    </div>
+  </aside>
+  <main class="container post">
+
+    <a class="back" href="/">← cd ..</a>
+
+    <span class="series-label">Projects</span>
+    <h1>High-Availability Proxmox VE Cluster with Shared NAS</h1>
+    <p class="post-meta">2025-07-15 · #project #virtualization #proxmox #high-availability #nas #clustering #snrt</p>
+
+    <input id="post-search" class="search post-search" type="text"
+           placeholder="search in this post...  (Enter = next, Shift+Enter = previous, Esc = clear)"
+           autocomplete="off">
+    <p id="post-search-count" class="search-count" hidden></p>
+
+
+
+
+
+    <article id="content">
+<p>My initiation internship project at <strong>SNRT</strong> (Morocco&#39;s national broadcasting company),<br>during the first year of the engineering cycle (IRIC, ENSA Khouribga). The goal: design and<br>deploy a <strong>high-availability, fault-tolerant Proxmox VE cluster</strong> on physical servers, backed<br>by <strong>shared NAS storage</strong> — so a virtual machine keeps running even if a whole host fails.</p>
+<p class="pdf-actions"><a class="pdf-button" href="/files/proxmox-ha-cluster-nas.pdf" target="_blank" rel="noopener">⬇ Download the full report — PDF, 94 pages (French)</a></p>
+
+<blockquote>
+<p>The report is written in French. This is a short English summary of what it covers.</p>
+</blockquote>
+<h2>What the project covers</h2>
+<p>The report starts from the fundamentals and builds up to a working cluster:</p>
+<ul>
+<li><strong>Virtualization</strong> — virtual machines, hypervisors (type 1 vs type 2), and why they matter.</li>
+<li><strong>Clustering &amp; high availability</strong> — what a cluster is, how HA works, and the role of<br><strong>quorum</strong> in keeping a cluster consistent.</li>
+<li><strong>Shared storage</strong> — SAN vs <strong>NAS</strong>, and <strong>RAID</strong> levels for redundancy.</li>
+<li><strong>Proxmox VE</strong> — the open-source virtualization platform, its features, and installation.</li>
+</ul>
+<h2>The build</h2>
+<p>The practical core deploys a <strong>two-node Proxmox VE cluster</strong> on physical servers with a shared<br><strong>NAS over NFS</strong>, plus everything needed to run it in production:</p>
+<ul>
+<li><strong>Physical architecture &amp; network plan</strong> — two servers (managed through a KVM switch) and<br>the IP addressing scheme.</li>
+<li><strong>Cluster configuration</strong> — installing Proxmox on both nodes and joining them into a cluster.</li>
+<li><strong>The two-node quorum problem</strong> — a 2-node cluster can&#39;t form a majority on its own, which<br>makes HA unstable; the report explains why and configures a fix so the surviving node keeps<br>running after a failure.</li>
+<li><strong>Shared NAS via NFS</strong> — configuring the NAS and adding it as cluster storage, so VM disks<br>live on shared storage and can move between nodes.</li>
+<li><strong>Networking &amp; firewall</strong> — a private NAT network and the Proxmox VE firewall.</li>
+<li><strong>Users &amp; permissions</strong> — groups, user accounts and role-based access.</li>
+</ul>
+<h2>Tests &amp; validation</h2>
+<p>The cluster is validated against the scenarios that matter for a broadcaster that can&#39;t afford<br>downtime:</p>
+<ul>
+<li><strong>High Availability</strong> — kill a node and watch its VMs restart automatically on the other.</li>
+<li><strong>Live migration</strong> — move a running VM between nodes with no downtime.</li>
+<li><strong>Firewall</strong> and <strong>NAT</strong> network tests.</li>
+</ul>
+<h2>Tech stack</h2>
+<p><code>Proxmox VE</code> · <code>KVM</code> · <code>NAS</code> / <code>NFS</code> · <code>RAID</code> · <code>Clustering / HA</code> · <code>Quorum</code> · <code>NAT</code> · firewall</p>
+<hr>
+<h3>Read the full report</h3>
+<object class="pdf-view" data="/files/proxmox-ha-cluster-nas.pdf" type="application/pdf">
+  <p>Your browser can't display the embedded PDF.
+  <a href="/files/proxmox-ha-cluster-nas.pdf">Download the report here</a>.</p>
+</object>
+
+    </article>
+
+  <nav class="series">
+    <p class="prompt">$ ls ~/series/projects</p>
+    <ul>
+      <li class="current">High-Availability Proxmox VE Cluster with Shared NAS &lt;- you are here</li>
+      <li><a href="proxmox-ceph-vxlan.html">Hyper-Converged Proxmox Cluster — Ceph, VXLAN &amp; Grafana</a></li>
+      <li><a href="cloud-soc-aws.html">Cloud-Native SOC on AWS — Purple Teaming &amp; Detection Engineering</a></li>
+    </ul>
+  </nav>
+
+  </main>
+
+  <script src="/post.js?v=1793612999907"></script>
+</body>
+</html>
