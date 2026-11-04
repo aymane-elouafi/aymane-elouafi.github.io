@@ -49,34 +49,46 @@ h1, h2, h3, h4 {
   letter-spacing: -0.01em;
 }
 
-/* ===== TOP BAR ===== */
+/* ===== TOP BAR (translucent material, sticky) ===== */
 .topbar {
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 30;
   display: flex;
   align-items: center;
   gap: 18px;
-  max-width: var(--maxw);
-  margin: 0 auto;
-  padding: 20px 24px 0;
+  padding: 13px 24px;
+  background: rgba(12, 13, 16, 0.62);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  backdrop-filter: saturate(180%) blur(18px);
+  /* scroll-edge: no divider at the top of the page, a soft one once content slides under */
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  transition: box-shadow 0.3s ease, background 0.3s ease;
+}
+.topbar.scrolled {
+  box-shadow: 0 1px 0 var(--border), 0 10px 24px -14px rgba(0, 0, 0, 0.7);
 }
 .topbar-home {
   font-family: var(--mono);
   font-size: 0.9rem;
   color: var(--muted);
+  transition: color 0.2s ease;
 }
 .topbar-home:hover { color: var(--accent); text-decoration: none; }
 .menu-toggle {
-  background: none;
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border);
   color: var(--muted);
   font-family: var(--mono);
   font-size: 0.85rem;
-  padding: 5px 11px;
-  border-radius: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.2s ease, color 0.2s ease, transform 0.12s ease-out;
 }
 .menu-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.menu-toggle:active { transform: scale(0.95); }
 
 /* ===== LAYOUT ===== */
 .container {
@@ -95,8 +107,10 @@ h1, h2, h3, h4 {
 .prompt .accent, .accent { color: var(--accent); }
 
 .intro h1 {
-  font-size: 2.6rem;
-  margin: 0 0 6px;
+  font-size: clamp(2.3rem, 7vw, 3rem);
+  line-height: 1.04;          /* tight leading for large display text */
+  letter-spacing: -0.03em;    /* negative tracking as type grows */
+  margin: 0 0 8px;
 }
 .role {
   font-family: var(--mono);
@@ -308,6 +322,8 @@ footer {
   display: none;
   position: fixed; inset: 0; z-index: 24;
   background: rgba(0, 0, 0, 0.55);
+  opacity: 0;               /* JS drives this 1:1 with the drawer position */
+  will-change: opacity;
 }
 
 /* wide screens: sidebar pinned, content shifts right */
@@ -315,15 +331,20 @@ footer {
   body { padding-left: var(--sidebar-w); }
   .menu-toggle { display: none; }
 }
-/* narrow screens: sidebar becomes a drawer */
+/* narrow screens: sidebar becomes a translucent drawer driven by a JS spring */
 @media (max-width: 1079px) {
   .sidebar {
-    transform: translateX(-100%);
-    transition: transform 0.25s ease;
+    transform: translateX(-100%);   /* closed by default; menu.js animates it */
+    will-change: transform;
+    /* translucent material over the dimmed content */
+    background: rgba(16, 17, 21, 0.82);
+    -webkit-backdrop-filter: saturate(160%) blur(24px);
+    backdrop-filter: saturate(160%) blur(24px);
   }
-  body.menu-open .sidebar { transform: none; }
-  body.menu-open .backdrop { display: block; }
   .sidebar-inner { padding-top: 72px; }
+  /* no-JS / reduced-motion fallback: a plain class-based open still works */
+  body.menu-open .sidebar { transform: none; }
+  body.menu-open .backdrop { display: block; opacity: 1; }
 }
 
 /* ============================================================
@@ -549,4 +570,55 @@ p, li { overflow-wrap: anywhere; }
   .cheat-row { flex-direction: column; gap: 2px; }
   .blog-head { flex-direction: column; align-items: stretch; }
   .search { width: 100%; }
+}
+
+/* ============================================================
+   MOTION & CRAFT  (apple-design)
+   Response: instant pointer-down feedback. Materials: depth.
+   Reveal: subtle entrances. Plus reduced-motion / transparency.
+   ============================================================ */
+
+/* ---- Response: feedback lives on the press, and it's instant ---- */
+.post-list a, .pdf-button, .button, .back, .topbar-home,
+.links a, .foot-links a, .nav-section a, .cheat-row code,
+.nav-phase > summary, .cheatsheet summary {
+  -webkit-tap-highlight-color: transparent;
+}
+.post-list a { transition: transform 0.14s ease-out; }
+.post-list a:active { transform: scale(0.992); }
+.pdf-button { transition: transform 0.12s ease-out, filter 0.15s ease; }
+.pdf-button:active { transform: scale(0.97); }
+.nav-section a { transition: color 0.15s ease, border-color 0.15s ease, transform 0.12s ease-out; }
+.nav-section a:active { transform: scale(0.98); }
+.cheat-row code { transition: color 0.15s ease, transform 0.12s ease-out; }
+.cheat-row code:active { transform: scale(0.97); }
+.nav-phase > summary { transition: color 0.15s ease; }
+
+/* ---- Depth: floating surfaces read as real material ---- */
+.cheatsheet, .toc, .series { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); }
+
+/* ---- Reveal: content materialises as it enters (JS adds .in) ---- */
+.anim .reveal {
+  opacity: 0;
+  transform: translateY(12px);
+}
+.anim .reveal.in {
+  opacity: 1;
+  transform: none;
+  /* spring-like settle: no overshoot, starts fast and eases home */
+  transition: opacity 0.5s ease, transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ---- Accessibility: honour the user's system preferences ---- */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .anim .reveal { opacity: 1 !important; transform: none !important; transition: none; }
+  * { animation-duration: 0.001ms !important; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .topbar { background: var(--bg); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .sidebar { background: #0e0f13 !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+}
+@media (prefers-contrast: more) {
+  :root { --border: #3a3f48; --muted: #b3b9c2; }
 }
