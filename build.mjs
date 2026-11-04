@@ -319,6 +319,7 @@ for (const post of posts) {
     jsonld,
   })}
 <body>
+${aurora()}
 ${topbar()}
 ${sidebar(post.id)}
   <main class="container post">
@@ -370,6 +371,28 @@ function card(post) {
         </li>`;
 }
 
+// featured card for the Projects block on the home page
+function projectCard(post) {
+  const chips = post.tags
+    .filter(t => t !== "project")
+    .slice(0, 4)
+    .map(t => `<span>${esc(t)}</span>`).join("");
+  return `        <a class="project-card" href="${post.id}.html">
+          <h3>${esc(post.title)}</h3>
+          <p>${esc(post.description)}</p>
+          <div class="project-chips">${chips}</div>
+          <span class="project-go">Read the write-up →</span>
+        </a>`;
+}
+
+// soft, slowly-drifting ambient background ("breathing")
+function aurora() {
+  return `  <div class="aurora" aria-hidden="true"><span class="b1"></span><span class="b2"></span><span class="b3"></span></div>`;
+}
+
+const projectPosts = posts.filter(p => (p.tags || []).includes("project"));
+const notePosts = posts.filter(p => !(p.tags || []).includes("project"));
+
 const homeDesc = `${AUTHOR} - ${ROLE} interested in offensive and defensive security: penetration testing, detection engineering, SOC operations and incident response. Write-ups and notes.`;
 
 const homeJsonld = {
@@ -409,6 +432,7 @@ const home = `${head({
   jsonld: homeJsonld,
 })}
 <body>
+${aurora()}
 ${topbar()}
 ${sidebar("")}
   <main class="container home">
@@ -442,6 +466,14 @@ ${sidebar("")}
       </p>
     </header>
 
+    <!-- ===== PROJECTS (featured) ===== -->
+    <section class="projects">
+      <h2 class="section-title">Projects</h2>
+      <div class="project-grid">
+${projectPosts.map(projectCard).join("\n")}
+      </div>
+    </section>
+
     <!-- ===== NOTES ===== -->
     <section class="blog">
       <div class="blog-head">
@@ -451,7 +483,7 @@ ${sidebar("")}
       <p id="no-results" class="no-results" hidden>No matching notes.</p>
 
       <ul id="post-list" class="post-list">
-${posts.map(card).join("\n")}
+${notePosts.map(card).join("\n")}
       </ul>
     </section>
 

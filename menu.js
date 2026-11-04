@@ -165,7 +165,7 @@
   // ---------- Scroll-reveal entrances ----------
   document.documentElement.classList.add("anim");
   if (!reduceMotion && "IntersectionObserver" in window) {
-    var targets = [].slice.call(document.querySelectorAll(".intro, .post-list > li"));
+    var targets = [].slice.call(document.querySelectorAll(".intro, .project-card, .post-list > li"));
     targets.forEach(function (el) { el.classList.add("reveal"); });
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (en) {

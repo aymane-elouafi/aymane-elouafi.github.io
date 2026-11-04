@@ -22,11 +22,11 @@
 
 * { box-sizing: border-box; }
 
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; background: var(--bg); }
 
 body {
   margin: 0;
-  background: var(--bg);
+  background: transparent;        /* let the aurora show through */
   color: var(--text);
   font-family: var(--sans);
   font-size: 16px;
@@ -35,6 +35,49 @@ body {
 }
 
 ::selection { background: var(--accent-dim); }
+
+/* ===== AMBIENT BACKGROUND (slow, breathing) ===== */
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.aurora span {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  filter: blur(80px);
+  will-change: transform, opacity;
+}
+.aurora .b1 {
+  width: 60vw; height: 60vw; left: -14vw; top: -16vw;
+  background: radial-gradient(circle, rgba(91, 196, 144, 0.16), transparent 68%);
+  animation: aurora-drift-1 28s ease-in-out infinite;
+}
+.aurora .b2 {
+  width: 52vw; height: 52vw; right: -16vw; bottom: -18vw;
+  background: radial-gradient(circle, rgba(64, 150, 196, 0.13), transparent 68%);
+  animation: aurora-drift-2 34s ease-in-out infinite;
+}
+.aurora .b3 {
+  width: 40vw; height: 40vw; left: 38vw; top: 46vh;
+  background: radial-gradient(circle, rgba(91, 196, 144, 0.10), transparent 70%);
+  animation: aurora-breathe 22s ease-in-out infinite;
+}
+@keyframes aurora-drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.8; }
+  50%      { transform: translate(6vw, 5vh) scale(1.12); opacity: 1; }
+}
+@keyframes aurora-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.7; }
+  50%      { transform: translate(-5vw, -6vh) scale(1.1); opacity: 0.95; }
+}
+@keyframes aurora-breathe {
+  0%, 100% { transform: scale(0.92); opacity: 0.5; }
+  50%      { transform: scale(1.12); opacity: 0.9; }
+}
 
 a {
   color: var(--accent);
@@ -151,9 +194,62 @@ h1, h2, h3, h4 {
   font-size: 0.9rem;
 }
 
+/* ===== PROJECTS (featured) ===== */
+.projects {
+  margin-top: 60px;
+  border-top: 1px solid var(--border);
+  padding-top: 36px;
+}
+.section-title {
+  font-size: 1.1rem;
+  margin: 0 0 22px;
+  color: var(--text);
+}
+.project-grid { display: grid; gap: 16px; }
+.project-card {
+  display: block;
+  padding: 22px 22px 20px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0));
+  color: var(--text);
+  transition: border-color 0.25s ease, transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.project-card:hover {
+  text-decoration: none;
+  border-color: var(--accent);
+  transform: translateY(-3px);
+  box-shadow: 0 14px 40px -24px rgba(91, 196, 144, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+.project-card:active { transform: translateY(-1px) scale(0.995); }
+.project-card h3 {
+  font-size: 1.15rem;
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+  transition: color 0.2s ease;
+}
+.project-card:hover h3 { color: var(--accent); }
+.project-card p { color: var(--muted); margin: 0 0 14px; font-size: 0.95rem; }
+.project-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
+.project-chips span {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--faint);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 3px 10px;
+}
+.project-go {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--accent);
+  opacity: 0.85;
+}
+
 /* divider before the notes list */
 .blog {
-  margin-top: 60px;
+  margin-top: 56px;
   border-top: 1px solid var(--border);
   padding-top: 36px;
 }
@@ -614,6 +710,7 @@ p, li { overflow-wrap: anywhere; }
   html { scroll-behavior: auto; }
   .anim .reveal { opacity: 1 !important; transform: none !important; transition: none; }
   * { animation-duration: 0.001ms !important; }
+  .aurora span { animation: none; }   /* keep the ambient glow, drop the motion */
 }
 @media (prefers-reduced-transparency: reduce) {
   .topbar { background: var(--bg); -webkit-backdrop-filter: none; backdrop-filter: none; }

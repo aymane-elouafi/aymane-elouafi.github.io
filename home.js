@@ -2,7 +2,9 @@
 // The list of posts is baked into the page by build.mjs (good for SEO).
 // This only adds the live search over titles, tags and full post text.
 
-const posts = JSON.parse(document.getElementById("posts-data").textContent);
+// the notes list + search cover write-ups only; projects are featured separately
+const posts = JSON.parse(document.getElementById("posts-data").textContent)
+  .filter(function (p) { return (p.tags || []).indexOf("project") === -1; });
 const list = document.getElementById("post-list");
 const noResults = document.getElementById("no-results");
 
