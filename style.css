@@ -621,7 +621,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 48px 0; }
   margin: 14px 0;
   border: 1px solid var(--border);
   border-radius: 6px;
-  cursor: zoom-in;
+  cursor: zoom-in; /* opens the lightbox */
 }
 .post a:hover img { border-color: var(--accent); }
 
@@ -718,4 +718,68 @@ p, li { overflow-wrap: anywhere; }
 }
 @media (prefers-contrast: more) {
   :root { --border: #3a3f48; --muted: #b3b9c2; }
+}
+
+/* ===== IMAGE LIGHTBOX ===== */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(6, 7, 9, 0.88);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+.lightbox[hidden] { display: none; }
+.lightbox.open { opacity: 1; }
+.lightbox figure { margin: 0; max-width: 100%; text-align: center; }
+.lightbox img {
+  display: block;
+  max-width: min(94vw, 1500px);
+  max-height: 84vh;
+  margin: 0 auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;                 /* transparent PNGs/SVGs stay readable */
+  cursor: default;
+  transform: scale(0.97);
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.lightbox.open img { transform: none; }
+.lightbox figcaption {
+  margin-top: 10px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+}
+.lb-close, .lb-prev, .lb-next {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 50%;
+  width: 44px; height: 44px;
+  font-size: 1.7rem; line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s ease, transform 0.12s ease-out;
+}
+.lb-close:hover, .lb-prev:hover, .lb-next:hover { background: rgba(255, 255, 255, 0.18); }
+.lb-close:active, .lb-prev:active, .lb-next:active { transform: scale(0.93); }
+.lb-close { top: 18px; right: 18px; }
+.lb-prev { left: 16px; top: 50%; margin-top: -22px; }
+.lb-next { right: 16px; top: 50%; margin-top: -22px; }
+body.lb-lock { overflow: hidden; }
+@media (max-width: 600px) {
+  .lb-prev, .lb-next { top: auto; bottom: 18px; margin-top: 0; }
+  .lb-prev { left: calc(50% - 56px); }
+  .lb-next { right: calc(50% - 56px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lightbox, .lightbox img { transition: none; }
 }

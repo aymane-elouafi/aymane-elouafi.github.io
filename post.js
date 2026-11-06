@@ -101,3 +101,72 @@ document.querySelectorAll(".cheat-row code").forEach(function (code) {
     });
   });
 });
+
+
+// ===== Image lightbox =====
+// Clicking a screenshot opens it in an overlay on the SAME page (no new tab).
+// Close: click outside / the X / Esc.  Browse: ← → keys or the arrow buttons.
+// One delegated listener, so it keeps working after the in-post search rebuilds the article.
+(function () {
+  var box = document.createElement("div");
+  box.className = "lightbox";
+  box.setAttribute("role", "dialog");
+  box.setAttribute("aria-modal", "true");
+  box.hidden = true;
+  box.innerHTML =
+    '<button class="lb-close" aria-label="Close image">&times;</button>' +
+    '<button class="lb-prev" aria-label="Previous image">&#8249;</button>' +
+    '<figure><img alt=""><figcaption></figcaption></figure>' +
+    '<button class="lb-next" aria-label="Next image">&#8250;</button>';
+  document.body.appendChild(box);
+
+  var big = box.querySelector("img");
+  var caption = box.querySelector("figcaption");
+  var list = [];
+  var index = 0;
+
+  function isShot(img) {              // skip tiny logos in tables
+    var w = parseInt(img.getAttribute("width"), 10);
+    return !(w && w <= 120);
+  }
+  function show(i) {
+    index = (i + list.length) % list.length;
+    var img = list[index];
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    caption.textContent = img.alt + "  (" + (index + 1) + " / " + list.length + ")";
+    var many = list.length > 1;
+    box.querySelector(".lb-prev").style.display = many ? "" : "none";
+    box.querySelector(".lb-next").style.display = many ? "" : "none";
+  }
+  function open(img) {
+    list = Array.prototype.filter.call(document.querySelectorAll("#content img"), isShot);
+    show(list.indexOf(img));
+    box.hidden = false;
+    requestAnimationFrame(function () { box.classList.add("open"); });
+    document.body.classList.add("lb-lock");
+  }
+  function close() {
+    box.classList.remove("open");
+    document.body.classList.remove("lb-lock");
+    setTimeout(function () { box.hidden = true; big.removeAttribute("src"); }, 180);
+  }
+
+  document.addEventListener("click", function (e) {
+    var img = e.target.closest && e.target.closest("#content img");
+    if (!img) return;
+    e.preventDefault();               // stops the link from opening a new tab
+    if (isShot(img)) open(img);
+  });
+  box.addEventListener("click", function (e) {
+    if (e.target === box || e.target.closest(".lb-close") || e.target === big.parentNode) close();
+    else if (e.target.closest(".lb-prev")) show(index - 1);
+    else if (e.target.closest(".lb-next")) show(index + 1);
+  });
+  document.addEventListener("keydown", function (e) {
+    if (box.hidden) return;
+    if (e.key === "Escape") close();
+    else if (e.key === "ArrowLeft") show(index - 1);
+    else if (e.key === "ArrowRight") show(index + 1);
+  });
+})();
