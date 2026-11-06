@@ -1,5 +1,22 @@
 [
   {
+    "id": "enterprise-lab-part1",
+    "title": "Enterprise Lab, Part 1 — pfSense, VLANs, a DMZ and a Suricata IDS",
+    "date": "2026-11-06",
+    "series": "Enterprise Lab",
+    "tags": ["project", "lab", "pfsense", "vlan", "dmz", "suricata", "ids", "firewall", "network-security", "blue-team"],
+    "description": "Building a segmented enterprise network in VMware by hand: a pfSense firewall with default-deny rules, a VLAN-aware Linux switch, a DMZ publishing a vulnerable web app behind Nginx, protected internal servers, a Squid proxy and a Suricata IDS.",
+    "cheatsheet": [
+      { "cmd": "bridge vlan show", "desc": "Read the VLAN table of the Linux bridge (switch)" },
+      { "cmd": "sudo tcpdump -e -n -i trunk0 vlan", "desc": "Prove 802.1Q tags are really on the trunk" },
+      { "cmd": "ip -br link   /   ip -br a", "desc": "Check port names, link state and addresses" },
+      { "cmd": "nc -zv -w2 <ip> <port>", "desc": "Test one firewall rule from the right machine" },
+      { "cmd": "sudo suricata -T -c /etc/suricata/suricata.yaml -v", "desc": "Validate the Suricata config before starting" },
+      { "cmd": "sudo tail -f /var/log/suricata/fast.log", "desc": "Watch alerts live" },
+      { "cmd": "sudo jq -r '.event_type' /var/log/suricata/eve.json | sort | uniq -c | sort -rn", "desc": "Count the kinds of events Suricata logs" }
+    ]
+  },
+  {
     "id": "cloud-soc-aws",
     "title": "Cloud-Native SOC on AWS — Purple Teaming & Detection Engineering",
     "date": "2026-06-20",

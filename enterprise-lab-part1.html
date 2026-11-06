@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Google Analytics (gtag.js) - counts your visitors -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-V2R1YY0P62"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-V2R1YY0P62');
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enterprise Lab, Part 1 — pfSense, VLANs, a DMZ and a Suricata IDS · Aymane Elouafi</title>
+  <meta name="description" content="Building a segmented enterprise network in VMware by hand: a pfSense firewall with default-deny rules, a VLAN-aware Linux switch, a DMZ publishing a vulnerable web app behind Nginx, protected internal servers, a Squid proxy and a Suricata IDS.">
+  <meta name="author" content="Aymane Elouafi">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="google-site-verification" content="P6WC3YGSehH9r2o-Lon_-tKZGpFiOWJjHD41vtJqLsk">
+  <link rel="canonical" href="https://aymaneelouafi.me/enterprise-lab-part1.html">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-512.png" type="image/png" sizes="512x512">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <!-- Open Graph (Facebook, LinkedIn, Discord...) -->
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Enterprise Lab, Part 1 — pfSense, VLANs, a DMZ and a Suricata IDS · Aymane Elouafi">
+  <meta property="og:description" content="Building a segmented enterprise network in VMware by hand: a pfSense firewall with default-deny rules, a VLAN-aware Linux switch, a DMZ publishing a vulnerable web app behind Nginx, protected internal servers, a Squid proxy and a Suricata IDS.">
+  <meta property="og:url" content="https://aymaneelouafi.me/enterprise-lab-part1.html">
+  <meta property="og:site_name" content="Aymane Elouafi">
+  <meta property="og:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Enterprise Lab, Part 1 — pfSense, VLANs, a DMZ and a Suricata IDS · Aymane Elouafi">
+  <meta name="twitter:description" content="Building a segmented enterprise network in VMware by hand: a pfSense firewall with default-deny rules, a VLAN-aware Linux switch, a DMZ publishing a vulnerable web app behind Nginx, protected internal servers, a Squid proxy and a Suricata IDS.">
+  <meta name="twitter:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BlogPosting",
+      "headline": "Enterprise Lab, Part 1 — pfSense, VLANs, a DMZ and a Suricata IDS",
+      "description": "Building a segmented enterprise network in VMware by hand: a pfSense firewall with default-deny rules, a VLAN-aware Linux switch, a DMZ publishing a vulnerable web app behind Nginx, protected internal servers, a Squid proxy and a Suricata IDS.",
+      "datePublished": "2026-11-06",
+      "dateModified": "2026-11-06",
+      "author": {
+        "@type": "Person",
+        "name": "Aymane Elouafi",
+        "@id": "https://aymaneelouafi.me/#person",
+        "url": "https://aymaneelouafi.me"
+      },
+      "publisher": {
+        "@type": "Person",
+        "name": "Aymane Elouafi",
+        "url": "https://aymaneelouafi.me"
+      },
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "https://aymaneelouafi.me/enterprise-lab-part1.html"
+      },
+      "url": "https://aymaneelouafi.me/enterprise-lab-part1.html",
+      "image": "https://aymaneelouafi.me/images/og.png",
+      "keywords": "project, lab, pfsense, vlan, dmz, suricata, ids, firewall, network-security, blue-team",
+      "articleSection": "Enterprise Lab",
+      "inLanguage": "en"
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Aymane Elouafi",
+          "item": "https://aymaneelouafi.me/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Enterprise Lab"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Enterprise Lab, Part 1 — pfSense, VLANs, a DMZ and a Suricata IDS",
+          "item": "https://aymaneelouafi.me/enterprise-lab-part1.html"
+        }
+      ]
+    }
+  ]
+}
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css?v=1793991236150">
+  <script defer src="/menu.js?v=1793991236150"></script>
+</head>
+<body>
+  <div class="aurora" aria-hidden="true"><span class="b1"></span><span class="b2"></span><span class="b3"></span></div>
+  <div class="topbar">
+    <button class="menu-toggle" aria-label="Open menu" aria-expanded="false">☰ menu</button>
+    <a class="topbar-home" href="/">~/aymane</a>
+  </div>
+  <div class="backdrop" id="backdrop"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner">
+      <p class="sidebar-title">// methodology &amp; notes</p>
+    <details class="nav-phase" open>
+      <summary><span class="nav-num">1</span> Information Gathering</summary>
+        <div class="nav-section">
+          <span class="nav-sec-title">Host Discovery &amp; Port Scanning</span>
+          <ul>
+            <li><a href="nmap.html">Network Enumeration with Nmap</a></li>
+          </ul>
+        </div>
+        <div class="nav-section">
+          <span class="nav-sec-title">Service Enumeration / Footprinting</span>
+          <ul>
+            <li><a href="nfs.html">Footprinting NFS</a></li>
+            <li><a href="ftp.html">Footprinting FTP</a></li>
+            <li><a href="dns.html">Footprinting DNS</a></li>
+            <li><a href="smtp.html">Footprinting SMTP</a></li>
+            <li><a href="imap-pop3.html">Footprinting IMAP / POP3</a></li>
+            <li><a href="snmp.html">Footprinting SNMP</a></li>
+            <li><a href="mysql.html">Footprinting MySQL</a></li>
+            <li><a href="mssql.html">Footprinting MSSQL</a></li>
+            <li><a href="oracle-tns.html">Footprinting Oracle TNS</a></li>
+            <li><a href="ipmi.html">Footprinting IPMI</a></li>
+          </ul>
+        </div>
+        <div class="nav-section empty"><span class="nav-sec-title">Web Recon</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">2</span> Vulnerability Assessment</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Known Vulnerabilities (version → CVE)</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Web Vulnerabilities</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Misconfigurations &amp; Default Credentials</span></div>
+    </details>
+    <details class="nav-phase" open>
+      <summary><span class="nav-num">3</span> Exploitation</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Service / Network Exploitation</span></div>
+        <div class="nav-section">
+          <span class="nav-sec-title">Web Exploitation</span>
+          <ul>
+            <li><a href="wordpress.html">Hacking WordPress</a></li>
+          </ul>
+        </div>
+        <div class="nav-section empty"><span class="nav-sec-title">Password Attacks</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">4</span> Post-Exploitation</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Local Enumeration</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Privilege Escalation (Linux / Windows)</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Looting &amp; Credential Hunting</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">5</span> Lateral Movement</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Pivoting &amp; Tunneling</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Credential Reuse &amp; Pass-the-Hash</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">6</span> Active Directory</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">AD Enumeration</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">AD Attacks</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Domain Dominance &amp; Lateral Movement</span></div>
+    </details>
+    <details class="nav-phase nav-projects" open>
+      <summary><span class="nav-num">▣</span> Projects</summary>
+      <div class="nav-section">
+        <ul>
+          <li><a href="enterprise-lab-part1.html" class="current">Enterprise Lab, Part 1 — pfSense, VLANs, a DMZ and a Suricata IDS</a></li>
+          <li><a href="cloud-soc-aws.html">Cloud-Native SOC on AWS — Purple Teaming &amp; Detection Engineering</a></li>
+          <li><a href="proxmox-ceph-vxlan.html">Hyper-Converged Proxmox Cluster — Ceph, VXLAN &amp; Grafana</a></li>
+          <li><a href="proxmox-ha-cluster.html">High-Availability Proxmox VE Cluster with Shared NAS</a></li>
+        </ul>
+      </div>
+    </details>
+    <details class="nav-phase nav-walk">
+      <summary><span class="nav-num">★</span> HTB Walkthroughs</summary>
+      <div class="nav-section">
+        <ul>
+          <li><a href="cap.html">Cap - HTB Walkthrough</a></li>
+        </ul>
+      </div>
+    </details>
+    </div>
+  </aside>
+  <main class="container post">
+
+    <a class="back" href="/">← cd ..</a>
+
+    <span class="series-label">Enterprise Lab</span>
+    <h1>Enterprise Lab, Part 1 — pfSense, VLANs, a DMZ and a Suricata IDS</h1>
+    <p class="post-meta">2026-11-06 · #project #lab #pfsense #vlan #dmz #suricata #ids #firewall #network-security #blue-team</p>
+
+    <input id="post-search" class="search post-search" type="text"
+           placeholder="search in this post...  (Enter = next, Shift+Enter = previous, Esc = clear)"
+           autocomplete="off">
+    <p id="post-search-count" class="search-count" hidden></p>
+
+  <details class="cheatsheet">
+    <summary><span class="arrow">&#9656;</span> Cheat sheet &mdash; useful commands</summary>
+    <div class="cheat-body">
+      <div class="cheat-row">
+        <code>bridge vlan show</code>
+        <span>Read the VLAN table of the Linux bridge (switch)</span>
+      </div>
+      <div class="cheat-row">
+        <code>sudo tcpdump -e -n -i trunk0 vlan</code>
+        <span>Prove 802.1Q tags are really on the trunk</span>
+      </div>
+      <div class="cheat-row">
+        <code>ip -br link   /   ip -br a</code>
+        <span>Check port names, link state and addresses</span>
+      </div>
+      <div class="cheat-row">
+        <code>nc -zv -w2 &lt;ip&gt; &lt;port&gt;</code>
+        <span>Test one firewall rule from the right machine</span>
+      </div>
+      <div class="cheat-row">
+        <code>sudo suricata -T -c /etc/suricata/suricata.yaml -v</code>
+        <span>Validate the Suricata config before starting</span>
+      </div>
+      <div class="cheat-row">
+        <code>sudo tail -f /var/log/suricata/fast.log</code>
+        <span>Watch alerts live</span>
+      </div>
+      <div class="cheat-row">
+        <code>sudo jq -r '.event_type' /var/log/suricata/eve.json | sort | uniq -c | sort -rn</code>
+        <span>Count the kinds of events Suricata logs</span>
+      </div>
+    </div>
+  </details>
+
+  <nav class="toc">
+    <p class="prompt">$ cat contents.txt</p>
+    <ul>
+      <li><a href="#section-0">Introduction</a></li>
+      <li><a href="#section-1">The firewall VM (pfSense)</a></li>
+      <li><a href="#section-2">VLANs and IP addressing</a></li>
+      <li><a href="#section-3">The switch (SW01)</a></li>
+      <li><a href="#section-4">Management, DNS and Internet access</a></li>
+      <li><a href="#section-5">The servers (endpoints)</a></li>
+      <li><a href="#section-6">The firewall policy</a></li>
+      <li><a href="#section-7">The Suricata sensor: what we built</a></li>
+    </ul>
+  </nav>
+
+    <article id="content">
+<h2 id="section-0">Introduction</h2>
+<p>This note documents, step by step, how we built a small enterprise-style network inside VMware Workstation and protected it with a firewall, VLANs, a DMZ and an intrusion detection system. Everything is built by hand, from the virtual machines to the firewall rules, so that every choice (why a zone exists, why a port is open, why a rule comes first) is understood and can be tested.</p>
+<p>It is the first part of a larger lab. The next parts use this network as a target: attack simulations from Parrot, turning Suricata into an IPS, and adding a WAF in front of the web server.</p>
+<h3>What we are building</h3>
+<ul>
+<li>A <strong>firewall</strong> (pfSense) with one interface per security zone and a default-deny policy.</li>
+<li>A <strong>switch with VLANs</strong>: a Debian VM configured as a VLAN-aware bridge, connected to the firewall by a single trunk.</li>
+<li>A <strong>DMZ</strong> that publishes a website: an Nginx reverse proxy in front of an Apache and PHP server running DVWA, a web application that is vulnerable on purpose.</li>
+<li>A <strong>protected internal network</strong>: a database and file server, the user machines, and a separate management network.</li>
+<li>A <strong>forward proxy</strong> (Squid), so that users reach the Internet only through a controlled point.</li>
+<li>A <strong>sensor</strong> (Suricata) that watches the DMZ and the VLAN trunk and raises alerts.</li>
+</ul>
+<h3>The architecture</h3>
+<a href="images/enterprise-lab-part1/lab-architecture-diagram.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/lab-architecture-diagram.png" alt="Screenshot: The architecture" width="1100"></a>
+
+<h3>The lab environment</h3>
+<p>Everything runs on a Linux host with VMware Workstation 25 and 15 GB of RAM. The WAN uses VMware NAT (<code>vmnet8</code>, <code>172.16.148.0/24</code>). Every other zone is a LAN segment, a private virtual network that exists only between the VMs, so nothing can leak to the real network of the host.</p>
+<table>
+<thead>
+<tr>
+<th>VM</th>
+<th>System</th>
+<th>Role</th>
+<th>Zone</th>
+<th>Address</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>FW01</td>
+<td>pfSense CE 2.9.0</td>
+<td>firewall, router, DHCP, DNS</td>
+<td>all zones</td>
+<td>WAN <code>172.16.148.10</code>, and <code>.1</code> in every internal zone</td>
+</tr>
+<tr>
+<td>SW01</td>
+<td>Debian 13</td>
+<td>VLAN-aware switch</td>
+<td>trunk and VLANs</td>
+<td>no IP address</td>
+</tr>
+<tr>
+<td>PROXY01</td>
+<td>Ubuntu 24.04</td>
+<td>Nginx reverse proxy, Squid forward proxy</td>
+<td>DMZ</td>
+<td><code>10.10.50.10</code></td>
+</tr>
+<tr>
+<td>WEB01</td>
+<td>Ubuntu 24.04</td>
+<td>Apache, PHP, DVWA</td>
+<td>DMZ</td>
+<td><code>10.10.50.20</code></td>
+</tr>
+<tr>
+<td>SRV01</td>
+<td>Ubuntu 24.04</td>
+<td>MariaDB, Samba</td>
+<td>SERVERS (VLAN 20)</td>
+<td><code>10.10.20.10</code></td>
+</tr>
+<tr>
+<td>ADMIN01</td>
+<td>Windows 10</td>
+<td>admin workstation, also used as test client</td>
+<td>MGMT (VLAN 99)</td>
+<td><code>10.10.99.10</code></td>
+</tr>
+<tr>
+<td>IDS01</td>
+<td>Ubuntu 24.04</td>
+<td>Suricata sensor</td>
+<td>capture on the DMZ and the trunk, management on VLAN 99</td>
+<td><code>10.10.99.20</code></td>
+</tr>
+<tr>
+<td>Parrot</td>
+<td>Parrot Security</td>
+<td>attacker (next part)</td>
+<td>WAN</td>
+<td><code>172.16.148.100</code></td>
+</tr>
+</tbody></table>
+<h3>The security policy at a glance</h3>
+<p>Everything is blocked by default, and only what this table allows is opened:</p>
+<table>
+<thead>
+<tr>
+<th>From \ To</th>
+<th>Internet</th>
+<th>DMZ</th>
+<th>SERVERS</th>
+<th>CLIENTS</th>
+<th>MGMT</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Internet</strong></td>
+<td>n/a</td>
+<td>ports 80 and 443 to PROXY01 only</td>
+<td>blocked</td>
+<td>blocked</td>
+<td>blocked</td>
+</tr>
+<tr>
+<td><strong>DMZ</strong></td>
+<td>updates only (80, 443, NTP)</td>
+<td>n/a</td>
+<td>WEB01 to SRV01 on port 3306 only</td>
+<td>blocked</td>
+<td>blocked</td>
+</tr>
+<tr>
+<td><strong>SERVERS</strong></td>
+<td>updates only (80, 443, NTP)</td>
+<td>blocked</td>
+<td>n/a</td>
+<td>blocked</td>
+<td>blocked</td>
+</tr>
+<tr>
+<td><strong>CLIENTS</strong></td>
+<td>through the proxy only</td>
+<td>PROXY01 on 80, 443 and 3128</td>
+<td>SRV01 on port 445 only</td>
+<td>n/a</td>
+<td>blocked</td>
+</tr>
+<tr>
+<td><strong>MGMT</strong></td>
+<td>allowed</td>
+<td>allowed</td>
+<td>allowed</td>
+<td>allowed</td>
+<td>n/a</td>
+</tr>
+</tbody></table>
+<p>These rules follow a few principles that come back all along the note:</p>
+<ul>
+<li><strong>Default deny</strong>: if no rule allows a connection, it is dropped and logged.</li>
+<li><strong>Least privilege</strong>: each rule opens only what is needed, for example one port from one source.</li>
+<li><strong>Segmentation</strong>: zones are separated by the firewall. Traffic inside a zone never crosses the firewall, so exposed machines and protected machines are placed in different zones.</li>
+<li><strong>Defense in depth</strong>: every server also has its own host firewall (<code>ufw</code>), which repeats what pfSense enforces.</li>
+<li><strong>Verify everything</strong>: every rule is tested from the right machine, and every block must appear in the firewall log.</li>
+</ul>
+<h3>Technologies used</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Technology</th>
+<th>What we use it for</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="images/enterprise-lab-part1/logo-vmware.svg" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/logo-vmware.svg" alt="vmware logo" width="110"></a></td>
+<td>VMware Workstation 25</td>
+<td>runs every VM and creates the virtual networks (LAN segments and the <code>vmnet8</code> NAT)</td>
+</tr>
+<tr>
+<td><a href="images/enterprise-lab-part1/logo-linux.svg" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/logo-linux.svg" alt="linux logo" width="44"></a></td>
+<td>Linux</td>
+<td>the host machine that runs VMware</td>
+</tr>
+<tr>
+<td><a href="images/enterprise-lab-part1/logo-pfsense.svg" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/logo-pfsense.svg" alt="pfsense logo" width="44"></a></td>
+<td>pfSense CE 2.9</td>
+<td>firewall, router, NAT, DHCP and DNS resolver for all the zones</td>
+</tr>
+<tr>
+<td><a href="images/enterprise-lab-part1/logo-debian.svg" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/logo-debian.svg" alt="debian logo" width="44"></a></td>
+<td>Debian 13</td>
+<td>becomes the switch, with the kernel&#39;s VLAN-aware bridge</td>
+</tr>
+<tr>
+<td><a href="images/enterprise-lab-part1/logo-ubuntu.svg" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/logo-ubuntu.svg" alt="ubuntu logo" width="44"></a></td>
+<td>Ubuntu Server 24.04</td>
+<td>base system of PROXY01, WEB01, SRV01 and IDS01</td>
+</tr>
+<tr>
+<td><a href="images/enterprise-lab-part1/logo-nginx.svg" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/logo-nginx.svg" alt="nginx logo" width="44"></a></td>
+<td>Nginx</td>
+<td>reverse proxy in front of the web server, ends the TLS connection</td>
+</tr>
+<tr>
+<td><a href="images/enterprise-lab-part1/logo-squid.svg" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/logo-squid.svg" alt="squid logo" width="44"></a></td>
+<td>Squid</td>
+<td>forward proxy and URL filtering for the internal users</td>
+</tr>
+<tr>
+<td><a href="images/enterprise-lab-part1/logo-apache.svg" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/logo-apache.svg" alt="apache logo" width="44"></a></td>
+<td>Apache</td>
+<td>web server of WEB01</td>
+</tr>
+<tr>
+<td><a href="images/enterprise-lab-part1/logo-php.svg" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/logo-php.svg" alt="php logo" width="44"></a></td>
+<td>PHP</td>
+<td>runs the DVWA application</td>
+</tr>
+<tr>
+<td><a href="images/enterprise-lab-part1/logo-dvwa.svg" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/logo-dvwa.svg" alt="dvwa logo" width="56"></a></td>
+<td>DVWA</td>
+<td>web application that is vulnerable on purpose, the target of the attacks</td>
+</tr>
+<tr>
+<td><a href="images/enterprise-lab-part1/logo-mariadb.svg" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/logo-mariadb.svg" alt="mariadb logo" width="44"></a></td>
+<td>MariaDB</td>
+<td>database of DVWA, on SRV01</td>
+</tr>
+<tr>
+<td><a href="images/enterprise-lab-part1/logo-samba.svg" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/logo-samba.svg" alt="samba logo" width="110"></a></td>
+<td>Samba</td>
+<td>file share (SMB) for the CLIENTS</td>
+</tr>
+<tr>
+<td><a href="images/enterprise-lab-part1/logo-suricata.svg" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/logo-suricata.svg" alt="suricata logo" width="110"></a></td>
+<td>Suricata 8</td>
+<td>network IDS that watches the DMZ and the VLAN trunk</td>
+</tr>
+<tr>
+<td><a href="images/enterprise-lab-part1/logo-parrot.svg" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/logo-parrot.svg" alt="parrot logo" width="44"></a></td>
+<td>Parrot Security</td>
+<td>attacker machine (next part)</td>
+</tr>
+<tr>
+<td><a href="images/enterprise-lab-part1/logo-windows.svg" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/logo-windows.svg" alt="windows logo" width="44"></a></td>
+<td>Windows 10</td>
+<td>admin workstation and test client</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>The logos belong to their respective projects and are only used here to identify the technologies.</p>
+</blockquote>
+<h3>How this note is organised</h3>
+<ol>
+<li><strong>The firewall VM (pfSense)</strong>: creating the VM and installing pfSense.</li>
+<li><strong>VLANs and IP addressing</strong>: the VLANs, the interfaces, DHCP and the WAN.</li>
+<li><strong>The switch (SW01)</strong>: the Linux bridge with its trunk and access ports.</li>
+<li><strong>Management, DNS and Internet access</strong>: moving the management to VLAN 99 and fixing DNS.</li>
+<li><strong>The servers (endpoints)</strong>: SRV01, WEB01 and PROXY01.</li>
+<li><strong>The firewall policy</strong>: aliases, port forwards, rules per zone and the tests.</li>
+<li><strong>The Suricata sensor</strong>: installation, configuration and our first rules.</li>
+</ol>
+<hr>
+<h2 id="section-1">The firewall VM (pfSense)</h2>
+<h3>Creating the virtual machine</h3>
+<p>Download the pfSense installer ISO from the official website ( <a href="https://www.pfsense.org/">https://www.pfsense.org/</a> ), then create a new virtual machine for it in VMware Workstation with 2 cores, 1100 MB of RAM and a 100 GB disk :</p>
+<blockquote>
+<p>Tip: the Netgate download comes as a compressed <code>.iso.gz</code> file. Decompress it in a terminal with <code>gunzip -k netgate-installer-*.iso.gz</code>. </p>
+</blockquote>
+<a href="images/enterprise-lab-part1/shot-20261104225313.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261104225313.png" alt="Screenshot: Creating the virtual machine" width="764"></a>
+
+<h3>Network interfaces</h3>
+<p>We created 3 network interfaces: WAN, LAN and DMZ. The WAN uses NAT so it has access to the Internet, and the other two use LAN segments (private virtual networks that exist only between the VMs: <code>LAB-TRUNK</code> for the LAN and <code>LAB-DMZ-OUTER</code> for the DMZ) :</p>
+<a href="images/enterprise-lab-part1/shot-20261104225516.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261104225516.png" alt="Screenshot: Network interfaces" width="772"></a>
+
+<h3>Installation</h3>
+<p>When we ran the installer, we chose the ZFS filesystem and assigned the WAN and LAN interfaces to the network adapters we created at the beginning (<code>em0</code> = WAN, <code>em1</code> = LAN). The DMZ adapter (<code>em2</code>* ) is added afterwards, in the web interface (GUI). The installer is an online installer, so the WAN (NAT) must have Internet access during the installation :</p>
+<a href="images/enterprise-lab-part1/shot-20261104232240.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261104232240.png" alt="Screenshot: Installation" width="955"></a>
+
+<a href="images/enterprise-lab-part1/shot-20261104232336.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261104232336.png" alt="Screenshot: Installation" width="970"></a>
+
+<p>-&gt; The pfSense login page, then the dashboard after the first configuration. We kept the default login (<code>admin</code> / <code>pfsense</code>) because this is an isolated lab, and the dashboard warns about it. At the very beginning the LAN had the default temporary address <code>192.168.1.1</code>, used only to reach the web interface the first time. We moved the management to a VLAN and removed that address later (see below).</p>
+<h2 id="section-2">VLANs and IP addressing</h2>
+<h3>Creating the VLANs</h3>
+<p>In the firewall we created 3 VLANs on the LAN interface (<code>em1</code>) :</p>
+<ul>
+<li>vlan99 : Management</li>
+<li>vlan20 : Servers</li>
+<li>vlan10 : Clients</li>
+</ul>
+<p>A VLAN is a separate virtual network that shares the same physical cable: every frame carries a numeric tag (802.1Q) that tells which VLAN it belongs to. The tags (10, 20 and 99) must be exactly the same on pfSense and on the trunk of the switch.</p>
+<a href="images/enterprise-lab-part1/shot-8.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-8.png" alt="Screenshot: Creating the VLANs"></a>
+
+<a href="images/enterprise-lab-part1/shot-7.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-7.png" alt="Screenshot: Creating the VLANs"></a>
+
+<p>-&gt; Interface assignments: WAN <code>em0</code>, LAN <code>em1</code>, DMZ <code>em2</code>, and CLIENTS / SERVERS / MGMT as VLANs on <code>em1</code></p>
+<h3>IP addresses and DHCP</h3>
+<p>For each interface we set a static IPv4 address, as shown in the table below. The <code>.1</code> address is pfSense&#39;s own address on that network, and it is the default gateway of the machines that live in it :</p>
+<a href="images/enterprise-lab-part1/shot-20261104232934.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261104232934.png" alt="Screenshot: IP addresses and DHCP"></a>
+
+<p>For the CLIENTS VLAN we enabled DHCP (Services › DHCP Server) with the range 10.10.10.100 – 10.10.10.199. SERVERS and DMZ have no DHCP: static addresses are predictable, which keeps the firewall rules and the logs clean.</p>
+<h3>The WAN interface</h3>
+<p>For the WAN interface we used a static IPv4 address (<code>172.16.148.10/24</code>, gateway <code>172.16.148.2</code>, the VMware NAT gateway, added as <code>WANGW</code> in System › Routing › Gateways). We also unticked the Reserved Networks options (“Block private networks and loopback addresses” and “Block bogon networks”). Our WAN uses a private IP range (<code>172.16.148.0/24</code>), so with these options on, pfSense would silently drop everything the laptop or Parrot sends to the WAN, and the port forward would look broken. On a real Internet-facing WAN you would leave them on :</p>
+<a href="images/enterprise-lab-part1/shot-20261105132024.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261105132024.png" alt="Screenshot: The WAN interface"></a>
+
+<h2 id="section-3">The switch (SW01)</h2>
+<h3>Creating the switch VM</h3>
+<p>For the switch we used a Debian ISO and turned the VM into a switch with the Linux kernel&#39;s VLAN-aware bridge :</p>
+<a href="images/enterprise-lab-part1/shot-20261105133202.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261105133202.png" alt="Screenshot: Creating the switch VM"></a>
+
+<h3>Trunk and access ports</h3>
+<p>It has one <strong>trunk</strong> port towards pfSense (all the VLANs, each frame keeps its tag) and one <strong>access</strong> port per VLAN (one VLAN, no tag: the switch adds the tag when a frame comes in and removes it when the frame goes out, so the computer never knows VLANs exist). On our Linux switch, each port is simply a network interface connected to a VMware LAN segment :</p>
+<table>
+<thead>
+<tr>
+<th>Port</th>
+<th>VMware segment</th>
+<th>Type</th>
+<th>VLAN</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>trunk0</code></td>
+<td>LAB-TRUNK</td>
+<td>trunk</td>
+<td>10, 20 and 99 (tagged)</td>
+</tr>
+<tr>
+<td><code>vlan10</code></td>
+<td>LAB-VLAN10</td>
+<td>access</td>
+<td>10</td>
+</tr>
+<tr>
+<td><code>vlan20</code></td>
+<td>LAB-VLAN20</td>
+<td>access</td>
+<td>20</td>
+</tr>
+<tr>
+<td><code>vlan99</code></td>
+<td>LAB-VLAN99</td>
+<td>access</td>
+<td>99</td>
+</tr>
+</tbody></table>
+<h3>Preparing Debian (sudo)</h3>
+<p>Before doing anything else, we added our user to the sudo group (the installer did not do it, because a root password was set during the installation) :</p>
+<a href="images/enterprise-lab-part1/shot-20261105152950.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261105152950.png" alt="Screenshot: Preparing Debian (sudo)"></a>
+
+<h3>Network adapters and port names</h3>
+<p>After this we created 4 network adapters on LAN segments: one for the trunk (towards pfSense) and one for each VLAN :</p>
+<a href="images/enterprise-lab-part1/shot-20261105133540.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261105133540.png" alt="Screenshot: Network adapters and port names" width="1300"></a>
+
+<p>After this we named the four cards by their MAC address, with one small file per card :</p>
+<a href="images/enterprise-lab-part1/shot-20261105153220.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261105153220.png" alt="Screenshot: Network adapters and port names"></a>
+
+<p>-&gt; Why by MAC address: Linux names the cards by PCI slot (<code>ens33</code>, <code>ens37</code>, ...), not in the order of the VMware adapters, so the MAC address is the only reliable way to know which card is which. A swapped port would silently put a machine in the wrong VLAN.</p>
+<p>We did the same for <code>vlan10</code>, <code>vlan20</code> and <code>vlan99</code>, each with its own MAC address.</p>
+<p>A <code>.link</code> file is a systemd-udev rule that is applied when the kernel discovers a network device. If the MAC address matches, the device is renamed. Files are read in name order (hence <code>10-</code>, <code>11-</code> ...).</p>
+<p>After creating the four files we also deleted the old network stanza of the first card (<code>allow-hotplug ens33</code> / <code>iface ens33 inet dhcp</code>) from <code>/etc/network/interfaces</code>, because that name no longer exists, then rebuilt the early-boot image so that the renaming happens early, and rebooted :</p>
+<pre><code class="language-sh">sudo update-initramfs -u
+sudo reboot
+ip -br link        # expect: lo, trunk0, vlan10, vlan20, vlan99
+</code></pre>
+<h3>Building the switch (VLAN-aware bridge)</h3>
+<p>Next we build the switch itself, with the <code>sw01-vlans.sh</code> script (stored in <code>/usr/local/sbin/</code>) :</p>
+<pre><code class="language-sh">ip link add name br0 type bridge vlan_filtering 1 vlan_default_pvid 0 stp_state 0
+</code></pre>
+<p>-&gt; This creates <strong><code>br0</code>: the switch itself</strong> (a “bridge”). <code>vlan_filtering 1</code> means “understand VLAN tags”. <code>vlan_default_pvid 0</code> means “ports belong to no VLAN until I say so” (a security measure: untagged traffic arriving on the trunk is simply dropped, so there is no native VLAN to abuse for VLAN hopping). <code>stp_state 0</code> turns off the spanning-tree loop protection, which we don&#39;t need because our topology has no loops.</p>
+<pre><code class="language-sh">ip link set trunk0 master br0      # plug trunk0 into the switch
+ip link set vlan10 master br0      # plug vlan10 in
+ip link set vlan20 master br0      # same for vlan20
+ip link set vlan99 master br0      # and vlan99
+</code></pre>
+<p>-&gt; <strong>Plug the four ports into the switch.</strong></p>
+<pre><code class="language-sh">bridge vlan add dev trunk0 vid 10    # the trunk carries tag 10
+bridge vlan add dev trunk0 vid 20    # tag 20
+bridge vlan add dev trunk0 vid 99    # tag 99
+</code></pre>
+<p>-&gt;<strong>Configure the trunk:</strong> it carries all three VLANs, with the tags kept.</p>
+<pre><code class="language-sh">bridge vlan add dev vlan10 vid 10 pvid untagged
+bridge vlan add dev vlan20 vid 20 pvid untagged
+bridge vlan add dev vlan99 vid 99 pvid untagged
+</code></pre>
+<p>-&gt;<strong>Configure the access ports:</strong> each one belongs to one VLAN. <code>pvid</code> means “any frame coming in from the computer is assigned this VLAN”, and <code>untagged</code> means “remove the tag when sending the frame to the computer”.</p>
+<h3>Starting the switch at boot</h3>
+<p>Finally, we need the switch to start by itself: a small systemd “service” file runs that script at every boot, because the bridge disappears at each restart otherwise.</p>
+<p>The service file : <code>/etc/systemd/system/sw01-vlans.service</code></p>
+<a href="images/enterprise-lab-part1/shot-20261105155017.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261105155017.png" alt="Screenshot: Starting the switch at boot"></a>
+
+<ul>
+<li><code>Type=oneshot</code> + <code>RemainAfterExit=yes</code> : the script runs once and exits, but systemd keeps the service “active”, so <code>systemctl status</code> shows the switch as up and <code>stop</code> can tear it down.</li>
+<li><code>After=systemd-udevd.service network-pre.target</code> : start after the devices have been renamed. The wait loop in the script is the safety net.</li>
+<li><code>ExecStop=/sbin/ip link del br0</code> : stopping the service deletes the bridge cleanly.</li>
+<li><code>WantedBy=multi-user.target</code> : start at every boot. The bridge is not persistent otherwise: it is rebuilt by this service each time.</li>
+</ul>
+<h3>Checking the switch</h3>
+<a href="images/enterprise-lab-part1/shot-20261105162517.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261105162517.png" alt="Screenshot: Checking the switch"></a>
+
+<p>-&gt; <code>ip -br a</code> and <code>ip -br link</code> on SW01: the four renamed ports are up, plus the bridge <code>br0</code>. We can also read the VLAN table of the switch :</p>
+<pre><code class="language-sh">bridge vlan show
+</code></pre>
+<pre><code>port     vlan-id
+trunk0   10
+         20
+         99
+vlan10   10 PVID Egress Untagged
+vlan20   20 PVID Egress Untagged
+vlan99   99 PVID Egress Untagged
+</code></pre>
+<p>-&gt; It reads like the table of a real switch: the trunk is a tagged member of the three VLANs, and each access port belongs to exactly one VLAN and removes the tag on the way out.</p>
+<h2 id="section-4">Management, DNS and Internet access</h2>
+<h3>The admin machine (ADMIN01)</h3>
+<p>For the admin machine (ADMIN01) we use a Windows 10 VM, plugged into the <code>LAB-VLAN99</code> segment (the management VLAN), so the switch puts its traffic in VLAN 99. We gave it a static IP address with PowerShell :</p>
+<a href="images/enterprise-lab-part1/shot-20261105164139.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261105164139.png" alt="Screenshot: The admin machine (ADMIN01)"></a>
+
+<a href="images/enterprise-lab-part1/shot-3.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-3.png" alt="Screenshot: The admin machine (ADMIN01)"></a>
+
+<h3>Proving that the VLAN tags cross VMware</h3>
+<p>To prove that the VLAN tags really cross VMware, we captured the trunk on SW01 while the Windows VM was pinging pfSense (<code>10.10.99.1</code>) :</p>
+<pre><code class="language-sh">sudo tcpdump -e -n -i trunk0 vlan
+</code></pre>
+<p>-&gt; Expected: lines containing <code>ethertype 802.1Q (0x8100) ... vlan 99 ... ICMP echo request</code>, with the matching replies. It proves that the frames are really tagged on the trunk, instead of just assuming it.</p>
+<h3>Moving the management off the LAN</h3>
+<p>Because we no longer manage pfSense from the LAN (the management now lives on the MGMT VLAN), we disabled the webConfigurator anti-lockout rule (System › Advanced › Admin Access). That built-in rule always allows access to the GUI from the LAN interface, whatever the firewall rules say, and we no longer want that :</p>
+<a href="images/enterprise-lab-part1/shot-5.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-5.png" alt="Screenshot: Moving the management off the LAN"></a>
+
+<p>We also disabled the DHCP server on the LAN :</p>
+<a href="images/enterprise-lab-part1/shot-6.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-6.png" alt="Screenshot: Moving the management off the LAN"></a>
+
+<p>Finally, we removed the IP address from the LAN interface (IPv4 and IPv6 set to None) and renamed it TRUNK. It now only carries the VLANs. We also deleted the two default “allow LAN to any” firewall rules on the TRUNK tab, so nothing is allowed there :</p>
+<a href="images/enterprise-lab-part1/shot-9.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-9.png" alt="Screenshot: Moving the management off the LAN"></a>
+
+<blockquote>
+<p>If pfSense refuses to set IPv6 to None with the errors “The DHCPv6 Server is active…” or “The Router Advertisements Server is active…”, first disable both services (Services › DHCPv6 Server &amp; RA: untick DHCPv6, and set the Router Advertisement mode to Disabled for this interface), then set the interface type to None again.</p>
+</blockquote>
+<h3>DNS and Internet access</h3>
+<p>Now we need to fix DNS so the clients have Internet access. The clients use pfSense as their DNS server (its address on their own network, for example <code>10.10.99.1</code>), and pfSense itself must use the VMware NAT gateway, <code>172.16.148.2</code>, as its upstream DNS server (System › General Setup) :</p>
+<a href="images/enterprise-lab-part1/shot-16.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-16.png" alt="Screenshot: DNS and Internet access"></a>
+
+<p>We also need to enable DNS Query Forwarding (Services › DNS Resolver) and untick DNSSEC. Reason: VMware&#39;s NAT only answers DNS queries sent to <code>172.16.148.2</code>, and it does not pass DNSSEC records. Without these two settings the clients get “could not resolve host” and <code>nslookup</code> shows SERVFAIL :</p>
+<a href="images/enterprise-lab-part1/shot-18.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-18.png" alt="Screenshot: DNS and Internet access"></a>
+
+<a href="images/enterprise-lab-part1/shot-17.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-17.png" alt="Screenshot: DNS and Internet access"></a>
+
+<p>-&gt; Proof: <code>curl.exe -I https://www.debian.org</code> from the Windows VM now returns HTTP 200.</p>
+<h2 id="section-5">The servers (endpoints)</h2>
+<p>Three Ubuntu Server 24.04 VMs, each with one job. Together they are the &quot;company website&quot;: a visitor on the Internet reaches the proxy, which forwards to the web server, which reads its data from the database.</p>
+<a href="images/enterprise-lab-part1/shot-20261106092137.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106092137.png" alt="Screenshot: The servers (endpoints)"></a>
+
+<h3>How the three servers were prepared</h3>
+<p>They are clones of one clean Ubuntu Server 24.04 VM. After cloning, each clone gets its own identity (otherwise the clones share the same machine-id and SSH host keys):</p>
+<pre><code class="language-sh">sudo rm -f /etc/machine-id &amp;&amp; sudo systemd-machine-id-setup
+sudo rm -f /etc/ssh/ssh_host_* &amp;&amp; sudo ssh-keygen -A
+sudo hostnamectl set-hostname web01          # proxy01 / web01 / srv01
+sudo sed -i &quot;s/^127.0.1.1.*/127.0.1.1 web01/&quot; /etc/hosts
+sudo reboot
+</code></pre>
+<p>The packages are installed while the VM is still on NAT (it has Internet), and the final network file and the firewall rules are only prepared. We apply them last, on the VM console, then move the adapter to its real LAN segment (WEB01 and PROXY01 → <code>LAB-DMZ-OUTER</code>, SRV01 → <code>LAB-VLAN20</code>):</p>
+<pre><code class="language-sh">sudo rm -f /etc/netplan/*.yaml
+sudo mv /root/01-lab.yaml.new /etc/netplan/01-lab.yaml
+sudo ufw enable
+sudo poweroff
+</code></pre>
+<blockquote>
+<p>After a clone&#39;s identity is reset, your SSH client warns “REMOTE HOST IDENTIFICATION HAS CHANGED”. It is expected. Remove the old key with <code>ssh-keygen -R &lt;ip&gt;</code>.</p>
+</blockquote>
+<h3>SRV01: the database and the file share</h3>
+<p>Zone: SERVERS (VLAN 20), address <code>10.10.20.10</code>, gateway <code>10.10.20.1</code>. It holds the data, so it is built first (WEB01 needs it).</p>
+<h4>MariaDB</h4>
+<a href="images/enterprise-lab-part1/shot-20261106103510.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106103510.png" alt="Screenshot: MariaDB"></a>
+
+<p>MariaDB is a MySQL-compatible database server. DVWA stores its users and test data in it.</p>
+<a href="images/enterprise-lab-part1/shot-20261106103634.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106103634.png" alt="Screenshot: MariaDB"></a>
+
+<p><code>bind-address = 0.0.0.0</code> : by default MariaDB listens only on <code>127.0.0.1</code> (this VM). WEB01 is another machine, so MariaDB must listen on the network. The firewalls (pfSense and <code>ufw</code>) decide who may actually connect.</p>
+<p>Then we created the database and a dedicated account for DVWA. The account can only connect from WEB01&#39;s IP address (in MariaDB an account is <code>user@host</code>) :</p>
+<a href="images/enterprise-lab-part1/shot-20261106103852.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106103852.png" alt="Screenshot: MariaDB"></a>
+
+<a href="images/enterprise-lab-part1/shot-20261106103954.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106103954.png" alt="Screenshot: MariaDB"></a>
+
+<a href="images/enterprise-lab-part1/shot-20261106104108.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106104108.png" alt="Screenshot: MariaDB"></a>
+
+<a href="images/enterprise-lab-part1/shot-20261106104138.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106104138.png" alt="Screenshot: MariaDB"></a>
+
+<h4>Samba: the file share for the CLIENTS</h4>
+<pre><code class="language-shell">useradd -M -s /usr/sbin/nologin alice   # a Linux account without home or login shell
+
+smbpasswd -a -s alice                   # Samba password for alice (asked twice: it is a new password you choose)
+
+mkdir -p /srv/share
+
+echo &quot;Q3 payroll summary - CONFIDENTIAL&quot; &gt; /srv/share/payroll.txt
+
+chown -R alice: /srv/share &amp;&amp; chmod 770 /srv/share
+</code></pre>
+<p>The share is defined in <code>/etc/samba/smb.conf</code> :</p>
+<a href="images/enterprise-lab-part1/shot-20261106104453.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106104453.png" alt="Screenshot: Samba: the file share for the CLIENTS"></a>
+
+<ul>
+<li>Samba implements the Windows file-sharing protocol (SMB, port 445), so a Windows client can open <code>\\10.10.20.10\share</code>.</li>
+<li><code>alice</code> exists twice: as a Linux account (owner of the files) and as a Samba user (with her own, separate Samba password).</li>
+<li><code>nologin</code>: she can use the share but cannot log in to the server.</li>
+<li><code>payroll.txt</code> is bait: a “confidential” file so the lab has something worth protecting.</li>
+</ul>
+<h4>Host firewall and network file</h4>
+<p>The <code>ufw</code> rules (SSH only from MGMT, the database only from WEB01, the file share only from CLIENTS) are prepared by the script and enabled at the end. <code>${WEB01_IP}</code> and <code>${CLIENTS_NET}</code> in the first screenshot are variables defined at the top of the script (<code>10.10.50.20</code> and <code>10.10.10.0/24</code>). The network file gives the server its static address in VLAN 20 :</p>
+<a href="images/enterprise-lab-part1/shot-20261106103810.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106103810.png" alt="Screenshot: Host firewall and network file"></a>
+
+<a href="images/enterprise-lab-part1/shot-20261106110700.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106110700.png" alt="Screenshot: Host firewall and network file"></a>
+
+<a href="images/enterprise-lab-part1/shot-20261106110532.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106110532.png" alt="Screenshot: Host firewall and network file"></a>
+
+<a href="images/enterprise-lab-part1/shot-20261106110437.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106110437.png" alt="Screenshot: Host firewall and network file"></a>
+
+<h3>WEB01: Apache, PHP and DVWA</h3>
+<p>Zone: DMZ, address <code>10.10.50.20</code>, gateway <code>10.10.50.1</code>. It is the web application: the exposed and deliberately vulnerable part.</p>
+<h4>Installing the packages</h4>
+<a href="images/enterprise-lab-part1/shot-20261106111701.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106111701.png" alt="Screenshot: Installing the packages"></a>
+
+<p><code>apache2</code>: the web server. <code>php</code> + <code>libapache2-mod-php</code>: the language DVWA is written in, and the Apache module that runs it. <code>php-mysql</code>: lets PHP talk to MariaDB (on SRV01). <code>php-gd</code>: image functions (used by DVWA&#39;s CAPTCHA). <code>git</code>: to download DVWA.</p>
+<h4>DVWA: the target application</h4>
+<p>DVWA (Damn Vulnerable Web Application) is a web app that is vulnerable on purpose: SQL injection, command injection, file inclusion, brute force and more, with adjustable difficulty levels. It is the target of the attack phase.</p>
+<pre><code class="language-shell">rm -f /var/www/html/index.html
+
+echo &#39;&lt;h1&gt;WEB01 - lab.internal&lt;/h1&gt;&#39; &gt; /var/www/html/index.html
+
+git clone https://github.com/digininja/DVWA.git /var/www/html/dvwa
+
+cd /var/www/html/dvwa/config 
+
+cp config.inc.php.dist config.inc.php
+
+sed -i &quot;/&#39;db_server&#39;/ s/&#39;127\.0\.0\.1&#39;/&#39;10.10.20.10&#39;/&quot; config.inc.php # the database is on SRV01
+
+chown -R www-data:www-data /var/www/html/dvwa/hackable/uploads /var/www/html/dvwa/config
+# php.ini (all versions): allow_url_include = On, allow_url_fopen = On
+</code></pre>
+<ul>
+<li><code>www-data</code> is the Linux user Apache runs as: it needs write access to the upload and config folders.</li>
+<li><code>allow_url_include</code> and <code>allow_url_fopen</code> are switched on in <code>php.ini</code> because DVWA&#39;s setup page checks them and its file-inclusion exercise needs them. They are normally off, because they are dangerous.</li>
+</ul>
+<a href="images/enterprise-lab-part1/shot-20261106112247.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106112247.png" alt="Screenshot: DVWA: the target application"></a>
+
+<a href="images/enterprise-lab-part1/shot-20261106112442.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106112442.png" alt="Screenshot: DVWA: the target application"></a>
+
+<p><code>db_server = 10.10.20.10</code> : DVWA reads the database address from its config file. By default it points to <code>127.0.0.1</code>; we point it at SRV01. The user <code>dvwa</code>, the database <code>dvwa</code> and the password <code>p@ssw0rd</code> are DVWA&#39;s defaults and already match the account created on SRV01.</p>
+<a href="images/enterprise-lab-part1/shot-20261106113247.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106113247.png" alt="Screenshot: DVWA: the target application"></a>
+
+<blockquote>
+<p>DVWA&#39;s setup page (“Create / Reset Database”) needs to reach SRV01 on port 3306, which pfSense blocks until the pinhole rule exists. That is why the database is created later, after the firewall policy (see the end of the firewall section).</p>
+</blockquote>
+<h4>Seeing the real visitor: <code>mod_remoteip</code></h4>
+<p>Behind a reverse proxy, every request reaches Apache from <code>10.10.50.10</code> (the proxy), so the logs would show one single address for every visitor. Nginx adds the real client address in the <code>X-Forwarded-For</code> header, and Apache is told to trust that header only when it comes from PROXY01:</p>
+<a href="images/enterprise-lab-part1/shot-20261106113545.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106113545.png" alt="Screenshot: Seeing the real visitor: `mod_remoteip`"></a>
+
+<a href="images/enterprise-lab-part1/shot-20261106113617.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106113617.png" alt="Screenshot: Seeing the real visitor: `mod_remoteip`"></a>
+
+<a href="images/enterprise-lab-part1/shot-20261106114255.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106114255.png" alt="Screenshot: Seeing the real visitor: `mod_remoteip`"></a>
+
+<p>Why only from PROXY01: if Apache trusted <code>X-Forwarded-For</code> from anyone, an attacker could send a fake header and forge the address in the logs. The <code>sed</code> command changes the log format from <code>%h</code> (the connecting host, i.e. the proxy) to <code>%a</code> (the real client address).</p>
+<h4>Host firewall and network</h4>
+<pre><code class="language-shell">
+ufw default deny incoming
+
+ufw default allow outgoing
+
+ufw allow from 10.10.99.0/24  to any port 22 proto tcp  # SSH only from MGMT
+
+ufw allow from 10.10.50.10    to any port 80 proto tcp  # HTTP only from PROXY01 
+</code></pre>
+<p>Even though WEB01 sits next to PROXY01 in the DMZ, it accepts HTTP from PROXY01 only. If a WAF is added in front of it later (<code>WAF01</code>, <code>10.10.50.30</code>), that address will be added too. The network file gives WEB01 its static address (<code>10.10.50.20/24</code>):</p>
+<a href="images/enterprise-lab-part1/shot-20261106120104.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106120104.png" alt="Screenshot: Host firewall and network"></a>
+
+<a href="images/enterprise-lab-part1/shot-20261106120135.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106120135.png" alt="Screenshot: Host firewall and network"></a>
+
+<h3>PROXY01: Nginx (reverse proxy) and Squid (forward proxy)</h3>
+<p>Zone: DMZ, address <code>10.10.50.10</code>, gateway <code>10.10.50.1</code>. It runs two proxies that do opposite jobs. They share a VM only to save one.</p>
+<a href="images/enterprise-lab-part1/shot-20261106121429.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106121429.png" alt="Screenshot: PROXY01: Nginx (reverse proxy) and Squid (forward proxy)"></a>
+
+<h4>Installation and TLS certificate</h4>
+<a href="images/enterprise-lab-part1/shot-20261106122904.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106122904.png" alt="Screenshot: Installation and TLS certificate"></a>
+
+<pre><code class="language-shell">mkdir -p /etc/ssl/lab
+
+openssl req -x509 -newkey rsa:2048 -nodes -days 825 \
+  -keyout /etc/ssl/lab/proxy01.key -out /etc/ssl/lab/proxy01.crt \
+  -subj &quot;/CN=www.lab.internal&quot; \
+  -addext &quot;subjectAltName=DNS:www.lab.internal,IP:172.16.148.10,IP:10.10.50.10&quot;
+
+chmod 600 /etc/ssl/lab/proxy01.key
+</code></pre>
+<ul>
+<li>A self-signed certificate (no real CA) lets Nginx serve HTTPS. Browsers show a warning, which is expected in a lab; <code>curl -k</code> skips the check.</li>
+<li><code>subjectAltName</code> lists every name/IP the certificate is valid for: <code>www.lab.internal</code>, the WAN address, and the proxy&#39;s own address. This is the reason the WAN address was made static (<code>.10</code>): the certificate names it.</li>
+<li>The private key is readable only by root (<code>chmod 600</code>).</li>
+</ul>
+<h4>Nginx: the reverse proxy</h4>
+<p>The site file is <code>/etc/nginx/sites-available/web01-rp</code> :</p>
+<a href="images/enterprise-lab-part1/shot-20261106130145.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106130145.png" alt="Screenshot: Nginx: the reverse proxy"></a>
+
+<a href="images/enterprise-lab-part1/shot-20261106135131.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106135131.png" alt="Screenshot: Nginx: the reverse proxy"></a>
+<a href="images/enterprise-lab-part1/shot-20261106135153.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106135153.png" alt="Screenshot: Nginx: the reverse proxy"></a>
+
+<a href="images/enterprise-lab-part1/shot-20261106135526.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106135526.png" alt="Screenshot: Nginx: the reverse proxy"></a>
+
+<h4>Squid: the forward proxy for the clients</h4>
+<p>Squid listens on port 3128. Our policy file only lets the CLIENTS network use it, blocks a list of sites, and hides the internal addresses (<code>forwarded_for delete</code>, <code>via off</code>) :</p>
+<a href="images/enterprise-lab-part1/shot-20261106135645.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106135645.png" alt="Screenshot: Squid: the forward proxy for the clients"></a>
+
+<a href="images/enterprise-lab-part1/shot-20261106135740.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106135740.png" alt="Screenshot: Squid: the forward proxy for the clients"></a>
+
+<a href="images/enterprise-lab-part1/shot-20261106135827.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106135827.png" alt="Screenshot: Squid: the forward proxy for the clients"></a>
+
+<a href="images/enterprise-lab-part1/shot-20261106135925.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106135925.png" alt="Screenshot: Squid: the forward proxy for the clients"></a>
+
+<h4>Host firewall and network</h4>
+<pre><code class="language-shell">
+ufw default deny incoming
+
+ufw default allow outgoing
+
+ufw allow from 10.10.99.0/24 to any port 22 proto tcp  # SSH only from MGMT
+
+ufw allow 80/tcp   # HTTP (Internet forward + clients)
+
+ufw allow 443/tcp  # HTTPS (Internet forward + clients)
+
+ufw allow from 10.10.10.0/24 to any port 3128 proto tcp  # Squid only for CLIENTS
+</code></pre>
+<p>The network file gives PROXY01 its static address (<code>10.10.50.10/24</code>, gateway and DNS: pfSense <code>10.10.50.1</code>). To prove the whole chain from PROXY01 :</p>
+<pre><code class="language-sh">curl -s http://10.10.50.20/        # WEB01 - lab.internal (works only from PROXY01)
+curl -sk https://localhost/        # the same page, through Nginx
+sudo nginx -t ; sudo squid -k parse
+</code></pre>
+<h2 id="section-6">The firewall policy</h2>
+<p>Now we return to the firewall and write the policy, based on what we configured :</p>
+<h3>How pfSense evaluates the rules</h3>
+<ul>
+<li>A rule on interface X applies to the traffic <strong>entering</strong> pfSense from X. To control CLIENTS → SERVERS, the rule is written on the CLIENTS tab.</li>
+<li>First match wins, from top to bottom: specific pass rules first, broad blocks after.</li>
+<li>The firewall is stateful: the replies to an allowed connection are allowed automatically.</li>
+<li>If nothing matches, the traffic is dropped (implicit default deny). A new interface has no rules, so it blocks everything.</li>
+<li>On the WAN, NAT happens before filtering: the rule that allows a port forward uses the internal address (<code>10.10.50.10</code>), not the WAN address.</li>
+</ul>
+<h3>Aliases (Firewall › Aliases)</h3>
+<a href="images/enterprise-lab-part1/shot-20261106144355.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106144355.png" alt="Screenshot: Aliases (Firewall › Aliases)"></a>
+
+<p>-&gt; Why RFC1918 : “never initiate to another internal zone” needs a name for “any private network”, otherwise every subnet would have to be listed in every rule.</p>
+<h3>Port forwards: publishing the website</h3>
+<a href="images/enterprise-lab-part1/shot-20261106150856.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106150856.png" alt="Screenshot: Port forwards: publishing the website"></a>
+
+<p>-&gt; WAN 80 and 443 are redirected to PROXY01 (never directly to WEB01), with an associated filter rule created automatically. Outbound NAT stays on Automatic. The GUI also listens on 443, but the forward only applies to traffic arriving on the WAN, so <code>https://10.10.99.1</code> from MGMT still reaches the GUI.</p>
+<h3>Rules per interface</h3>
+<p>Every Block rule has logging enabled.</p>
+<h4>DMZ</h4>
+<a href="images/enterprise-lab-part1/shot-20261106151130.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106151130.png" alt="Screenshot: DMZ"></a>
+
+<p>-&gt; Rule 1 is the only hole between the DMZ and the inside: WEB01 → SRV01 on port 3306. It comes <strong>before</strong> the “block RFC1918” rule, because the first matching rule wins (SRV01 is inside the private range, so if the block came first DVWA could never reach its database).</p>
+<h4>CLIENTS</h4>
+<a href="images/enterprise-lab-part1/shot-20261106151221.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106151221.png" alt="Screenshot: CLIENTS"></a>
+
+<p>-&gt; Clients may only use DNS and ping on pfSense, the proxy (PROXY01, ports 80, 443 and 3128), and the file share (SRV01, port 445). Everything else, including direct web access, is blocked and logged.</p>
+<h4>SERVERS</h4>
+<a href="images/enterprise-lab-part1/shot-20261106151329.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106151329.png" alt="Screenshot: SERVERS"></a>
+
+<p>-&gt; Servers never start connections towards the other zones (RFC1918 block). They only get updates (ports 80/443) and NTP. There is no rule for the database&#39;s replies: WEB01 opens the connection, so the replies belong to that state and pass automatically.</p>
+<h4>MGMT</h4>
+<a href="images/enterprise-lab-part1/shot-20261106155322.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106155322.png" alt="Screenshot: MGMT"></a>
+
+<p>-&gt; One single rule: MGMT → any, with the protocol set to <strong>Any</strong> (a TCP-only rule lets the GUI in but blocks <code>ping</code>). In production this would be restricted too. </p>
+<h4>WAN</h4>
+<p>Only the two rules created by the port forwards.</p>
+<a href="images/enterprise-lab-part1/shot-20261106185227.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106185227.png" alt="Screenshot: WAN"></a>
+
+<h4>TRUNK</h4>
+<p>No rules.</p>
+<a href="images/enterprise-lab-part1/shot-20261106185131.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106185131.png" alt="Screenshot: TRUNK"></a>
+
+<h3>Testing the policy</h3>
+<p>From the VMs and from the “Internet” (the laptop) :</p>
+<p>DVWA&#39;s database is created from a browser: <code>http://10.10.50.10/dvwa/setup.php</code> → Create / Reset Database, then log in with <code>admin</code> / <code>password</code> and set DVWA Security to Low.</p>
+<pre><code class="language-shell"># from WEB01: the pinhole works, the rest is blocked
+nc -zv -w2 10.10.20.10 3306     # succeeds
+nc -zv -w2 10.10.20.10 445      # times out
+
+# from SRV01: updates are allowed, the DMZ is not reachable
+curl -I https://www.debian.org  # HTTP 200
+nc -zv -w2 10.10.50.20 80       # times out
+
+# from the laptop (the “Internet”): only the published ports answer
+curl -I http://172.16.148.10/dvwa/login.php
+curl -kI https://172.16.148.10/dvwa/login.php
+nmap -Pn -p 22,445,3306 172.16.148.10    # all filtered
+</code></pre>
+<p>Every blocked test must also appear in pfSense (Status › System Logs › Firewall), with the rule that blocked it. On WEB01, <code>sudo tail -3 /var/log/apache2/access.log</code> should show the laptop&#39;s real address (<code>172.16.148.1</code>) and not the proxy&#39;s, thanks to <code>mod_remoteip</code>.</p>
+<h3>Operating pfSense: watching it work</h3>
+<a href="images/enterprise-lab-part1/shot-20261106155207.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106155207.png" alt="Screenshot: Operating pfSense: watching it work"></a>
+
+<h3>Things we would change for a production environment</h3>
+<a href="images/enterprise-lab-part1/shot-20261106160949.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106160949.png" alt="Screenshot: Things we would change for a production environment"></a>
+
+<h2 id="section-7">The Suricata sensor: what we built</h2>
+<h3>What Suricata is</h3>
+<p>Suricata is an open-source network IDS/IPS: it reads packets, rebuilds the connections, decodes the protocols (HTTP, DNS, TLS, SMB ...) and compares them to rules, writing an alert when one matches. In IDS mode it only watches and alerts; in IPS mode (a later phase) it sits inline and can drop packets. We start with IDS: a wrong alert only wastes time, a wrong block breaks the network. IDS01 is a separate VM that watches <strong>copies</strong> of the traffic: it is not in the path.</p>
+<h3>Where the sensor sits and what it can see</h3>
+<a href="images/enterprise-lab-part1/shot-20261106171452.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106171452.png" alt="Screenshot: Where the sensor sits and what it can see"></a>
+
+<a href="images/enterprise-lab-part1/shot-20261106171555.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106171555.png" alt="Screenshot: Where the sensor sits and what it can see"></a>
+
+<h3>Four NICs and what each is for</h3>
+<a href="images/enterprise-lab-part1/shot-20261106171816.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106171816.png" alt="Screenshot: Four NICs and what each is for"></a>
+
+<p>-&gt; The capture NICs have no IP address: a card without an address cannot be scanned or attacked, so the sensor is invisible on the networks it watches. They also have the checksum/segmentation offloads (GRO, LRO, TSO ...) turned off, so Suricata sees the real packets and not merged “super-packets”.</p>
+<h3>Installing Suricata</h3>
+<pre><code class="language-shell">sudo add-apt-repository -y ppa:oisf/suricata-stable
+
+sudo apt update
+
+sudo apt install -y suricata jq ethtool
+
+sudo suricata-update  # downloads Emerging Threats Open into /var/lib/suricata/rules/suricata.rules
+</code></pre>
+<ul>
+<li><code>ppa:oisf/suricata-stable</code> is the project&#39;s own repository: Ubuntu&#39;s package is several versions behind.</li>
+<li><code>jq</code> reads JSON logs on the command line, and <code>ethtool</code> checks the NIC offloads.</li>
+<li><code>suricata-update</code> downloads the Emerging Threats Open ruleset and merges it into one file. The service may start right after the installation, so we stop it (<code>sudo systemctl stop suricata</code>) until it is configured.</li>
+</ul>
+<a href="images/enterprise-lab-part1/shot-20261106172529.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106172529.png" alt="Screenshot: Installing Suricata" width="732"></a>
+
+<a href="images/enterprise-lab-part1/shot-20261106172722.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106172722.png" alt="Screenshot: Installing Suricata" width="743"></a>
+
+<a href="images/enterprise-lab-part1/shot-20261106172757.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106172757.png" alt="Screenshot: Installing Suricata" width="752"></a>
+
+<p>-&gt; Suricata 8.0.8 is installed, and the downloaded ruleset (44 MB) contains about 53,000 <code>alert</code> rules.</p>
+<h3>Configuring Suricata (<code>suricata.yaml</code>)</h3>
+<p>The main file is <code>/etc/suricata/suricata.yaml</code>. We keep a backup (<code>suricata.yaml.orig</code>) and change only a few settings: the network variables, the capture interfaces, <code>community-id</code>, the rule files and the threshold file.</p>
+<a href="images/enterprise-lab-part1/shot-20261106173157.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106173157.png" alt="Screenshot: Configuring Suricata (`suricata.yaml`)"></a>
+
+<a href="images/enterprise-lab-part1/shot-20261106173306.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106173306.png" alt="Screenshot: Configuring Suricata (`suricata.yaml`)"></a>
+
+<h4>The capture interfaces (AF_PACKET)</h4>
+<p>AF_PACKET is the Linux kernel&#39;s native capture method. There is one block per capture point: <code>dmzfw0</code> (the DMZ, pfSense side) and <code>tap0</code> (the VLAN trunk).</p>
+<a href="images/enterprise-lab-part1/shot-20261106173336.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106173336.png" alt="Screenshot: The capture interfaces (AF_PACKET)"></a>
+
+<a href="images/enterprise-lab-part1/shot-20261106173427.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106173427.png" alt="Screenshot: The capture interfaces (AF_PACKET)"></a>
+
+<a href="images/enterprise-lab-part1/shot-20261106180027.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106180027.png" alt="Screenshot: The capture interfaces (AF_PACKET)"></a>
+
+<a href="images/enterprise-lab-part1/shot-20261106180050.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106180050.png" alt="Screenshot: The capture interfaces (AF_PACKET)"></a>
+
+<h3>Writing our own rules</h3>
+<pre><code>alert http any any -&gt; $HOME_NET any (msg:&quot;LAB Command injection attempt DVWA exec&quot;; flow:established,to_server; http.uri; content:&quot;/vulnerabilities/exec/&quot;; http.request_body; pcre:&quot;/ip=[^&amp;]*(%3B|%7C|%26|\x3B|\x7C)/i&quot;; classtype:web-application-attack; sid:1000005; rev:1;)
+</code></pre>
+<p>A rule is <code>action protocol source -&gt; destination (options)</code>. This one raises an alert when someone sends a command-injection attempt to DVWA&#39;s exec page. A raw <code>;</code> inside an option would end the option, so the separators are written in hex in the regular expression (<code>\x3B</code> and <code>\x7C</code>). The table below explains each part :</p>
+<a href="images/enterprise-lab-part1/shot-20261106180245.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106180245.png" alt="Screenshot: Writing our own rules" width="1222"></a>
+
+<p>-&gt; In the attack phase we will go deeper into the rules, because we will run real attack simulations and write the IDS rules to detect them.</p>
+<h3>Reading the output</h3>
+<a href="images/enterprise-lab-part1/shot-20261106182550.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106182550.png" alt="Screenshot: Reading the output"></a>
+
+<pre><code class="language-sh">sudo tail -f /var/log/suricata/fast.log                  # one text line per alert, live
+sudo jq -r &#39;.event_type&#39; /var/log/suricata/eve.json | sort | uniq -c | sort -rn     # which kinds of events exist
+</code></pre>
+<h3>Network configuration of IDS01 (netplan)</h3>
+<p>The netplan file matches each card by its MAC address and renames it (<code>mgmt0</code>, <code>dmzfw0</code>, <code>dmzsrv0</code>, <code>tap0</code>). Only <code>mgmt0</code> has an IP address (<code>10.10.99.20/24</code>). The capture cards have no IPv4, no IPv6 and not even a link-local address, and their offloads are off. Our first script guessed the order of the cards from the Linux names and three MAC addresses came out rotated: the sensor would have listened to the wrong network without any error. Always compare the MACs with VMware&#39;s <em>Network Adapter › Advanced</em> page.</p>
+<a href="images/enterprise-lab-part1/shot-20261106182703.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106182703.png" alt="Screenshot: Network configuration of IDS01 (netplan)"></a>
+
+<a href="images/enterprise-lab-part1/shot-20261106182837.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106182837.png" alt="Screenshot: Network configuration of IDS01 (netplan)"></a>
+
+<a href="images/enterprise-lab-part1/shot-20261106183059.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/shot-20261106183059.png" alt="Screenshot: Network configuration of IDS01 (netplan)"></a>
+
+<p>-&gt; <code>ip -br link</code> shows the four cards, and <code>ip -br a</code> shows that only <code>mgmt0</code> has an address.</p>
+<h3>Starting Suricata</h3>
+<pre><code class="language-sh">sudo suricata -T -c /etc/suricata/suricata.yaml -v     # test the configuration: it must end with &quot;successfully loaded&quot;
+sudo systemctl enable --now suricata                  # start now and at every boot
+sudo tail -f /var/log/suricata/suricata.log           # look for: dmzfw0: creating 1 thread, tap0: creating 1 thread, Engine started
+</code></pre>
+<p>Loading the ~53,000 rules takes about half a minute.<br>Next step: the attack phase.</p>
+
+    </article>
+
+  <nav class="series">
+    <p class="prompt">$ ls ~/series/enterprise-lab</p>
+    <ul>
+      <li class="current">Enterprise Lab, Part 1 — pfSense, VLANs, a DMZ and a Suricata IDS &lt;- you are here</li>
+    </ul>
+  </nav>
+
+  </main>
+
+  <script src="/post.js?v=1793991236150"></script>
+</body>
+</html>
