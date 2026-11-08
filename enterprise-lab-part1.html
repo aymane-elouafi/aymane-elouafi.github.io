@@ -97,8 +97,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css?v=1793991552705">
-  <script defer src="/menu.js?v=1793991552705"></script>
+  <link rel="stylesheet" href="/style.css?v=1794180003151">
+  <script defer src="/menu.js?v=1794180003151"></script>
 </head>
 <body>
   <div class="aurora" aria-hidden="true"><span class="b1"></span><span class="b2"></span><span class="b3"></span></div>
@@ -265,7 +265,7 @@
 <li>A <strong>sensor</strong> (Suricata) that watches the DMZ and the VLAN trunk and raises alerts.</li>
 </ul>
 <h3>The architecture</h3>
-<a href="images/enterprise-lab-part1/lab-architecture-diagram.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/lab-architecture-diagram.png" alt="Screenshot: The architecture" width="1100"></a>
+<a href="images/enterprise-lab-part1/lab-architecture-diagram-v2.png" target="_blank" rel="noopener"><img src="images/enterprise-lab-part1/lab-architecture-diagram-v2.png" alt="Network architecture diagram of the segmented lab: WAN, DMZ, pfSense, SW01, IDS01 and the CLIENTS, SERVERS and MGMT VLANs" width="1100"></a>
 
 <h3>The lab environment</h3>
 <p>Everything runs on a Linux host with VMware Workstation 25 and 15 GB of RAM. The WAN uses VMware NAT (<code>vmnet8</code>, <code>172.16.148.0/24</code>). Every other zone is a LAN segment, a private virtual network that exists only between the VMs, so nothing can leak to the real network of the host.</p>
@@ -1026,6 +1026,6 @@ sudo tail -f /var/log/suricata/suricata.log           # look for: dmzfw0: creati
 
   </main>
 
-  <script src="/post.js?v=1793991552705"></script>
+  <script src="/post.js?v=1794180003151"></script>
 </body>
 </html>

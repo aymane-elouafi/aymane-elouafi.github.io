@@ -15,7 +15,7 @@ It is the first part of a larger lab. The next parts use this network as a targe
 
 ## The architecture
 
-<img src="images/enterprise-lab-part1/lab-architecture-diagram.png" alt="Screenshot: The architecture" width="1100">
+<img src="images/enterprise-lab-part1/lab-architecture-diagram-v2.png" alt="Network architecture diagram of the segmented lab: WAN, DMZ, pfSense, SW01, IDS01 and the CLIENTS, SERVERS and MGMT VLANs" width="1100">
 
 ## The lab environment
 
