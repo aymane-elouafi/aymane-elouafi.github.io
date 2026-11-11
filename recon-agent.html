@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Google Analytics (gtag.js) - counts your visitors -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-V2R1YY0P62"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-V2R1YY0P62');
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Pentest Agent (live) · Aymane Elouafi</title>
+  <meta name="description" content="Live build log of an AI-assisted recon and footprinting agent for authorized pentesting: rule-based planner, local LLM advisor, sandboxed Kali container, approval-gated exploit validation.">
+  <meta name="author" content="Aymane Elouafi">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="google-site-verification" content="P6WC3YGSehH9r2o-Lon_-tKZGpFiOWJjHD41vtJqLsk">
+  <link rel="canonical" href="https://aymaneelouafi.me/recon-agent.html">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-512.png" type="image/png" sizes="512x512">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <!-- Open Graph (Facebook, LinkedIn, Discord...) -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="AI Pentest Agent (live) · Aymane Elouafi">
+  <meta property="og:description" content="Live build log of an AI-assisted recon and footprinting agent for authorized pentesting: rule-based planner, local LLM advisor, sandboxed Kali container, approval-gated exploit validation.">
+  <meta property="og:url" content="https://aymaneelouafi.me/recon-agent.html">
+  <meta property="og:site_name" content="Aymane Elouafi">
+  <meta property="og:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="AI Pentest Agent (live) · Aymane Elouafi">
+  <meta name="twitter:description" content="Live build log of an AI-assisted recon and footprinting agent for authorized pentesting: rule-based planner, local LLM advisor, sandboxed Kali container, approval-gated exploit validation.">
+  <meta name="twitter:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareSourceCode",
+      "name": "AI Pentest Agent",
+      "description": "Live build log of an AI-assisted recon and footprinting agent for authorized pentesting: rule-based planner, local LLM advisor, sandboxed Kali container, approval-gated exploit validation.",
+      "codeRepository": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent",
+      "programmingLanguage": [
+        "Python",
+        "JavaScript",
+        "CSS",
+        "Shell",
+        "HTML",
+        "Dockerfile"
+      ],
+      "author": {
+        "@type": "Person",
+        "name": "Aymane Elouafi",
+        "@id": "https://aymaneelouafi.me/#person",
+        "url": "https://aymaneelouafi.me"
+      },
+      "dateCreated": "2026-11-11",
+      "dateModified": "2026-11-11",
+      "url": "https://aymaneelouafi.me/recon-agent.html",
+      "keywords": "ai, llm, recon, kali, sandbox, python"
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Aymane Elouafi",
+          "item": "https://aymaneelouafi.me/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Live projects"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "AI Pentest Agent",
+          "item": "https://aymaneelouafi.me/recon-agent.html"
+        }
+      ]
+    }
+  ]
+}
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css?v=59f29efc9e">
+  <script defer src="/menu.js?v=59f29efc9e"></script>
+</head>
+<body class="live-body">
+  <div class="aurora" aria-hidden="true"><span class="b1"></span><span class="b2"></span><span class="b3"></span></div>
+  <div class="topbar">
+    <button class="menu-toggle" aria-label="Open menu" aria-expanded="false">☰ menu</button>
+    <a class="topbar-home" href="/">~/aymane</a>
+  </div>
+  <div class="backdrop" id="backdrop"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner">
+      <p class="sidebar-title">// methodology &amp; notes</p>
+    <details class="nav-phase nav-live" open>
+      <summary><span class="nav-num live-dot" aria-hidden="true"></span> Live projects</summary>
+      <div class="nav-section">
+        <ul>
+          <li><a href="enterprise-network.html">Enterprise Network Lab</a></li>
+          <li><a href="recon-agent.html" class="current">AI Pentest Agent</a></li>
+          <li><a href="api-attack-detection.html">Web API Attack Detection with AI</a></li>
+        </ul>
+      </div>
+    </details>
+    <details class="nav-phase" open>
+      <summary><span class="nav-num">1</span> Information Gathering</summary>
+        <div class="nav-section">
+          <span class="nav-sec-title">Host Discovery &amp; Port Scanning</span>
+          <ul>
+            <li><a href="nmap.html">Network Enumeration with Nmap</a></li>
+          </ul>
+        </div>
+        <div class="nav-section">
+          <span class="nav-sec-title">Service Enumeration / Footprinting</span>
+          <ul>
+            <li><a href="nfs.html">Footprinting NFS</a></li>
+            <li><a href="ftp.html">Footprinting FTP</a></li>
+            <li><a href="dns.html">Footprinting DNS</a></li>
+            <li><a href="smtp.html">Footprinting SMTP</a></li>
+            <li><a href="imap-pop3.html">Footprinting IMAP / POP3</a></li>
+            <li><a href="snmp.html">Footprinting SNMP</a></li>
+            <li><a href="mysql.html">Footprinting MySQL</a></li>
+            <li><a href="mssql.html">Footprinting MSSQL</a></li>
+            <li><a href="oracle-tns.html">Footprinting Oracle TNS</a></li>
+            <li><a href="ipmi.html">Footprinting IPMI</a></li>
+          </ul>
+        </div>
+        <div class="nav-section empty"><span class="nav-sec-title">Web Recon</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">2</span> Vulnerability Assessment</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Known Vulnerabilities (version → CVE)</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Web Vulnerabilities</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Misconfigurations &amp; Default Credentials</span></div>
+    </details>
+    <details class="nav-phase" open>
+      <summary><span class="nav-num">3</span> Exploitation</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Service / Network Exploitation</span></div>
+        <div class="nav-section">
+          <span class="nav-sec-title">Web Exploitation</span>
+          <ul>
+            <li><a href="wordpress.html">Hacking WordPress</a></li>
+          </ul>
+        </div>
+        <div class="nav-section empty"><span class="nav-sec-title">Password Attacks</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">4</span> Post-Exploitation</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Local Enumeration</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Privilege Escalation (Linux / Windows)</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Looting &amp; Credential Hunting</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">5</span> Lateral Movement</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Pivoting &amp; Tunneling</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Credential Reuse &amp; Pass-the-Hash</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">6</span> Active Directory</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">AD Enumeration</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">AD Attacks</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Domain Dominance &amp; Lateral Movement</span></div>
+    </details>
+    <details class="nav-phase nav-projects">
+      <summary><span class="nav-num">▣</span> Projects</summary>
+      <div class="nav-section">
+        <ul>
+          <li><a href="enterprise-lab-part1.html">Enterprise Lab, Part 1 — pfSense, VLANs, a DMZ and a Suricata IDS</a></li>
+          <li><a href="cloud-soc-aws.html">Cloud-Native SOC on AWS — Purple Teaming &amp; Detection Engineering</a></li>
+          <li><a href="proxmox-ceph-vxlan.html">Hyper-Converged Proxmox Cluster — Ceph, VXLAN &amp; Grafana</a></li>
+          <li><a href="proxmox-ha-cluster.html">High-Availability Proxmox VE Cluster with Shared NAS</a></li>
+        </ul>
+      </div>
+    </details>
+    <details class="nav-phase nav-walk">
+      <summary><span class="nav-num">★</span> HTB Walkthroughs</summary>
+      <div class="nav-section">
+        <ul>
+          <li><a href="cap.html">Cap - HTB Walkthrough</a></li>
+        </ul>
+      </div>
+    </details>
+    </div>
+  </aside>
+  <main class="container live-page" data-live="recon-agent" data-repo="aymane-elouafi/AI-powered-penetration-testing-agent" data-visual="pipeline" data-ver="2026-11-11T22:34:16.005Z">
+
+    <a class="back" href="/">← cd ..</a>
+
+    <header class="live-hero wide">
+      <div class="live-pill"><span class="live-dot" aria-hidden="true"></span> LIVE <span class="pill-sep"></span> synced from GitHub</div>
+      <h1 class="scramble">AI Pentest Agent</h1>
+      <p class="lead">An agentic recon &amp; footprinting assistant for authorized labs. A local LLM advises, rules decide, and every command runs in a locked-down Kali container. Below: a replay of a real run from the repo's test fixtures.</p>
+      <div class="hero-stats">
+        <div class="ring" style="--p:57" role="img" aria-label="57% of the roadmap done">
+          <svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="34" class="ring-bg"/><circle cx="40" cy="40" r="34" class="ring-fg" stroke-dasharray="213.6" stroke-dashoffset="91.9"/></svg>
+          <b data-count="57">57</b><small>%</small>
+        </div>
+        <dl class="stat-grid">
+          <div><dt>last push</dt><dd data-ago="2026-11-11T21:59:28Z" data-push="aymane-elouafi/AI-powered-penetration-testing-agent">2026-11-11</dd></div>
+          <div><dt>commits</dt><dd data-count="47">47</dd></div>
+          <div><dt>files</dt><dd data-count="61">61</dd></div>
+          <div><dt>repo size</dt><dd>424 KB</dd></div>
+          <div><dt>milestones</dt><dd>4<span class="muted">/7</span></dd></div>
+          <div><dt>activity</dt><dd><svg class="spark" viewBox="0 0 160 34" width="160" height="34" aria-label="commits per day, last 21 days" role="img">
+  <polyline points="0,34 0.0,31.0 8.0,31.0 16.0,31.0 24.0,31.0 32.0,31.0 40.0,31.0 48.0,31.0 56.0,25.4 64.0,27.3 72.0,21.7 80.0,12.4 88.0,23.6 96.0,31.0 104.0,31.0 112.0,31.0 120.0,31.0 128.0,31.0 136.0,31.0 144.0,31.0 152.0,14.3 160.0,5.0 160,34" class="spark-fill"/><polyline points="0.0,31.0 8.0,31.0 16.0,31.0 24.0,31.0 32.0,31.0 40.0,31.0 48.0,31.0 56.0,25.4 64.0,27.3 72.0,21.7 80.0,12.4 88.0,23.6 96.0,31.0 104.0,31.0 112.0,31.0 120.0,31.0 128.0,31.0 136.0,31.0 144.0,31.0 152.0,14.3 160.0,5.0" class="spark-line"/></svg></dd></div>
+        </dl>
+      </div>
+      <div class="langbar" role="img" aria-label="languages"><i style="width:86.9%;background:#3572A5"></i><i style="width:4.4%;background:#f1e05a"></i><i style="width:3.7%;background:#663399"></i><i style="width:2.3%;background:#89e051"></i><i style="width:2.1%;background:#e34c26"></i><i style="width:0.5%;background:#384d54"></i></div>
+      <div class="langs"><span><b style="background:#3572A5"></b>Python 87%</span><span><b style="background:#f1e05a"></b>JavaScript 4%</span><span><b style="background:#663399"></b>CSS 4%</span><span><b style="background:#89e051"></b>Shell 2%</span><span><b style="background:#e34c26"></b>HTML 2%</span><span><b style="background:#384d54"></b>Dockerfile 1%</span></div>
+      <p class="repo-line"><a href="https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent" target="_blank" rel="noopener">⎇ aymane-elouafi/AI-powered-penetration-testing-agent</a></p>
+    </header>
+
+    <section class="viz wide viz-pipeline" id="viz" aria-label="AI Pentest Agent live visualisation"></section>
+
+
+    <section class="milestones wide reveal">
+      <h2 class="section-title">Roadmap <span class="muted">· parsed live from the repo</span></h2>
+      <ol class="ms-track">
+        <li class="ms ms-done" style="--i:0">
+          <span class="ms-dot" aria-hidden="true"></span>
+          <span class="ms-id">1</span>
+          <span class="ms-label">v1</span>
+          <span class="ms-detail">rule-based flow, typed tools, container sandbox, CLI + web UI, Markdown report.</span>
+          <span class="ms-status">done</span>
+        </li>
+        <li class="ms ms-done" style="--i:1">
+          <span class="ms-dot" aria-hidden="true"></span>
+          <span class="ms-id">2</span>
+          <span class="ms-label">v2</span>
+          <span class="ms-detail">persistent knowledge base + web research (agent/research.py).</span>
+          <span class="ms-status">done</span>
+        </li>
+        <li class="ms ms-done" style="--i:2">
+          <span class="ms-dot" aria-hidden="true"></span>
+          <span class="ms-id">3</span>
+          <span class="ms-label">v3</span>
+          <span class="ms-detail">restricted shell (run_command) with the approval queue.</span>
+          <span class="ms-status">done</span>
+        </li>
+        <li class="ms ms-done" style="--i:3">
+          <span class="ms-dot" aria-hidden="true"></span>
+          <span class="ms-id">4</span>
+          <span class="ms-label">v4</span>
+          <span class="ms-detail">styled HTML reports + history page; deep per-service footprinting; host-network mode for local VMs; Metasploit exploit validation (msf_exploit, approval-gated).</span>
+          <span class="ms-status">done</span>
+        </li>
+        <li class="ms ms-todo" style="--i:4">
+          <span class="ms-dot" aria-hidden="true"></span>
+          <span class="ms-id">5</span>
+          <span class="ms-label">cross-run experience weighting</span>
+          
+          <span class="ms-status">planned</span>
+        </li>
+        <li class="ms ms-todo" style="--i:5">
+          <span class="ms-dot" aria-hidden="true"></span>
+          <span class="ms-id">6</span>
+          <span class="ms-label">multi-host internal sweeps</span>
+          
+          <span class="ms-status">planned</span>
+        </li>
+        <li class="ms ms-todo" style="--i:6">
+          <span class="ms-dot" aria-hidden="true"></span>
+          <span class="ms-id">7</span>
+          <span class="ms-label">benchmark scoring</span>
+          
+          <span class="ms-status">planned</span>
+        </li>
+      </ol>
+    </section>
+
+    <section class="feed wide reveal">
+      <div class="term">
+        <div class="term-bar"><i></i><i></i><i></i><span>git log --live aymane-elouafi/AI-powered-penetration-testing-agent</span><span class="feed-state" id="feed-state">snapshot</span></div>
+        <ol class="commits" id="commits">
+          <li><a href="https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/992b219732b7aa20a0e270d43fcd5c8e5b95146f" target="_blank" rel="noopener"><span class="sha">992b219</span><span class="msg">docs: fix plan all done — stage 1+2 + live root shell</span><time datetime="2026-11-11T20:54:33Z" data-ago="2026-11-11T20:54:33Z">2026-11-11</time></a></li>
+          <li><a href="https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/553a35ca8049959bd98d7ccc2a4914591fea73fb" target="_blank" rel="noopener"><span class="sha">553a35c</span><span class="msg">fix 13: the reasoning step questions the picture before acting</span><time datetime="2026-11-11T20:54:17Z" data-ago="2026-11-11T20:54:17Z">2026-11-11</time></a></li>
+          <li><a href="https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/c39bb8481506b7ddce02f4e997c733de6aa9cec3" target="_blank" rel="noopener"><span class="sha">c39bb84</span><span class="msg">fix 11: research online the vulnerable services it can't auto-exploit</span><time datetime="2026-11-11T20:53:32Z" data-ago="2026-11-11T20:53:32Z">2026-11-11</time></a></li>
+          <li><a href="https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/5bf81283ecea3782966a0683b95a4fd6cb3a7814" target="_blank" rel="noopener"><span class="sha">5bf8128</span><span class="msg">fix 12 followup: bump worked counter so a recalled winner is visible</span><time datetime="2026-11-11T20:51:41Z" data-ago="2026-11-11T20:51:41Z">2026-11-11</time></a></li>
+          <li><a href="https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/90348d13e267f0e3ae07318674dfc69c05dba615" target="_blank" rel="noopener"><span class="sha">90348d1</span><span class="msg">fix 12: learn which exploit works, across runs</span><time datetime="2026-11-11T20:51:16Z" data-ago="2026-11-11T20:51:16Z">2026-11-11</time></a></li>
+          <li><a href="https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/17ca25fcf75599ffb9845644f4b41acaa0865987" target="_blank" rel="noopener"><span class="sha">17ca25f</span><span class="msg">fix: stop exploiting once a shell is confirmed on the host</span><time datetime="2026-11-11T20:45:43Z" data-ago="2026-11-11T20:45:43Z">2026-11-11</time></a></li>
+          <li><a href="https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/2e67af2b386559becc8753f06855ca165259841c" target="_blank" rel="noopener"><span class="sha">2e67af2</span><span class="msg">docs: mark stage 1 of the fix plan complete</span><time datetime="2026-11-11T15:25:19Z" data-ago="2026-11-11T15:25:19Z">2026-11-11</time></a></li>
+          <li><a href="https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/75cb63343cf01029398afba9bbe6d381d3e5ce5a" target="_blank" rel="noopener"><span class="sha">75cb633</span><span class="msg">fix 9: stop a run from the UI instead of killing the server</span><time datetime="2026-11-11T15:24:11Z" data-ago="2026-11-11T15:24:11Z">2026-11-11</time></a></li>
+          <li><a href="https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/4d26a8bb51c3a9e82fc04e617bea25bb0735c33c" target="_blank" rel="noopener"><span class="sha">4d26a8b</span><span class="msg">fix 8: cut the LLM calls that cost time and changed nothing; delete dead code</span><time datetime="2026-11-11T15:22:45Z" data-ago="2026-11-11T15:22:45Z">2026-11-11</time></a></li>
+          <li><a href="https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/eb673fc0e13766ee5c81482c2494a967afcaa48d" target="_blank" rel="noopener"><span class="sha">eb673fc</span><span class="msg">fix 10: findings feed later steps, and stop repeating work</span><time datetime="2026-11-11T15:20:17Z" data-ago="2026-11-11T15:20:17Z">2026-11-11</time></a></li>
+          <li><a href="https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/56aa3cd2295ac52bb2cbeeea802f3982aec46528" target="_blank" rel="noopener"><span class="sha">56aa3cd</span><span class="msg">fix 7: a failed step is no longer accepted as done</span><time datetime="2026-11-11T15:18:21Z" data-ago="2026-11-11T15:18:21Z">2026-11-11</time></a></li>
+          <li><a href="https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/f5103a25fe86e84854abde128a589fc0acbdc728" target="_blank" rel="noopener"><span class="sha">f5103a2</span><span class="msg">fix 6: Exploit-DB searches that actually return results, as named leads</span><time datetime="2026-11-11T15:16:39Z" data-ago="2026-11-11T15:16:39Z">2026-11-11</time></a></li>
+        </ol>
+      </div>
+    </section>
+    <article id="content" class="readme reveal">
+      <p class="prompt">$ cat README.md <span class="muted">(synced from aymane-elouafi/AI-powered-penetration-testing-agent)</span></p>
+<p>An agentic recon &amp; footprinting assistant for <strong>authorized</strong> network pentesting<br>(HTB labs, internal/external engagements). You give it a scope; it scans in-scope<br>hosts, enumerates each service, looks up public exploits for the versions it finds,<br>and writes a report. It runs its tools inside a locked-down Kali container and uses<br>a <strong>local</strong> LLM.</p>
+<blockquote>
+<p><strong>Authorized use only.</strong> The agent refuses any target not in <code>scope.yaml</code>, and the<br>container firewall physically drops traffic to anything out of scope. It performs<br>recon and enumeration only — it does <strong>not</strong> run exploits. Exploit matches in the<br>report are leads for your own manual, authorized follow-up.</p>
+</blockquote>
+<h2>How it works</h2>
+<pre><code>Planner (rules + optional LLM advice)
+  → approval gate (autonomy tier)
+    → Sandbox: validate binary + scope + no shell metachars
+      → Kali container (firewall = scope only)
+        → parse output → state map (SQLite) → findings
+          → Markdown report
+</code></pre>
+<p>The design is deliberately <strong>not</strong> &quot;let the model run commands&quot;. A small local model<br>(tested: a 9B on an 8 GB GPU) is not reliable enough to decide what is vulnerable, so:</p>
+<ul>
+<li><strong>Discovery, per-service enumeration and exploit lookup are rule-based</strong> — they always run.</li>
+<li><strong>The LLM only advises</strong> (suggests at most one extra step from the fixed tool list,<br>validated against scope before it can run) and helps write up results.</li>
+<li><strong>Safety is structural, not prompt-based:</strong> an allowlist of binaries, scope checks on<br>every IP in every command, no shell (argv only), and a container that can&#39;t route off-scope.</li>
+</ul>
+<h2>Setup</h2>
+<pre><code class="language-bash">cd recon-agent
+python3 -m venv .venv &amp;&amp; . .venv/bin/activate
+pip install -r requirements.txt
+docker build -t recon-agent-kali:latest kali/      # one-time (large)
+python -m agent.cli doctor                          # check prerequisites
+</code></pre>
+<p>Point an OpenAI-compatible local LLM at the defaults (LM Studio on :1234), or set<br><code>RECON_LLM_URL</code> / <code>RECON_LLM_MODEL</code>. The agent runs without an LLM too (rule-based only).</p>
+<h2>Run</h2>
+<pre><code class="language-bash">cp config/scope.example.yaml config/scope.yaml      # then edit targets + authorized_by
+python -m agent.cli run --scope config/scope.yaml   # CLI, asks before gated steps
+</code></pre>
+<p>Web UI (start runs, watch live, approve steps, read the report):</p>
+<pre><code class="language-bash">uvicorn web.app:app --host 127.0.0.1 --port 8700
+# open http://127.0.0.1:8700
+</code></pre>
+<h2>Scope file</h2>
+<p>See <a href="https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/blob/main/config/scope.example.yaml" target="_blank" rel="noopener"><code>config/scope.example.yaml</code></a>. Key fields: <code>targets</code><br>(CIDRs/IPs), <code>exclude</code>, <code>autonomy</code> (<code>low</code>/<code>medium</code>/<code>high</code> — how much runs without<br>asking; exploitation is never auto), and <code>limits</code>.</p>
+<h2>Autonomy tiers</h2>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Tools</th>
+<th>Runs</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>low</td>
+<td>nmap, host_discovery, whatweb, smb_enum, smb_shares, nmap_nse, dns_axfr, searchsploit</td>
+<td>auto at autonomy ≥ low</td>
+</tr>
+<tr>
+<td>medium</td>
+<td>ffuf directory brute-force, nikto</td>
+<td>auto at autonomy ≥ medium, else asks</td>
+</tr>
+<tr>
+<td>shell</td>
+<td><code>run_command</code> (ad-hoc command, allowed binary)</td>
+<td><strong>always</strong> asks — never auto</td>
+</tr>
+<tr>
+<td>exploit</td>
+<td><code>msf_exploit</code> (validate a known vuln with Metasploit, confirm RCE)</td>
+<td><strong>always</strong> asks (approval button) — never auto</td>
+</tr>
+</tbody></table>
+<h2>Knowledge base + web research (the &quot;brain&quot;)</h2>
+<p>Before enumerating a service the planner consults a persistent knowledge base<br>(<code>knowledge</code> table). On a miss, if research is enabled it looks the service up on the<br>web (<code>agent/research.py</code>: SearXNG → page extraction → local-embedding ranking) and<br>saves what it learns as <strong>unverified</strong>, promoting entries that actually produce<br>findings and demoting ones that don&#39;t — so the agent improves across runs. Web text is<br>untrusted: it can only <em>select</em> from a fixed technique vocabulary and is mapped to the<br>tool allow-list; it is never turned into a command. Set <code>research.offline_only: true</code><br>to disable all web access (and for reproducible benchmarks).</p>
+<h2>Restricted shell</h2>
+<p><code>run_command</code> lets the agent (via its LLM advisor) propose a single ad-hoc command for<br>a case the typed tools don&#39;t cover — a specific NSE script, an <code>smbclient</code> action,<br>curling a discovered path. It goes through the exact same gate as everything else<br>(binary on the allow-list, every IP in scope, no shell metacharacters — commands run<br>argv-style, never through a shell) and it <strong>always</strong> requires operator approval.</p>
+<h2>Deep footprinting + exploit validation</h2>
+<p>Each service is enumerated with <strong>several</strong> tools, not one (e.g. a web port runs<br>whatweb + directory brute-force + NSE <code>http-*</code> scripts + nikto; SMB runs enum4linux-ng</p>
+<ul>
+<li>anonymous share listing + <code>smb-vuln-*</code>), and the knowledge base / web research can add<br>more. Where a service fingerprint matches a <strong>curated</strong> vulnerability<br>(<code>agent/exploits.py</code>, e.g. vsftpd 2.3.4, Samba 3.0.20 usermap_script, distccd,<br>UnrealIRCd), the agent can <strong>validate</strong> it: it runs the matching Metasploit module via<br><code>kali/msf-run.sh</code> and proves code execution by running <code>id</code>/<code>uname</code> on any session it<br>opens — a confirmed finding, not a guess.</li>
+</ul>
+<p><strong>This is for authorized labs only.</strong> Exploit validation is tier <code>exploit</code>, which<br><strong>never</strong> runs automatically: every attempt waits in the approval queue (a red card in<br>the web UI) until you approve it, and only ever targets an in-scope host. The scope<br>firewall + command-level scope check still apply, so the exploit can only reach the<br>authorized target. <code>host_network: true</code> in a scope lets the container reach a VM on your<br>own machine&#39;s networks directly (firewall skipped there; scope still enforced in-tool).</p>
+<h2>Layout</h2>
+<pre><code>agent/        scope, sandbox, container, store, tools, parsers, planner, research, llm, engine, cli
+kali/         Dockerfile + firewall.sh + entrypoint.sh (the locked-down toolbox)
+web/          FastAPI app + single-page UI
+config/       scope files
+data/         SQLite DB (state + audit log + knowledge base) + per-run raw tool output
+reports/      generated Markdown reports
+tests/        logic tests (no Docker/LLM/network): python tests/test_core.py (also test_research, test_kb, test_shell)
+</code></pre>
+<h2>Status</h2>
+<ul>
+<li><strong>v1</strong> — rule-based flow, typed tools, container sandbox, CLI + web UI, Markdown report.</li>
+<li><strong>v2</strong> — persistent knowledge base + web research (<code>agent/research.py</code>).</li>
+<li><strong>v3</strong> — restricted shell (<code>run_command</code>) with the approval queue.</li>
+<li><strong>v4</strong> — styled HTML reports + history page; deep per-service footprinting; host-network<br>mode for local VMs; Metasploit exploit validation (<code>msf_exploit</code>, approval-gated).</li>
+</ul>
+<p>Planned: cross-run experience weighting, multi-host internal sweeps, benchmark scoring<br>on retired HTB boxes.</p>
+
+    </article>
+
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="/post.js?v=59f29efc9e"></script>
+  <script src="/live.js?v=59f29efc9e"></script>
+</body>
+</html>

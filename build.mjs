@@ -14,7 +14,8 @@
 //  sitemap.xml and robots.txt.
 // ============================================================
 
-import { readFileSync, writeFileSync } from "fs";
+import { readFileSync, writeFileSync, existsSync } from "fs";
+import { createHash } from "crypto";
 import { marked } from "marked";
 import { parse } from "node-html-parser";
 
@@ -32,9 +33,17 @@ const GA_ID = "G-V2R1YY0P62"; // Google Analytics measurement ID
 const posts = JSON.parse(readFileSync("posts.json", "utf8"));
 const methodology = JSON.parse(readFileSync("methodology.json", "utf8"));
 
-// changes on every build, so browsers always load the newest css/js
-// (instead of a stale cached copy) after you push an update
-const VER = Date.now();
+// living projects (projects.json) + their GitHub snapshots (live/*.json, written by sync-live.mjs)
+const projects = JSON.parse(readFileSync("projects.json", "utf8"));
+const live = Object.fromEntries(projects.map(p =>
+  [p.id, existsSync(`live/${p.id}.json`) ? JSON.parse(readFileSync(`live/${p.id}.json`, "utf8")) : null]));
+
+// changes whenever a css/js file changes, so browsers load the newest copy.
+// A content hash (not the time) keeps builds identical, so the CI bot and a
+// local build never conflict over nothing.
+const VER = createHash("sha1")
+  .update(["style.css", "menu.js", "post.js", "home.js", "live.js"].map(f => existsSync(f) ? readFileSync(f, "utf8") : "").join("|"))
+  .digest("hex").slice(0, 10);
 
 // escape text that goes inside an HTML attribute (meta tags, etc.)
 function attr(s) {
@@ -112,7 +121,7 @@ function topbar() {
 function sidebar(currentId) {
   // posts tagged "walkthrough" / "project" get their own parts at the bottom
   const walkthroughs = posts.filter(p => (p.tags || []).includes("walkthrough"));
-  const projects = posts.filter(p => (p.tags || []).includes("project"));
+  const projectList = posts.filter(p => (p.tags || []).includes("project"));
 
   const postLink = p =>
     `<li><a href="${p.id}.html"${p.id === currentId ? ' class="current"' : ""}>${esc(p.title)}</a></li>`;
@@ -151,11 +160,11 @@ ${sections}
     </details>`;
   }).join("\n");
 
-  const projectsHtml = `    <details class="nav-phase nav-projects"${projects.some(p => p.id === currentId) ? " open" : ""}>
+  const projectsHtml = `    <details class="nav-phase nav-projects"${projectList.some(p => p.id === currentId) ? " open" : ""}>
       <summary><span class="nav-num">▣</span> Projects</summary>
       <div class="nav-section">
         <ul>
-${(projects.length ? projects.map(postLink) : ["<li class=\"empty\">(soon)</li>"]).map(s => "          " + s).join("\n")}
+${(projectList.length ? projectList.map(postLink) : ["<li class=\"empty\">(soon)</li>"]).map(s => "          " + s).join("\n")}
         </ul>
       </div>
     </details>`;
@@ -169,10 +178,20 @@ ${(walkthroughs.length ? walkthroughs.map(postLink) : ["<li class=\"empty\">(soo
       </div>
     </details>`;
 
+  const liveHtml = `    <details class="nav-phase nav-live" open>
+      <summary><span class="nav-num live-dot" aria-hidden="true"></span> Live projects</summary>
+      <div class="nav-section">
+        <ul>
+${projects.map(p => `          <li><a href="${p.id}.html"${p.id === currentId ? ' class="current"' : ""}>${esc(p.title)}</a></li>`).join("\n")}
+        </ul>
+      </div>
+    </details>`;
+
   return `  <div class="backdrop" id="backdrop"></div>
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-inner">
       <p class="sidebar-title">// methodology &amp; notes</p>
+${liveHtml}
 ${phasesHtml}
 ${projectsHtml}
 ${walkHtml}
@@ -390,6 +409,214 @@ function aurora() {
   return `  <div class="aurora" aria-hidden="true"><span class="b1"></span><span class="b2"></span><span class="b3"></span></div>`;
 }
 
+// ============================================================
+//  LIVING PROJECT PAGES (projects.json + live/<id>.json)
+//  Rebuilt by the CI pipeline whenever a project repo changes;
+//  live.js then keeps them moving in the browser.
+// ============================================================
+const LANG_COLORS = { Python: "#3572A5", Shell: "#89e051", JavaScript: "#f1e05a", CSS: "#663399", HTML: "#e34c26", Go: "#00ADD8", Dockerfile: "#384d54" };
+
+function progressOf(d) {
+  const ms = (d && d.milestones) || [];
+  if (!ms.length) return { pct: 0, done: 0, wip: 0, total: 0 };
+  const done = ms.filter(m => m.status === "done").length;
+  const wip = ms.filter(m => m.status === "wip").length;
+  return { pct: Math.round(((done + wip * 0.5) / ms.length) * 100), done, wip, total: ms.length };
+}
+
+// commits per day over the 21 days that end with the last push (deterministic)
+function sparkline(d, w = 160, h = 34) {
+  if (!d || !d.commits.length) return "";
+  const end = new Date(d.pushed_at); end.setUTCHours(23, 59, 59, 999);
+  const bins = Array(21).fill(0);
+  d.commits.forEach(c => { const i = 20 - Math.floor((end - new Date(c.date)) / 864e5); if (i >= 0 && i < 21) bins[i]++; });
+  const max = Math.max(1, ...bins);
+  const pts = bins.map((v, i) => `${(i / 20 * w).toFixed(1)},${(h - 3 - v / max * (h - 8)).toFixed(1)}`).join(" ");
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-label="commits per day, last 21 days" role="img">
+  <polyline points="0,${h} ${pts} ${w},${h}" class="spark-fill"/><polyline points="${pts}" class="spark-line"/></svg>`;
+}
+
+function langBar(d) {
+  if (!d) return "";
+  const entries = Object.entries(d.languages);
+  const total = entries.reduce((s, [, v]) => s + v, 0) || 1;
+  const parts = entries.map(([k, v]) => ({ k, p: (v / total) * 100 })).filter(x => x.p >= 0.5);
+  return `<div class="langbar" role="img" aria-label="languages">${parts.map(x => `<i style="width:${x.p.toFixed(1)}%;background:${LANG_COLORS[x.k] || "#8b929b"}"></i>`).join("")}</div>
+      <div class="langs">${parts.map(x => `<span><b style="background:${LANG_COLORS[x.k] || "#8b929b"}"></b>${esc(x.k)} ${x.p.toFixed(0)}%</span>`).join("")}</div>`;
+}
+
+const STATUS_LABEL = { done: "done", wip: "in progress", todo: "planned" };
+function milestonesHtml(d) {
+  if (!d || !d.milestones || !d.milestones.length) return "";
+  return `    <section class="milestones wide reveal">
+      <h2 class="section-title">Roadmap <span class="muted">· parsed live from the repo</span></h2>
+      <ol class="ms-track">
+${d.milestones.map((m, i) => `        <li class="ms ms-${m.status}" style="--i:${i}">
+          <span class="ms-dot" aria-hidden="true"></span>
+          <span class="ms-id">${esc(m.id || String(i + 1))}</span>
+          <span class="ms-label">${esc(m.label)}</span>
+          ${m.detail ? `<span class="ms-detail">${esc(m.detail)}</span>` : ""}
+          <span class="ms-status">${esc(m.statusText && m.status === "wip" ? m.statusText : STATUS_LABEL[m.status])}</span>
+        </li>`).join("\n")}
+      </ol>
+    </section>`;
+}
+
+function feedHtml(d) {
+  if (!d) return "";
+  return `    <section class="feed wide reveal">
+      <div class="term">
+        <div class="term-bar"><i></i><i></i><i></i><span>git log --live ${esc(d.repo)}</span><span class="feed-state" id="feed-state">snapshot</span></div>
+        <ol class="commits" id="commits">
+${d.commits.slice(0, 12).map(c => `          <li><a href="${attr(c.url)}" target="_blank" rel="noopener"><span class="sha">${esc(c.sha)}</span><span class="msg">${esc(c.msg)}</span><time datetime="${attr(c.date)}" data-ago="${attr(c.date)}">${esc(c.date.slice(0, 10))}</time></a></li>`).join("\n")}
+        </ol>
+      </div>
+    </section>`;
+}
+
+function stepsHtml(d) {
+  if (!d || !d.steps || !d.steps.length) return "";
+  return `    <section class="steps wide reveal">
+      <h2 class="section-title">Attack log <span class="muted">· every screenshot pushed to the repo shows up here</span></h2>
+      <div class="step-grid shots">
+${d.steps.map(s => `        <article class="step">
+          <header><span class="step-id">${esc(s.id)}</span><span class="step-title">${esc(s.shots[0].caption)}</span><span class="step-n">${s.shots.length} shot${s.shots.length > 1 ? "s" : ""}</span></header>
+          <div class="step-shots">${s.shots.map(sh => `<img src="${attr(sh.src)}" alt="${attr(s.id + ": " + sh.caption)}" loading="lazy" decoding="async">`).join("")}</div>
+        </article>`).join("\n")}
+      </div>
+    </section>`;
+}
+
+// the repo README, rendered as the body of the living post
+function readmeHtml(p, d) {
+  if (!d || !d.readme) return "";
+  let html = marked.parse(d.readme.replace(/^#\s+.*\n/, ""));          // the page has its own h1
+  html = html.replace(/<script[\s\S]*?<\/script>|<iframe[\s\S]*?<\/iframe>/gi, "")   // repo content is data, not code
+    .replace(/\son\w+="[^"]*"/gi, "").replace(/href="javascript:[^"]*"/gi, 'href="#"');
+  html = html.replace(/<(\/?)h1([ >])/g, "<$1h2$2");                    // the only h1 is the page title
+  const abs = (u, kind) => {
+    if (/^(https?:|mailto:|#|\/)/.test(u)) return u;
+    const path = u.replace(/^\.\//, "");
+    const dec = decodeURIComponent(path);
+    for (const [prefix, to] of Object.entries(p.linkMap || {})) if (dec.startsWith(prefix)) return to;
+    return kind === "img" ? `https://raw.githubusercontent.com/${d.repo}/${d.branch}/${path}` : `${d.url}/blob/${d.branch}/${path}`;
+  };
+  html = html.replace(/<a href="([^"]+)"/g, (m, u) => {
+    const to = abs(u, "a");
+    return `<a href="${to}"${/^https?:/.test(to) ? ' target="_blank" rel="noopener"' : ""}`;
+  }).replace(/<img ([^>]*?)src="([^"]+)"/g, (m, a, u) => `<img ${a}src="${abs(u, "img")}" loading="lazy"`);
+  return `    <article id="content" class="readme reveal">
+      <p class="prompt">$ cat README.md <span class="muted">(synced from ${esc(d.repo)})</span></p>
+${html}
+    </article>`;
+}
+
+function chaptersHtml(p) {
+  if (!p.chapters) return "";
+  return `    <section class="chapters wide reveal">
+      <h2 class="section-title">Write-ups</h2>
+      <div class="chapter-grid">
+${p.chapters.map(c => `        <a class="chapter ch-${c.status}" href="${attr(c.href)}"${/^https?:/.test(c.href) ? ' target="_blank" rel="noopener"' : ""}><span class="ch-status">${STATUS_LABEL[c.status]}</span><span class="ch-title">${esc(c.title)}</span><span class="ch-go">${c.status === "done" ? "read →" : "follow on GitHub →"}</span></a>`).join("\n")}
+      </div>
+    </section>`;
+}
+
+const fmtBytes = b => b > 1e6 ? (b / 1e6).toFixed(1) + " MB" : Math.round(b / 1e3) + " KB";
+
+for (const p of projects) {
+  const d = live[p.id];
+  const prog = progressOf(d);
+  const canonical = `${SITE}/${p.id}.html`;
+  const jsonld = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareSourceCode",
+        "name": p.title,
+        "description": p.description,
+        "codeRepository": `https://github.com/${p.repo}`,
+        "programmingLanguage": d ? Object.keys(d.languages) : [],
+        "author": { "@type": "Person", "name": AUTHOR, "@id": SITE + "/#person", "url": SITE },
+        "dateCreated": d ? d.created_at.slice(0, 10) : undefined,
+        "dateModified": d ? d.pushed_at.slice(0, 10) : undefined,
+        "url": canonical,
+        "keywords": p.tags.join(", "),
+      },
+      { "@type": "BreadcrumbList", "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": AUTHOR, "item": SITE + "/" },
+        { "@type": "ListItem", "position": 2, "name": "Live projects" },
+        { "@type": "ListItem", "position": 3, "name": p.title, "item": canonical },
+      ] },
+    ],
+  };
+  const ring = 2 * Math.PI * 34;
+  const page = `${head({ title: `${p.title} (live) · ${AUTHOR}`, description: p.description, canonical, ogType: "website", jsonld })}
+<body class="live-body">
+${aurora()}
+${topbar()}
+${sidebar(p.id)}
+  <main class="container live-page" data-live="${p.id}" data-repo="${attr(p.repo)}" data-visual="${p.visual}" data-ver="${attr(d ? d.synced_at : "")}">
+
+    <a class="back" href="/">← cd ..</a>
+
+    <header class="live-hero wide">
+      <div class="live-pill"><span class="live-dot" aria-hidden="true"></span> LIVE <span class="pill-sep"></span> synced from GitHub</div>
+      <h1 class="scramble">${esc(p.title)}</h1>
+      <p class="lead">${esc(p.tagline)}</p>
+      <div class="hero-stats">
+        <div class="ring" style="--p:${prog.pct}" role="img" aria-label="${prog.pct}% of the roadmap done">
+          <svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="34" class="ring-bg"/><circle cx="40" cy="40" r="34" class="ring-fg" stroke-dasharray="${ring.toFixed(1)}" stroke-dashoffset="${(ring * (1 - prog.pct / 100)).toFixed(1)}"/></svg>
+          <b data-count="${prog.pct}">${prog.pct}</b><small>%</small>
+        </div>
+        <dl class="stat-grid">
+          <div><dt>last push</dt><dd data-ago="${attr(d ? d.pushed_at : "")}" data-push="${attr(p.repo)}">${d ? esc(d.pushed_at.slice(0, 10)) : "-"}</dd></div>
+          <div><dt>commits</dt><dd data-count="${d ? d.commit_count : 0}">${d ? d.commit_count : "-"}</dd></div>
+          <div><dt>files</dt><dd data-count="${d ? d.files : 0}">${d ? d.files : "-"}</dd></div>
+          <div><dt>repo size</dt><dd>${d ? fmtBytes(d.bytes) : "-"}</dd></div>
+          <div><dt>milestones</dt><dd>${prog.done}<span class="muted">/${prog.total}</span>${prog.wip ? ` <span class="wip-tag">+${prog.wip} wip</span>` : ""}</dd></div>
+          <div><dt>activity</dt><dd>${sparkline(d)}</dd></div>
+        </dl>
+      </div>
+      ${langBar(d)}
+      <p class="repo-line"><a href="https://github.com/${attr(p.repo)}" target="_blank" rel="noopener">⎇ ${esc(p.repo)}</a></p>
+    </header>
+
+    <section class="viz wide viz-${p.visual}" id="viz" aria-label="${attr(p.title)} live visualisation"></section>
+
+${chaptersHtml(p)}
+${milestonesHtml(d)}
+${stepsHtml(d)}
+${feedHtml(d)}
+${readmeHtml(p, d)}
+
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="/post.js?v=${VER}"></script>
+  <script src="/live.js?v=${VER}"></script>
+</body>
+</html>
+`;
+  writeFileSync(`${p.id}.html`, page);
+  console.log("built", p.id + ".html (live)");
+}
+
+// home page cards for the live projects
+function liveCard(p) {
+  const d = live[p.id];
+  const prog = progressOf(d);
+  const c = d && d.commits[0];
+  return `        <a class="live-card${p.featured ? " featured" : ""} reveal" href="${p.id}.html">
+          <div class="lc-head"><span class="live-dot" aria-hidden="true"></span><span class="lc-live">LIVE</span><span class="lc-repo">${esc(p.repo.split("/")[1])}</span></div>
+          <div class="lc-viz" data-mini="${p.visual}" data-id="${p.id}" aria-hidden="true"></div>
+          <h3>${esc(p.title)}</h3>
+          <p>${esc(p.tagline)}</p>
+          <div class="lc-progress"><span class="bar"><i style="width:${prog.pct}%"></i></span><span>${prog.done}/${prog.total} milestones · ${prog.pct}%</span></div>
+          <div class="lc-meta"><span>${d ? d.commit_count : 0} commits</span><span>pushed <b data-ago="${attr(d ? d.pushed_at : "")}" data-push="${attr(p.repo)}">${d ? esc(d.pushed_at.slice(0, 10)) : "-"}</b></span>${sparkline(d, 110, 26)}</div>
+          ${c ? `<div class="lc-commit"><span class="sha">${esc(c.sha)}</span><span class="msg" data-type>${esc(c.msg)}</span></div>` : ""}
+        </a>`;
+}
+
 const projectPosts = posts.filter(p => (p.tags || []).includes("project"));
 const notePosts = posts.filter(p => !(p.tags || []).includes("project"));
 
@@ -436,6 +663,18 @@ ${aurora()}
 ${topbar()}
 ${sidebar("")}
   <main class="container home">
+
+    <!-- ===== LIVE PROJECTS (in progress, synced from GitHub) ===== -->
+    <section class="live-home wide">
+      <div class="live-title">
+        <h2><span class="live-dot" aria-hidden="true"></span> Live projects <span class="muted">· in progress</span></h2>
+        <p class="live-sub">These pages are wired to GitHub: a pipeline syncs every push, so they change as the projects do.</p>
+      </div>
+      <div class="ticker" aria-hidden="true"><div class="ticker-track" id="ticker">${projects.flatMap(p => (live[p.id] ? live[p.id].commits.slice(0, 4) : []).map(c => `<span><b>${esc(p.repo.split("/")[1])}</b> ${esc(c.msg)}</span>`)).join("")}</div></div>
+      <div class="live-grid">
+${projects.map(liveCard).join("\n")}
+      </div>
+    </section>
 
     <!-- ===== INTRO ===== -->
     <header class="intro">
@@ -500,6 +739,7 @@ ${notePosts.map(card).join("\n")}
   <!-- search index for the home page search bar -->
   <script id="posts-data" type="application/json">${JSON.stringify(searchIndex).replace(/</g, "\\u003c")}</script>
   <script src="/home.js?v=${VER}"></script>
+  <script src="/live.js?v=${VER}"></script>
 </body>
 </html>
 `;
@@ -511,6 +751,7 @@ console.log("built index.html");
 // ============================================================
 const urls = [
   { loc: SITE + "/", lastmod: posts[0].date },
+  ...projects.map(p => ({ loc: `${SITE}/${p.id}.html`, lastmod: live[p.id] ? live[p.id].pushed_at.slice(0, 10) : posts[0].date })),
   ...posts.map(p => ({ loc: `${SITE}/${p.id}.html`, lastmod: p.date })),
 ];
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>

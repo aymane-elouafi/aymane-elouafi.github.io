@@ -5,7 +5,7 @@ const searchBox = document.getElementById("post-search");
 const countLabel = document.getElementById("post-search-count");
 
 // keep the original post so we can restore it when the search changes
-const originalHTML = content.innerHTML;
+const originalHTML = content ? content.innerHTML : "";
 
 let marks = [];      // the <mark> elements currently highlighted
 let current = -1;    // which match we are focused on
@@ -69,12 +69,12 @@ function jumpTo(index) {
 }
 
 let timer;
-searchBox.addEventListener("input", function () {
+searchBox && searchBox.addEventListener("input", function () {
   clearTimeout(timer);
   timer = setTimeout(function () { runSearch(searchBox.value.trim()); }, 150);
 });
 
-searchBox.addEventListener("keydown", function (e) {
+searchBox && searchBox.addEventListener("keydown", function (e) {
   if (e.key === "Enter") {
     e.preventDefault();
     jumpTo(current + (e.shiftKey ? -1 : 1));
@@ -140,7 +140,7 @@ document.querySelectorAll(".cheat-row code").forEach(function (code) {
     box.querySelector(".lb-next").style.display = many ? "" : "none";
   }
   function open(img) {
-    list = Array.prototype.filter.call(document.querySelectorAll("#content img"), isShot);
+    list = Array.prototype.filter.call(document.querySelectorAll(img.closest(".shots") ? ".shots img" : "#content img"), isShot);
     show(list.indexOf(img));
     box.hidden = false;
     requestAnimationFrame(function () { box.classList.add("open"); });
@@ -153,7 +153,7 @@ document.querySelectorAll(".cheat-row code").forEach(function (code) {
   }
 
   document.addEventListener("click", function (e) {
-    var img = e.target.closest && e.target.closest("#content img");
+    var img = e.target.closest && e.target.closest("#content img, .shots img");
     if (!img) return;
     e.preventDefault();               // stops the link from opening a new tab
     if (isShot(img)) open(img);

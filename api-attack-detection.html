@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Google Analytics (gtag.js) - counts your visitors -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-V2R1YY0P62"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-V2R1YY0P62');
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web API Attack Detection with AI (live) · Aymane Elouafi</title>
+  <meta name="description" content="Live build log of a hybrid web API attack detector: custom rules, Coraza + OWASP CRS, a payload classifier and an Isolation Forest behavior model fused with a noisy-OR.">
+  <meta name="author" content="Aymane Elouafi">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="google-site-verification" content="P6WC3YGSehH9r2o-Lon_-tKZGpFiOWJjHD41vtJqLsk">
+  <link rel="canonical" href="https://aymaneelouafi.me/api-attack-detection.html">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-512.png" type="image/png" sizes="512x512">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <!-- Open Graph (Facebook, LinkedIn, Discord...) -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Web API Attack Detection with AI (live) · Aymane Elouafi">
+  <meta property="og:description" content="Live build log of a hybrid web API attack detector: custom rules, Coraza + OWASP CRS, a payload classifier and an Isolation Forest behavior model fused with a noisy-OR.">
+  <meta property="og:url" content="https://aymaneelouafi.me/api-attack-detection.html">
+  <meta property="og:site_name" content="Aymane Elouafi">
+  <meta property="og:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Web API Attack Detection with AI (live) · Aymane Elouafi">
+  <meta name="twitter:description" content="Live build log of a hybrid web API attack detector: custom rules, Coraza + OWASP CRS, a payload classifier and an Isolation Forest behavior model fused with a noisy-OR.">
+  <meta name="twitter:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareSourceCode",
+      "name": "Web API Attack Detection with AI",
+      "description": "Live build log of a hybrid web API attack detector: custom rules, Coraza + OWASP CRS, a payload classifier and an Isolation Forest behavior model fused with a noisy-OR.",
+      "codeRepository": "https://github.com/aymane-elouafi/Web-API-Attack-Detection-With-AI",
+      "programmingLanguage": [
+        "Python",
+        "HTML",
+        "Go",
+        "Dockerfile"
+      ],
+      "author": {
+        "@type": "Person",
+        "name": "Aymane Elouafi",
+        "@id": "https://aymaneelouafi.me/#person",
+        "url": "https://aymaneelouafi.me"
+      },
+      "dateCreated": "2026-11-11",
+      "dateModified": "2026-11-11",
+      "url": "https://aymaneelouafi.me/api-attack-detection.html",
+      "keywords": "ai, machine-learning, waf, coraza, api-security, python"
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Aymane Elouafi",
+          "item": "https://aymaneelouafi.me/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Live projects"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Web API Attack Detection with AI",
+          "item": "https://aymaneelouafi.me/api-attack-detection.html"
+        }
+      ]
+    }
+  ]
+}
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css?v=59f29efc9e">
+  <script defer src="/menu.js?v=59f29efc9e"></script>
+</head>
+<body class="live-body">
+  <div class="aurora" aria-hidden="true"><span class="b1"></span><span class="b2"></span><span class="b3"></span></div>
+  <div class="topbar">
+    <button class="menu-toggle" aria-label="Open menu" aria-expanded="false">☰ menu</button>
+    <a class="topbar-home" href="/">~/aymane</a>
+  </div>
+  <div class="backdrop" id="backdrop"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner">
+      <p class="sidebar-title">// methodology &amp; notes</p>
+    <details class="nav-phase nav-live" open>
+      <summary><span class="nav-num live-dot" aria-hidden="true"></span> Live projects</summary>
+      <div class="nav-section">
+        <ul>
+          <li><a href="enterprise-network.html">Enterprise Network Lab</a></li>
+          <li><a href="recon-agent.html">AI Pentest Agent</a></li>
+          <li><a href="api-attack-detection.html" class="current">Web API Attack Detection with AI</a></li>
+        </ul>
+      </div>
+    </details>
+    <details class="nav-phase" open>
+      <summary><span class="nav-num">1</span> Information Gathering</summary>
+        <div class="nav-section">
+          <span class="nav-sec-title">Host Discovery &amp; Port Scanning</span>
+          <ul>
+            <li><a href="nmap.html">Network Enumeration with Nmap</a></li>
+          </ul>
+        </div>
+        <div class="nav-section">
+          <span class="nav-sec-title">Service Enumeration / Footprinting</span>
+          <ul>
+            <li><a href="nfs.html">Footprinting NFS</a></li>
+            <li><a href="ftp.html">Footprinting FTP</a></li>
+            <li><a href="dns.html">Footprinting DNS</a></li>
+            <li><a href="smtp.html">Footprinting SMTP</a></li>
+            <li><a href="imap-pop3.html">Footprinting IMAP / POP3</a></li>
+            <li><a href="snmp.html">Footprinting SNMP</a></li>
+            <li><a href="mysql.html">Footprinting MySQL</a></li>
+            <li><a href="mssql.html">Footprinting MSSQL</a></li>
+            <li><a href="oracle-tns.html">Footprinting Oracle TNS</a></li>
+            <li><a href="ipmi.html">Footprinting IPMI</a></li>
+          </ul>
+        </div>
+        <div class="nav-section empty"><span class="nav-sec-title">Web Recon</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">2</span> Vulnerability Assessment</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Known Vulnerabilities (version → CVE)</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Web Vulnerabilities</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Misconfigurations &amp; Default Credentials</span></div>
+    </details>
+    <details class="nav-phase" open>
+      <summary><span class="nav-num">3</span> Exploitation</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Service / Network Exploitation</span></div>
+        <div class="nav-section">
+          <span class="nav-sec-title">Web Exploitation</span>
+          <ul>
+            <li><a href="wordpress.html">Hacking WordPress</a></li>
+          </ul>
+        </div>
+        <div class="nav-section empty"><span class="nav-sec-title">Password Attacks</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">4</span> Post-Exploitation</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Local Enumeration</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Privilege Escalation (Linux / Windows)</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Looting &amp; Credential Hunting</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">5</span> Lateral Movement</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Pivoting &amp; Tunneling</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Credential Reuse &amp; Pass-the-Hash</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">6</span> Active Directory</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">AD Enumeration</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">AD Attacks</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Domain Dominance &amp; Lateral Movement</span></div>
+    </details>
+    <details class="nav-phase nav-projects">
+      <summary><span class="nav-num">▣</span> Projects</summary>
+      <div class="nav-section">
+        <ul>
+          <li><a href="enterprise-lab-part1.html">Enterprise Lab, Part 1 — pfSense, VLANs, a DMZ and a Suricata IDS</a></li>
+          <li><a href="cloud-soc-aws.html">Cloud-Native SOC on AWS — Purple Teaming &amp; Detection Engineering</a></li>
+          <li><a href="proxmox-ceph-vxlan.html">Hyper-Converged Proxmox Cluster — Ceph, VXLAN &amp; Grafana</a></li>
+          <li><a href="proxmox-ha-cluster.html">High-Availability Proxmox VE Cluster with Shared NAS</a></li>
+        </ul>
+      </div>
+    </details>
+    <details class="nav-phase nav-walk">
+      <summary><span class="nav-num">★</span> HTB Walkthroughs</summary>
+      <div class="nav-section">
+        <ul>
+          <li><a href="cap.html">Cap - HTB Walkthrough</a></li>
+        </ul>
+      </div>
+    </details>
+    </div>
+  </aside>
+  <main class="container live-page" data-live="api-attack-detection" data-repo="aymane-elouafi/Web-API-Attack-Detection-With-AI" data-visual="stream" data-ver="2026-11-11T22:23:01.495Z">
+
+    <a class="back" href="/">← cd ..</a>
+
+    <header class="live-hero wide">
+      <div class="live-pill"><span class="live-dot" aria-hidden="true"></span> LIVE <span class="pill-sep"></span> synced from GitHub</div>
+      <h1 class="scramble">Web API Attack Detection with AI</h1>
+      <p class="lead">Rules, Coraza + OWASP CRS and two machine-learning models, fused into one risk score. The stream below replays real requests from the project's dataset.</p>
+      <div class="hero-stats">
+        <div class="ring" style="--p:70" role="img" aria-label="70% of the roadmap done">
+          <svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="34" class="ring-bg"/><circle cx="40" cy="40" r="34" class="ring-fg" stroke-dasharray="213.6" stroke-dashoffset="64.1"/></svg>
+          <b data-count="70">70</b><small>%</small>
+        </div>
+        <dl class="stat-grid">
+          <div><dt>last push</dt><dd data-ago="2026-11-11T21:59:37Z" data-push="aymane-elouafi/Web-API-Attack-Detection-With-AI">2026-11-11</dd></div>
+          <div><dt>commits</dt><dd data-count="2">2</dd></div>
+          <div><dt>files</dt><dd data-count="41">41</dd></div>
+          <div><dt>repo size</dt><dd>1.2 MB</dd></div>
+          <div><dt>milestones</dt><dd>3<span class="muted">/5</span> <span class="wip-tag">+1 wip</span></dd></div>
+          <div><dt>activity</dt><dd><svg class="spark" viewBox="0 0 160 34" width="160" height="34" aria-label="commits per day, last 21 days" role="img">
+  <polyline points="0,34 0.0,31.0 8.0,31.0 16.0,31.0 24.0,31.0 32.0,31.0 40.0,31.0 48.0,31.0 56.0,31.0 64.0,31.0 72.0,31.0 80.0,31.0 88.0,31.0 96.0,31.0 104.0,31.0 112.0,31.0 120.0,31.0 128.0,31.0 136.0,31.0 144.0,31.0 152.0,31.0 160.0,5.0 160,34" class="spark-fill"/><polyline points="0.0,31.0 8.0,31.0 16.0,31.0 24.0,31.0 32.0,31.0 40.0,31.0 48.0,31.0 56.0,31.0 64.0,31.0 72.0,31.0 80.0,31.0 88.0,31.0 96.0,31.0 104.0,31.0 112.0,31.0 120.0,31.0 128.0,31.0 136.0,31.0 144.0,31.0 152.0,31.0 160.0,5.0" class="spark-line"/></svg></dd></div>
+        </dl>
+      </div>
+      <div class="langbar" role="img" aria-label="languages"><i style="width:83.6%;background:#3572A5"></i><i style="width:10.8%;background:#e34c26"></i><i style="width:5.2%;background:#00ADD8"></i></div>
+      <div class="langs"><span><b style="background:#3572A5"></b>Python 84%</span><span><b style="background:#e34c26"></b>HTML 11%</span><span><b style="background:#00ADD8"></b>Go 5%</span></div>
+      <p class="repo-line"><a href="https://github.com/aymane-elouafi/Web-API-Attack-Detection-With-AI" target="_blank" rel="noopener">⎇ aymane-elouafi/Web-API-Attack-Detection-With-AI</a></p>
+    </header>
+
+    <section class="viz wide viz-stream" id="viz" aria-label="Web API Attack Detection with AI live visualisation"></section>
+
+
+    <section class="milestones wide reveal">
+      <h2 class="section-title">Roadmap <span class="muted">· parsed live from the repo</span></h2>
+      <ol class="ms-track">
+        <li class="ms ms-done" style="--i:0">
+          <span class="ms-dot" aria-hidden="true"></span>
+          <span class="ms-id">1</span>
+          <span class="ms-label">Foundation</span>
+          <span class="ms-detail">vulnerable demo API + labeled traffic generator</span>
+          <span class="ms-status">done</span>
+        </li>
+        <li class="ms ms-done" style="--i:1">
+          <span class="ms-dot" aria-hidden="true"></span>
+          <span class="ms-id">2</span>
+          <span class="ms-label">Rules-based detector</span>
+          <span class="ms-detail">our own WAF-style rules, plus Coraza + OWASP CRS as the industry baseline (done)</span>
+          <span class="ms-status">done</span>
+        </li>
+        <li class="ms ms-done" style="--i:2">
+          <span class="ms-dot" aria-hidden="true"></span>
+          <span class="ms-id">3</span>
+          <span class="ms-label">AI</span>
+          <span class="ms-detail">supervised payload classifier (done); unsupervised behavior model (done, see below)</span>
+          <span class="ms-status">done</span>
+        </li>
+        <li class="ms ms-todo" style="--i:3">
+          <span class="ms-dot" aria-hidden="true"></span>
+          <span class="ms-id">4</span>
+          <span class="ms-label">Score fusion + evaluation (rules vs AI vs hybrid)</span>
+          
+          <span class="ms-status">planned</span>
+        </li>
+        <li class="ms ms-wip" style="--i:4">
+          <span class="ms-dot" aria-hidden="true"></span>
+          <span class="ms-id">5</span>
+          <span class="ms-label">Management interface (dashboard)</span>
+          <span class="ms-detail">first version done, see below</span>
+          <span class="ms-status">in progress</span>
+        </li>
+      </ol>
+    </section>
+
+    <section class="feed wide reveal">
+      <div class="term">
+        <div class="term-bar"><i></i><i></i><i></i><span>git log --live aymane-elouafi/Web-API-Attack-Detection-With-AI</span><span class="feed-state" id="feed-state">snapshot</span></div>
+        <ol class="commits" id="commits">
+          <li><a href="https://github.com/aymane-elouafi/Web-API-Attack-Detection-With-AI/commit/3c418808e4dbeab109e8879e716339d3b69256dd" target="_blank" rel="noopener"><span class="sha">3c41880</span><span class="msg">Add contributors to README</span><time datetime="2026-11-11T21:59:35Z" data-ago="2026-11-11T21:59:35Z">2026-11-11</time></a></li>
+          <li><a href="https://github.com/aymane-elouafi/Web-API-Attack-Detection-With-AI/commit/d12f2d80d3724eb6c6ed39d48396e8a087319a79" target="_blank" rel="noopener"><span class="sha">d12f2d8</span><span class="msg">Web API attack detection: rules, Coraza, two AI models, fusion, dashboard</span><time datetime="2026-11-11T21:52:36Z" data-ago="2026-11-11T21:52:36Z">2026-11-11</time></a></li>
+        </ol>
+      </div>
+    </section>
+    <article id="content" class="readme reveal">
+      <p class="prompt">$ cat README.md <span class="muted">(synced from aymane-elouafi/Web-API-Attack-Detection-With-AI)</span></p>
+<p>AI-assisted detection of attacks against a web API: classic rules + machine learning,<br>combined into one risk score. (AI module project.)</p>
+<h2>Roadmap</h2>
+<ol>
+<li><strong>Foundation</strong> (done): vulnerable demo API + labeled traffic generator</li>
+<li><strong>Rules-based detector</strong> (done): our own WAF-style rules, plus <strong>Coraza + OWASP CRS</strong> as the industry baseline (done)</li>
+<li>AI: supervised payload classifier (done); unsupervised behavior model (done, see below)</li>
+<li>Score fusion + evaluation (rules vs AI vs hybrid)</li>
+<li>Management interface (dashboard) -- first version done, see below</li>
+</ol>
+<h2>Layout</h2>
+<pre><code>common/seed.py        shared seed data (users, products, orders)
+target_api/app.py     intentionally vulnerable FastAPI app (local only, fake data)
+traffic/payloads.py   attack payload catalogue (with evasion variants)
+traffic/generate.py   simulates users + attackers, writes data/dataset.csv
+detection/rules.py    rules detector: signature rules + rate/login-failure rules, CRS-style scoring
+detection/metrics.py  precision / recall / false-positive rate, shared by all detectors
+detection/run_rules.py  runs the rules on the dataset and prints a report
+detection/run_waf.py  evaluates Coraza+CRS and compares it with our rules
+detection/report.py   report printing shared by all detectors
+detection/ml_payload.py  supervised payload classifier (features + model + grouped cross-validation)
+detection/run_ml.py   evaluates it and compares it with the rules and Coraza
+dashboard/            read-only management dashboard (FastAPI + one HTML page)
+detection/ml_behavior.py  unsupervised behavior model (rolling per-client features + Isolation Forest)
+detection/run_behavior.py  evaluates it and compares it with every other detector
+detection/run_novel.py  held-out test on attack payloads that are not in the generator&#39;s catalogue
+waf/                  Coraza + OWASP CRS inspection proxy (Go, built and run in Docker)
+tests/                unit tests for the rules
+data/                 generated datasets and predictions
+</code></pre>
+<h2>Setup</h2>
+<pre><code class="language-bash">python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+</code></pre>
+<h2>Generate a dataset</h2>
+<p>Terminal 1 -- start the vulnerable API (restart it between runs for a clean state):</p>
+<pre><code class="language-bash">.venv/bin/uvicorn target_api.app:app --host 127.0.0.1 --port 8000
+</code></pre>
+<p>Terminal 2 -- generate traffic:</p>
+<pre><code class="language-bash">.venv/bin/python -m traffic.generate --seed 42
+</code></pre>
+<p>Output: <code>data/dataset.csv</code> with one row per request: what the server saw<br>(method, path, query, body, user agent, status, size, time) plus the ground-truth<br><code>label</code> (0 normal / 1 attack), <code>attack_type</code> and evasion <code>variant</code>.</p>
+<h2>Run the rules detector</h2>
+<pre><code class="language-bash">.venv/bin/python -m detection.run_rules          # report on data/dataset.csv
+.venv/bin/python -m unittest discover -s tests -t .   # unit tests
+</code></pre>
+<p>Each request gets an anomaly score (every matching rule adds points); a score of<br>5 or more is flagged. Baseline result on the default dataset (seed 42):<br>precision 100%, recall 64.7%, false-positive rate 0%. It catches injection, XSS, most<br>path traversal and most brute force, but misses every BOLA and mass-assignment request --<br>the cases that need context or behavior, which is what the AI phases target.</p>
+<p>Caveat: the rules were written by the same author as the payload generator, so<br>their recall on injection attacks is optimistic. Phase 4 will test on held-out,<br>novel payloads.</p>
+<h2>Coraza + OWASP CRS baseline</h2>
+<p><a href="https://coraza.io" target="_blank" rel="noopener">Coraza</a> is an open-source, ModSecurity-compatible WAF written in Go. <code>waf/</code><br>is a small reverse proxy that runs every request through Coraza with the real OWASP Core Rule<br>Set (CRS v4, paranoia level 1, anomaly threshold 5). It runs in <strong>monitor mode</strong>: every request<br>is still forwarded to the API, and the verdict comes back as response headers<br>(<code>X-WAF-Score</code>, <code>X-WAF-Rules</code>, <code>X-WAF-Block</code>), which the generator saves as <code>waf_*</code> columns.<br>Go is not needed on the host -- it is compiled inside Docker.</p>
+<pre><code class="language-bash">docker build -t web-api-coraza:local waf/
+</code></pre>
+<p>Start the API (terminal 1), then the proxy (terminal 2):</p>
+<pre><code class="language-bash">.venv/bin/uvicorn target_api.app:app --host 127.0.0.1 --port 8000
+</code></pre>
+<pre><code class="language-bash">docker run -d --rm --name coraza-proxy --network host --read-only --tmpfs /tmp:rw,noexec,nosuid,size=64m --cap-drop ALL --security-opt no-new-privileges -e LISTEN=127.0.0.1:8080 -e UPSTREAM=http://127.0.0.1:8000 web-api-coraza:local
+</code></pre>
+<p>Generate traffic THROUGH the proxy and evaluate (stop it afterwards with <code>docker stop coraza-proxy</code>):</p>
+<pre><code class="language-bash">.venv/bin/python -m traffic.generate --seed 42 --url http://127.0.0.1:8080
+.venv/bin/python -m detection.run_rules
+.venv/bin/python -m detection.run_waf
+</code></pre>
+<p>Tuning that was needed (normal when putting CRS in front of a REST API): <code>PUT/PATCH/DELETE</code><br>are allowed (CRS only allows GET/HEAD/POST/OPTIONS by default), and the generator sends a<br>real <code>Host</code> name (CRS flags bare-IP Host headers). Only request rules are evaluated;<br>CRS response rules (e.g. SQL-error leakage) are not.</p>
+<p>Results on the default dataset (seed 42, 3,732 requests, 1,092 attacks):</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>precision</th>
+<th>recall</th>
+<th>false alarms</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>own rules</td>
+<td>100%</td>
+<td>64.7%</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Coraza + CRS</td>
+<td>100%</td>
+<td>39.1%</td>
+<td>0</td>
+</tr>
+<tr>
+<td>either one flags</td>
+<td>100%</td>
+<td>65.9%</td>
+<td>0</td>
+</tr>
+</tbody></table>
+<p>Coraza detects 100% of SQL injection, XSS and path traversal (including double-encoded<br>payloads, where our rules miss some) but nothing behavioral: BOLA, mass assignment and<br>brute force are invisible to CRS (our rate / failed-login rules catch 92% of brute force).<br>Both detectors miss every BOLA and mass-assignment request -- the target for the AI phase.</p>
+<p>User agents: only ~12% of injection / traversal / brute-force sessions use a noisy tool&#39;s<br>default agent (sqlmap, Nikto, Hydra), and every request in those sessions is labeled an<br>attack; other attackers use ordinary-looking agents. (With seed 42 only 9 requests, 1% of the<br>attacks, ended up with a tool agent.) The report also shows each detector without its<br>user-agent rule (it changes almost nothing). An earlier generator where most<br>attackers used sqlmap/Nikto agents let that one rule inflate Coraza&#39;s brute-force score and<br>created fake &quot;false alarms&quot;, so it was changed. The user agent must not be an ML feature.</p>
+<h2>Payload classifier (AI model #1)</h2>
+<p>Learns from labeled requests instead of hand-written rules: character n-grams of the request<br>(method, path shape with ids masked, parameter names, decoded values) plus a few numeric<br>features (length, entropy, odd-character share) into a logistic regression. It never sees the<br>client IP, user agent, attack type or variant, and it is trained only on payload attacks<br>(SQLi, XSS, traversal, mass assignment) -- BOLA and brute force are behavior, not text.</p>
+<pre><code class="language-bash">.venv/bin/python -m detection.run_ml      # 5-fold cross-validation grouped by client IP + comparison
+.venv/bin/python -m detection.run_novel   # held-out test on novel payloads
+</code></pre>
+<p>Same dataset: 100% recall on SQLi, XSS, traversal and mass assignment, 0 false alarms, but that<br>number is <strong>memorisation</strong>: the generator re-uses ~30 attack strings for training and testing.<br>The honest number is the held-out test (30 novel attacks, 15 harmless look-alikes; small, so<br>indicative only): payload ML catches 28/30 (93%) with 0 false alarms; own rules catch 22/30 (73%)<br>with 0. A first version learned <code>--</code> as &quot;attack&quot; and flagged &quot;a -- b&quot; and &quot;great -- would buy<br>again&quot;; adding ~45 varied harmless sentences (<code>BENIGN_TEXT</code> in <code>traffic/payloads.py</code>, different<br>from the test sentences, but written by the same author) to the training data fixed it.</p>
+<h2>Behavior model (AI model #2)</h2>
+<p>Unsupervised, no labels: for each request it summarises what that client did in the last 60 s<br>(distinct order ids, share of order requests, errors, error ratio, 404s, failed logins) and an<br>Isolation Forest scores how unusual that is. It targets what text-based detectors cannot see.</p>
+<pre><code class="language-bash">.venv/bin/python -m detection.run_behavior   # report + comparison with every other detector
+</code></pre>
+<p>Ranking quality (AUC, normal vs attack): BOLA 0.99, brute force 0.995. Flagging the 5% most<br>unusual requests (a policy choice, not tuned on labels): BOLA 50%, brute force 13%, 1 false<br>alarm. A &quot;shared object&quot; feature (another user already requested this order) raised BOLA from<br>45%. The alert budget is the only knob; trade-off (BOLA / brute force / false alarms): 5%<br>50/13/0.0%, 10% 77/42/0.5%, 15% 92/80/1.2%, 20% 97/100/4.7%. Everything together (&quot;any of<br>them&quot; at 5%): 84.5% recall, 1 false alarm. The first requests of a burst are missed (the<br>window is still empty).</p>
+<p>Improvement history: the first version used 7 generic features (BOLA AUC 0.94, brute force<br>0.98). Keeping only features that describe the attacks gave 0.99 / 0.995; adding more generic<br>ones (request count, speed, session age, distinct paths) made it worse. I compared about ten<br>feature sets using the labels, so these AUCs are slightly optimistic. Caveats: only 8 BOLA and<br>6 brute-force clients in the data, and the model is fit on the same traffic it scores (normal<br>for anomaly detection; a live system would train on earlier traffic).</p>
+<h2>Fusion and final evaluation (Phase 4)</h2>
+<p><code>detection/fusion.py</code> turns each detector into an &quot;alert strength&quot; (0.5 = this detector alone<br>would alert: rules / Coraza score 5 of 10, payload ML p = 0.5, behavior = its alert-budget cutoff)<br>and combines them with a noisy-OR, <code>1 - prod(1 - s)</code>; risk &gt;= 0.5 is flagged. One confident<br>detector is enough, several half-convinced ones add up. The mappings are a stated policy, not<br>tuned on labels.</p>
+<pre><code class="language-bash">.venv/bin/python -m detection.run_fusion                                   # needs the four predictions_*.csv
+.venv/bin/python -m detection.run_fusion --waf-url http://127.0.0.1:8080   # + Coraza on the novel payloads
+</code></pre>
+<p>Default dataset (3,732 requests, 1,092 attacks):</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>precision</th>
+<th>recall</th>
+<th>false alarms</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>rules only</td>
+<td>100%</td>
+<td>64.7%</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Coraza only</td>
+<td>100%</td>
+<td>39.1%</td>
+<td>0</td>
+</tr>
+<tr>
+<td>AI only (payload + behavior)</td>
+<td>99.9%</td>
+<td>62.1%</td>
+<td>1 (0.0%)</td>
+</tr>
+<tr>
+<td><strong>hybrid (all four, fused)</strong></td>
+<td>99.9%</td>
+<td><strong>84.5%</strong></td>
+<td>1 (0.0%)</td>
+</tr>
+</tbody></table>
+<p>Each detector covers a different gap: Coraza/rules/payload ML the injections, rules the<br>brute force, payload ML mass assignment, behavior ML the only BOLA hits (50%). The hybrid still<br>misses 145 BOLA and 24 brute-force requests (the start of each burst). On this data fusion<br>equals the plain union of the four flags; the noisy-OR only matters when detectors are<br>half-convinced, which the dataset rarely produces.</p>
+<p>Novel-payload test (30 unseen attacks, 15 harmless look-alikes; single requests, so no behavior<br>model; small, indicative only): own rules 22/30, 0 false alarms; payload ML 28/30, 0; Coraza+CRS<br>30/30, 1 (Coraza measured earlier, not re-run since the payload fix). Coraza is strongest on unseen injections, the hybrid&#39;s value is coverage of<br>behavior attacks, not payloads.</p>
+<h2>Dashboard (Phase 5)</h2>
+<p>Read-only, local, vanilla JS (no external libraries), light and dark, works at phone width,<br>respects reduced motion / transparency / contrast. It reads <code>data/</code> only and never talks to the<br>demo API.</p>
+<pre><code class="language-bash">.venv/bin/uvicorn dashboard.app:app --host 127.0.0.1 --port 8100   # then open http://127.0.0.1:8100
+</code></pre>
+<ul>
+<li><strong>Overview:</strong> every detector side by side, recall by attack type. The threshold slider in the<br>top bar re-decides the hybrid live (lower = more alerts, more false alarms).</li>
+<li><strong>Alerts:</strong> flagged / missed attacks / false alarms, with the reason (which detectors fired,<br>rule and Coraza ids).</li>
+<li><strong>Clients:</strong> ranked by riskiest request; click one for its request timeline (risk, which<br>detectors flagged each request, why).</li>
+<li><strong>Live feed:</strong> Play/Pause replays the dataset in time order (1x / 4x / 20x), colouring rows by risk.</li>
+</ul>
+<p>Not built: real live traffic, user accounts, editing rules.</p>
+<h2>Attacks covered</h2>
+<p>SQL injection, XSS (stored), path traversal, mass assignment, BOLA/IDOR,<br>brute force / credential stuffing.</p>
+<h2>Safety</h2>
+<p>The demo API is vulnerable on purpose. It only uses an in-memory database and a<br>fake file system, and must only be bound to 127.0.0.1. Never deploy it.</p>
+<h2>Contributors</h2>
+<ul>
+<li><a href="https://github.com/aymane-elouafi" target="_blank" rel="noopener">Aymane Elouafi</a> -- project owner</li>
+<li>Claude (Anthropic) -- AI pair programmer; co-author of the commits</li>
+</ul>
+
+    </article>
+
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="/post.js?v=59f29efc9e"></script>
+  <script src="/live.js?v=59f29efc9e"></script>
+</body>
+</html>

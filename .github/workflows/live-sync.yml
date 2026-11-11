@@ -1,0 +1,56 @@
+# Keeps the living project pages in sync with their GitHub repos.
+# Every 15 minutes (or on demand / when a project repo pings us) it pulls
+# the repos into live/*.json, and only if something changed it rebuilds
+# the site and commits, which republishes GitHub Pages.
+name: live-sync
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+  repository_dispatch:
+    types: [project-updated]
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: live-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Pull project repos
+        run: node sync-live.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Rebuild and publish if a project changed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -z "$(git status --porcelain -- live/)" ]; then
+            echo "No project changed, nothing to publish."
+            exit 0
+          fi
+          node build.mjs
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "live: sync project data from GitHub"
+          git push
+          # make sure Pages rebuilds even if the push from the workflow token did not trigger it
+          gh api -X POST "repos/${{ github.repository }}/pages/builds" || true

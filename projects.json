@@ -1,0 +1,104 @@
+[
+  {
+    "id": "enterprise-network",
+    "repo": "aymane-elouafi/enterprise-network",
+    "title": "Enterprise Network Lab",
+    "tagline": "A segmented enterprise network built by hand: pfSense, VLANs, a DMZ, Suricata, then real attacks against it. It grows one lab at a time.",
+    "description": "Live build log of a virtualized enterprise network: pfSense firewall, VLAN-aware switch, DMZ with Nginx and Squid, Suricata IDS, and attack simulations, synced from GitHub.",
+    "visual": "network",
+    "featured": true,
+    "tags": [
+      "pfsense",
+      "vlan",
+      "dmz",
+      "suricata",
+      "ids",
+      "red-vs-blue"
+    ],
+    "milestones": {
+      "file": "ROADMAP.md",
+      "type": "table"
+    },
+    "shots": "part-2-attack-phase/screenshots/",
+    "chapters": [
+      {
+        "title": "Part 1: building the segmented lab",
+        "href": "enterprise-lab-part1.html",
+        "status": "done"
+      },
+      {
+        "title": "Part 2: attack phase",
+        "href": "https://github.com/aymane-elouafi/enterprise-network/tree/main/part-2-attack-phase",
+        "status": "wip"
+      }
+    ],
+    "linkMap": {
+      "part-1-main-installation/": "enterprise-lab-part1.html"
+    }
+  },
+  {
+    "id": "recon-agent",
+    "repo": "aymane-elouafi/AI-powered-penetration-testing-agent",
+    "title": "AI Pentest Agent",
+    "tagline": "An agentic recon & footprinting assistant for authorized labs. A local LLM advises, rules decide, and every command runs in a locked-down Kali container. Below: a replay of a real run from the repo's test fixtures.",
+    "description": "Live build log of an AI-assisted recon and footprinting agent for authorized pentesting: rule-based planner, local LLM advisor, sandboxed Kali container, approval-gated exploit validation.",
+    "visual": "pipeline",
+    "tags": [
+      "ai",
+      "llm",
+      "recon",
+      "kali",
+      "sandbox",
+      "python"
+    ],
+    "milestones": {
+      "file": "README.md",
+      "type": "list",
+      "section": "Status",
+      "default": "done"
+    },
+    "replay": [
+      {
+        "path": "tests/fixtures/run25/recon-nmap.txt",
+        "stage": "recon",
+        "cmd": "nmap -Pn -sV -sC -T4 172.16.148.152",
+        "lines": 40
+      },
+      {
+        "path": "tests/fixtures/run25/enum4linux-ng.txt",
+        "stage": "enum",
+        "cmd": "enum4linux-ng -A 172.16.148.152",
+        "lines": 48
+      },
+      {
+        "path": "tests/fixtures/run25/msf-search-samba.txt",
+        "stage": "lookup",
+        "cmd": "msf-search samba",
+        "lines": 26
+      }
+    ]
+  },
+  {
+    "id": "api-attack-detection",
+    "repo": "aymane-elouafi/Web-API-Attack-Detection-With-AI",
+    "title": "Web API Attack Detection with AI",
+    "tagline": "Rules, Coraza + OWASP CRS and two machine-learning models, fused into one risk score. The stream below replays real requests from the project's dataset.",
+    "description": "Live build log of a hybrid web API attack detector: custom rules, Coraza + OWASP CRS, a payload classifier and an Isolation Forest behavior model fused with a noisy-OR.",
+    "visual": "stream",
+    "tags": [
+      "ai",
+      "machine-learning",
+      "waf",
+      "coraza",
+      "api-security",
+      "python"
+    ],
+    "milestones": {
+      "file": "README.md",
+      "type": "list",
+      "section": "Roadmap",
+      "default": "todo"
+    },
+    "sample": true
+  }
+]

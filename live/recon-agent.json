@@ -1,0 +1,512 @@
+{
+ "id": "recon-agent",
+ "repo": "aymane-elouafi/AI-powered-penetration-testing-agent",
+ "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent",
+ "branch": "main",
+ "created_at": "2026-11-11T21:47:12Z",
+ "pushed_at": "2026-11-11T21:59:28Z",
+ "stars": 0,
+ "languages": {
+  "Python": 304159,
+  "JavaScript": 15414,
+  "CSS": 13116,
+  "Shell": 8070,
+  "HTML": 7472,
+  "Dockerfile": 1808
+ },
+ "commit_count": 47,
+ "files": 61,
+ "bytes": 423872,
+ "top": [
+  {
+   "path": ".gitignore",
+   "dir": false
+  },
+  {
+   "path": "README.md",
+   "dir": false
+  },
+  {
+   "path": "agent",
+   "dir": true
+  },
+  {
+   "path": "config",
+   "dir": true
+  },
+  {
+   "path": "docs",
+   "dir": true
+  },
+  {
+   "path": "kali",
+   "dir": true
+  },
+  {
+   "path": "requirements.txt",
+   "dir": false
+  },
+  {
+   "path": "tests",
+   "dir": true
+  },
+  {
+   "path": "web",
+   "dir": true
+  }
+ ],
+ "commits": [
+  {
+   "sha": "992b219",
+   "msg": "docs: fix plan all done — stage 1+2 + live root shell",
+   "date": "2026-11-11T20:54:33Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/992b219732b7aa20a0e270d43fcd5c8e5b95146f"
+  },
+  {
+   "sha": "553a35c",
+   "msg": "fix 13: the reasoning step questions the picture before acting",
+   "date": "2026-11-11T20:54:17Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/553a35ca8049959bd98d7ccc2a4914591fea73fb"
+  },
+  {
+   "sha": "c39bb84",
+   "msg": "fix 11: research online the vulnerable services it can't auto-exploit",
+   "date": "2026-11-11T20:53:32Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/c39bb8481506b7ddce02f4e997c733de6aa9cec3"
+  },
+  {
+   "sha": "5bf8128",
+   "msg": "fix 12 followup: bump worked counter so a recalled winner is visible",
+   "date": "2026-11-11T20:51:41Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/5bf81283ecea3782966a0683b95a4fd6cb3a7814"
+  },
+  {
+   "sha": "90348d1",
+   "msg": "fix 12: learn which exploit works, across runs",
+   "date": "2026-11-11T20:51:16Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/90348d13e267f0e3ae07318674dfc69c05dba615"
+  },
+  {
+   "sha": "17ca25f",
+   "msg": "fix: stop exploiting once a shell is confirmed on the host",
+   "date": "2026-11-11T20:45:43Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/17ca25fcf75599ffb9845644f4b41acaa0865987"
+  },
+  {
+   "sha": "2e67af2",
+   "msg": "docs: mark stage 1 of the fix plan complete",
+   "date": "2026-11-11T15:25:19Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/2e67af2b386559becc8753f06855ca165259841c"
+  },
+  {
+   "sha": "75cb633",
+   "msg": "fix 9: stop a run from the UI instead of killing the server",
+   "date": "2026-11-11T15:24:11Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/75cb63343cf01029398afba9bbe6d381d3e5ce5a"
+  },
+  {
+   "sha": "4d26a8b",
+   "msg": "fix 8: cut the LLM calls that cost time and changed nothing; delete dead code",
+   "date": "2026-11-11T15:22:45Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/4d26a8bb51c3a9e82fc04e617bea25bb0735c33c"
+  },
+  {
+   "sha": "eb673fc",
+   "msg": "fix 10: findings feed later steps, and stop repeating work",
+   "date": "2026-11-11T15:20:17Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/eb673fc0e13766ee5c81482c2494a967afcaa48d"
+  },
+  {
+   "sha": "56aa3cd",
+   "msg": "fix 7: a failed step is no longer accepted as done",
+   "date": "2026-11-11T15:18:21Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/56aa3cd2295ac52bb2cbeeea802f3982aec46528"
+  },
+  {
+   "sha": "f5103a2",
+   "msg": "fix 6: Exploit-DB searches that actually return results, as named leads",
+   "date": "2026-11-11T15:16:39Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/f5103a25fe86e84854abde128a589fc0acbdc728"
+  },
+  {
+   "sha": "95fdf2d",
+   "msg": "fixes 3,4: bound the exploit wrapper; stop nuclei failing silently",
+   "date": "2026-11-11T14:56:43Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/95fdf2dd9d6f16fc199f0260c466d35de170b368"
+  },
+  {
+   "sha": "cd64f7d",
+   "msg": "fixes 0,1,2,5: engine replay test + working retry ladder + enum-first creds",
+   "date": "2026-11-11T14:56:06Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/cd64f7d5156988997de81c1809204887f952e76d"
+  },
+  {
+   "sha": "7e658a0",
+   "msg": "fix: prefer bind payloads — reverse callbacks are firewalled in the sandbox",
+   "date": "2026-11-10T16:53:59Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/7e658a00782854521ca4c25a9e18fa8686af2963"
+  },
+  {
+   "sha": "699a5d3",
+   "msg": "fix: msf_info fact JSON was truncated, crashing the exploit scorer",
+   "date": "2026-11-10T16:41:31Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/699a5d3ac19c4bdf84a5e8fd4c1c6284a6a2b818"
+  },
+  {
+   "sha": "abfe26b",
+   "msg": "fix: show active run on any page, and tie msf_search to its service",
+   "date": "2026-11-10T16:35:02Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/abfe26baae2540e9577818acc842467bd6e8cdc2"
+  },
+  {
+   "sha": "b6c0c3d",
+   "msg": "fix: exploit path never fired mid-run (and lost the SMB version)",
+   "date": "2026-11-10T16:28:35Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/b6c0c3d2e0bcea3b1eacacbf77ba81d667e01fef"
+  },
+  {
+   "sha": "fc1463d",
+   "msg": "Phase 5: console UI redesign — methodology, live reasoning, knowledge board",
+   "date": "2026-11-10T16:16:38Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/fc1463d333b79f8c1af4a7557791c4512a3e2a8d"
+  },
+  {
+   "sha": "2cc0849",
+   "msg": "Phase 4: swappable LLM providers with a remote-data gate",
+   "date": "2026-11-10T16:05:54Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/2cc08497341e5f2a2cfe630032c5ba26483d1b8b"
+  },
+  {
+   "sha": "5154c91",
+   "msg": "Phase 3: chase leads, fix broken commands, work in phases",
+   "date": "2026-11-10T15:00:24Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/5154c9147bd00c1bbf64bdc38e7926c2484d95d0"
+  },
+  {
+   "sha": "5213af7",
+   "msg": "Phase 2: exploit chosen by version-fit, with a retry ladder",
+   "date": "2026-11-10T14:57:01Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/5213af72937cec22631b560781e85d56ca11479a"
+  },
+  {
+   "sha": "bf07f6c",
+   "msg": "Phase 0+1: evidence layer — keep what the tools actually find",
+   "date": "2026-11-10T14:52:05Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/bf07f6c21b25dc6cfc8c56a5d6ad8059586cf01a"
+  },
+  {
+   "sha": "c1196e3",
+   "msg": "planner: LLM-driven pentester brain for the next move",
+   "date": "2026-11-02T19:43:37Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/c1196e37816ed940efcfdc17a165e2e9d860c24c"
+  },
+  {
+   "sha": "167b0dd",
+   "msg": "major fixes: stop repetition, credential/username chaining, LLM working-memory brain",
+   "date": "2026-11-02T19:29:28Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/167b0dd1f89d64e1d424de1a900517a59d16105b"
+  },
+  {
+   "sha": "1441b42",
+   "msg": "planner: LLM attack-surface assessment (visible reasoning after scan)",
+   "date": "2026-11-02T19:02:19Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/1441b424c56b626b608fa7dea12523c29b10cb5f"
+  },
+  {
+   "sha": "2b6133d",
+   "msg": "credential reuse loop, LLM fixes (model auto-detect), duplicate-approval fix",
+   "date": "2026-11-02T19:01:01Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/2b6133dfb145c23cb7ecf63ff36f3f9aee3b6cd8"
+  },
+  {
+   "sha": "ee6e441",
+   "msg": "attack-tree planner: pursue the most promising path first, not a fixed checklist",
+   "date": "2026-11-01T13:23:23Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/ee6e4410f32766dd5235028b56624db38ba2a5ce"
+  },
+  {
+   "sha": "1131360",
+   "msg": "nuclei: broad web/network vulnerability discovery",
+   "date": "2026-11-01T13:15:33Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/1131360a065a596f894cfce6f0b31baa7a124fce"
+  },
+  {
+   "sha": "ac414ba",
+   "msg": "post-exploitation: loot flags, root, and privilege-escalation paths",
+   "date": "2026-11-01T13:13:39Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/ac414ba5c65ccc3682f63abbfefde7aee3139e2e"
+  },
+  {
+   "sha": "7831e43",
+   "msg": "docs: honest design review + upgrade roadmap",
+   "date": "2026-11-01T13:11:53Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/7831e4364c4692f085d5d14e7387082b5d60b28a"
+  },
+  {
+   "sha": "61c6de9",
+   "msg": "LLM reasoning layer: research + choose the exploit before running",
+   "date": "2026-11-01T13:09:54Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/61c6de917e6255fe26d38d6b83618b0e6028db25"
+  },
+  {
+   "sha": "2069e5e",
+   "msg": "exploit discovery via Metasploit search — works on any box, not a hardcoded list",
+   "date": "2026-11-01T13:03:26Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/2069e5e6493598ada4ff3bedc80474d518f298e6"
+  },
+  {
+   "sha": "9c4c6a0",
+   "msg": "WIP: generalize exploit discovery via Metasploit search (partial)",
+   "date": "2026-11-01T12:20:59Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/9c4c6a0f04e85f1aa7ea9ca15c97d700fd4a00ad"
+  },
+  {
+   "sha": "091d215",
+   "msg": "attack-surface graph (host → services → findings), live view toggle",
+   "date": "2026-11-01T11:58:33Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/091d21582403b791a8d12aed50feb84eb8528d1d"
+  },
+  {
+   "sha": "bf911a1",
+   "msg": "reports: commands + output per step, ATT&CK tags, remediation",
+   "date": "2026-11-01T11:50:12Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/bf911a17afed0d4df1e66f9ec068573c86358a22"
+  },
+  {
+   "sha": "d8a3044",
+   "msg": "live command + output streaming, UI refresh, competitive research",
+   "date": "2026-11-01T11:47:22Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/d8a3044a31afead66f63d9bba7d5fc4fcacd9cd9"
+  },
+  {
+   "sha": "e792d9c",
+   "msg": "web: mark orphaned 'running' runs as interrupted on startup",
+   "date": "2026-10-31T11:14:23Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/e792d9c518828a0f219622115d3991c20cdae568"
+  },
+  {
+   "sha": "143aa0f",
+   "msg": "web: scans survive page navigation; research never re-scans",
+   "date": "2026-10-31T11:11:49Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/143aa0fbff63307b24f2762259df7eaa39ecce39"
+  },
+  {
+   "sha": "7ebb6a1",
+   "msg": "cli: exploits always prompt (never auto, even with --yes); graceful EOF",
+   "date": "2026-10-31T10:50:04Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/7ebb6a12e2e1f1297f638b7c29b4643c13fb3dca"
+  },
+  {
+   "sha": "a650e6b",
+   "msg": "v4: deep footprinting + online research + Metasploit exploit validation",
+   "date": "2026-10-31T10:46:36Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/a650e6b36d777bd107720ad5431546b5fbb4cda8"
+  },
+  {
+   "sha": "13deb28",
+   "msg": "web: styled HTML reports + reports history page",
+   "date": "2026-10-31T10:17:03Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/13deb28debb2a40fb60c4eca6ffef4359f886ff2"
+  },
+  {
+   "sha": "4d7c1c9",
+   "msg": "fix VM/local scanning: host-network mode, two-phase nmap, UI Enter-to-run",
+   "date": "2026-10-30T23:53:39Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/4d7c1c939b23847870ad80a9da4f5621489d2709"
+  },
+  {
+   "sha": "3dac51c",
+   "msg": "web UI: type the target IP directly, no YAML editing",
+   "date": "2026-10-30T23:22:17Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/3dac51cf932ca60eb841cd47f899d4c2e467dc86"
+  },
+  {
+   "sha": "b30a22f",
+   "msg": "recon-agent v3: restricted-shell tier with approval queue",
+   "date": "2026-10-29T20:14:21Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/b30a22fc0447a7b40be4c52d0fdb50cb767d308e"
+  },
+  {
+   "sha": "fbd703f",
+   "msg": "recon-agent v2: knowledge base + web research (the brain)",
+   "date": "2026-10-29T19:55:50Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/fbd703f4061b687c3b64287575e8576e2689d676"
+  },
+  {
+   "sha": "f702246",
+   "msg": "recon-agent v1: rule-based recon pipeline + sandbox + web UI",
+   "date": "2026-10-29T19:35:07Z",
+   "url": "https://github.com/aymane-elouafi/AI-powered-penetration-testing-agent/commit/f7022469442d719bba0c069c9bb090bef1c15441"
+  }
+ ],
+ "readme": "# recon-agent\n\nAn agentic recon & footprinting assistant for **authorized** network pentesting\n(HTB labs, internal/external engagements). You give it a scope; it scans in-scope\nhosts, enumerates each service, looks up public exploits for the versions it finds,\nand writes a report. It runs its tools inside a locked-down Kali container and uses\na **local** LLM.\n\n> **Authorized use only.** The agent refuses any target not in `scope.yaml`, and the\n> container firewall physically drops traffic to anything out of scope. It performs\n> recon and enumeration only — it does **not** run exploits. Exploit matches in the\n> report are leads for your own manual, authorized follow-up.\n\n## How it works\n\n```\nPlanner (rules + optional LLM advice)\n  → approval gate (autonomy tier)\n    → Sandbox: validate binary + scope + no shell metachars\n      → Kali container (firewall = scope only)\n        → parse output → state map (SQLite) → findings\n          → Markdown report\n```\n\nThe design is deliberately **not** \"let the model run commands\". A small local model\n(tested: a 9B on an 8 GB GPU) is not reliable enough to decide what is vulnerable, so:\n\n- **Discovery, per-service enumeration and exploit lookup are rule-based** — they always run.\n- **The LLM only advises** (suggests at most one extra step from the fixed tool list,\n  validated against scope before it can run) and helps write up results.\n- **Safety is structural, not prompt-based:** an allowlist of binaries, scope checks on\n  every IP in every command, no shell (argv only), and a container that can't route off-scope.\n\n## Setup\n\n```bash\ncd recon-agent\npython3 -m venv .venv && . .venv/bin/activate\npip install -r requirements.txt\ndocker build -t recon-agent-kali:latest kali/      # one-time (large)\npython -m agent.cli doctor                          # check prerequisites\n```\n\nPoint an OpenAI-compatible local LLM at the defaults (LM Studio on :1234), or set\n`RECON_LLM_URL` / `RECON_LLM_MODEL`. The agent runs without an LLM too (rule-based only).\n\n## Run\n\n```bash\ncp config/scope.example.yaml config/scope.yaml      # then edit targets + authorized_by\npython -m agent.cli run --scope config/scope.yaml   # CLI, asks before gated steps\n```\n\nWeb UI (start runs, watch live, approve steps, read the report):\n\n```bash\nuvicorn web.app:app --host 127.0.0.1 --port 8700\n# open http://127.0.0.1:8700\n```\n\n## Scope file\n\nSee [`config/scope.example.yaml`](config/scope.example.yaml). Key fields: `targets`\n(CIDRs/IPs), `exclude`, `autonomy` (`low`/`medium`/`high` — how much runs without\nasking; exploitation is never auto), and `limits`.\n\n## Autonomy tiers\n\n| Tier | Tools | Runs |\n|------|-------|------|\n| low | nmap, host_discovery, whatweb, smb_enum, smb_shares, nmap_nse, dns_axfr, searchsploit | auto at autonomy ≥ low |\n| medium | ffuf directory brute-force, nikto | auto at autonomy ≥ medium, else asks |\n| shell | `run_command` (ad-hoc command, allowed binary) | **always** asks — never auto |\n| exploit | `msf_exploit` (validate a known vuln with Metasploit, confirm RCE) | **always** asks (approval button) — never auto |\n\n## Knowledge base + web research (the \"brain\")\n\nBefore enumerating a service the planner consults a persistent knowledge base\n(`knowledge` table). On a miss, if research is enabled it looks the service up on the\nweb (`agent/research.py`: SearXNG → page extraction → local-embedding ranking) and\nsaves what it learns as **unverified**, promoting entries that actually produce\nfindings and demoting ones that don't — so the agent improves across runs. Web text is\nuntrusted: it can only *select* from a fixed technique vocabulary and is mapped to the\ntool allow-list; it is never turned into a command. Set `research.offline_only: true`\nto disable all web access (and for reproducible benchmarks).\n\n## Restricted shell\n\n`run_command` lets the agent (via its LLM advisor) propose a single ad-hoc command for\na case the typed tools don't cover — a specific NSE script, an `smbclient` action,\ncurling a discovered path. It goes through the exact same gate as everything else\n(binary on the allow-list, every IP in scope, no shell metacharacters — commands run\nargv-style, never through a shell) and it **always** requires operator approval.\n\n## Deep footprinting + exploit validation\n\nEach service is enumerated with **several** tools, not one (e.g. a web port runs\nwhatweb + directory brute-force + NSE `http-*` scripts + nikto; SMB runs enum4linux-ng\n+ anonymous share listing + `smb-vuln-*`), and the knowledge base / web research can add\nmore. Where a service fingerprint matches a **curated** vulnerability\n(`agent/exploits.py`, e.g. vsftpd 2.3.4, Samba 3.0.20 usermap_script, distccd,\nUnrealIRCd), the agent can **validate** it: it runs the matching Metasploit module via\n`kali/msf-run.sh` and proves code execution by running `id`/`uname` on any session it\nopens — a confirmed finding, not a guess.\n\n**This is for authorized labs only.** Exploit validation is tier `exploit`, which\n**never** runs automatically: every attempt waits in the approval queue (a red card in\nthe web UI) until you approve it, and only ever targets an in-scope host. The scope\nfirewall + command-level scope check still apply, so the exploit can only reach the\nauthorized target. `host_network: true` in a scope lets the container reach a VM on your\nown machine's networks directly (firewall skipped there; scope still enforced in-tool).\n\n## Layout\n\n```\nagent/        scope, sandbox, container, store, tools, parsers, planner, research, llm, engine, cli\nkali/         Dockerfile + firewall.sh + entrypoint.sh (the locked-down toolbox)\nweb/          FastAPI app + single-page UI\nconfig/       scope files\ndata/         SQLite DB (state + audit log + knowledge base) + per-run raw tool output\nreports/      generated Markdown reports\ntests/        logic tests (no Docker/LLM/network): python tests/test_core.py (also test_research, test_kb, test_shell)\n```\n\n## Status\n\n- **v1** — rule-based flow, typed tools, container sandbox, CLI + web UI, Markdown report.\n- **v2** — persistent knowledge base + web research (`agent/research.py`).\n- **v3** — restricted shell (`run_command`) with the approval queue.\n- **v4** — styled HTML reports + history page; deep per-service footprinting; host-network\n  mode for local VMs; Metasploit exploit validation (`msf_exploit`, approval-gated).\n\nPlanned: cross-run experience weighting, multi-host internal sweeps, benchmark scoring\non retired HTB boxes.\n",
+ "milestones": [
+  {
+   "label": "v1",
+   "detail": "rule-based flow, typed tools, container sandbox, CLI + web UI, Markdown report.",
+   "statusText": "",
+   "status": "done"
+  },
+  {
+   "label": "v2",
+   "detail": "persistent knowledge base + web research (agent/research.py).",
+   "statusText": "",
+   "status": "done"
+  },
+  {
+   "label": "v3",
+   "detail": "restricted shell (run_command) with the approval queue.",
+   "statusText": "",
+   "status": "done"
+  },
+  {
+   "label": "v4",
+   "detail": "styled HTML reports + history page; deep per-service footprinting; host-network mode for local VMs; Metasploit exploit validation (msf_exploit, approval-gated).",
+   "statusText": "",
+   "status": "done"
+  },
+  {
+   "label": "cross-run experience weighting",
+   "detail": "",
+   "statusText": "planned",
+   "status": "todo"
+  },
+  {
+   "label": "multi-host internal sweeps",
+   "detail": "",
+   "statusText": "planned",
+   "status": "todo"
+  },
+  {
+   "label": "benchmark scoring",
+   "detail": "",
+   "statusText": "planned",
+   "status": "todo"
+  }
+ ],
+ "replay": [
+  {
+   "stage": "recon",
+   "cmd": "nmap -Pn -sV -sC -T4 172.16.148.152",
+   "path": "tests/fixtures/run25/recon-nmap.txt",
+   "lines": [
+    "Nmap scan report for 172.16.148.152",
+    "PORT      STATE  SERVICE      VERSION",
+    "22/tcp    open   ssh          OpenSSH 2.9p2 (protocol 1.99)",
+    "| sshv1: Server supports SSHv1",
+    "| ssh-hostkey: 1024 b8:74:6c:db:fd:8b:e6:66:e9:2a:2b:df:5e:6f:64:86 (RSA1)",
+    "|  1024 8f:8e:5b:81:ed:21:ab:c1:80:e1:57:a3:3c:85:c4:71 (DSA)",
+    "|  1024 ed:4e:a9:4a:06:14:ff:15:14:ce:da:3a:80:db:e2:81 (RSA)",
+    "80/tcp    open   http         Apache httpd 1.3.20 ((Unix)  (Red-Hat/Linux) mod_ssl/2.8.4 OpenSSL/0.9.6b)",
+    "| http-server-header: Apache/1.3.20 (Unix)  (Red-Hat/Linux) mod_ssl/2.8.4 OpenSSL/0.9.6b",
+    "| http-methods: Potentially risky methods: TRACE",
+    "| http-title: Test Page for the Apache Web Server on Red Hat Linux",
+    "111/tcp   open   rpcbind      2 (RPC #100000)",
+    "| rpcinfo: program version    port/proto  service",
+    "|  100000  2            111/tcp   rpcbind",
+    "|  100000  2            111/udp   rpcbind",
+    "139/tcp   open   netbios-ssn  Samba smbd (workgroup: MYGROUP)",
+    "443/tcp   open   https        Apache/1.3.20 (Unix)  (Red-Hat/Linux) mod_ssl/2.8.4 OpenSSL/0.9.6b",
+    "| sslv2: SSLv2 supported",
+    "|  ciphers:",
+    "|  SSL2_RC4_128_EXPORT40_WITH_MD5",
+    "| http-title: 400 Bad Request",
+    "| ssl-cert: Subject: commonName=localhost.localdomain/organizationName=SomeOrganization/stateOrProvinceName=SomeState/countryName=--",
+    "|  Not valid before: 2009-09-26T09:32:06",
+    "|  Not valid after:  2010-09-26T09:32:06",
+    "| ssl-date: 2026-10-15T10:26:46+00:00; -26d06h15m30s from scanner time.",
+    "| http-server-header: Apache/1.3.20 (Unix)  (Red-Hat/Linux) mod_ssl/2.8.4 OpenSSL/0.9.6b",
+    "1024/tcp  open   status       1 (RPC #100024)"
+   ]
+  },
+  {
+   "stage": "enum",
+   "cmd": "enum4linux-ng -A 172.16.148.152",
+   "path": "tests/fixtures/run25/enum4linux-ng.txt",
+   "lines": [
+    "ENUM4LINUX - next generation (v1.3.10)",
+    "",
+    " ==========================",
+    "|    Target Information    |",
+    " ==========================",
+    "[*] Target ........... 172.16.148.152",
+    "[*] Username ......... ''",
+    "[*] Random Username .. 'ajnrbbba'",
+    "[*] Password ......... ''",
+    "[*] Timeout .......... 10 second(s)",
+    "",
+    " =======================================",
+    "|    Listener Scan on 172.16.148.152    |",
+    " =======================================",
+    "[*] Checking LDAP",
+    "[-] Could not connect to LDAP on 389/tcp: connection refused",
+    "[*] Checking LDAPS",
+    "[-] Could not connect to LDAPS on 636/tcp: connection refused",
+    "[*] Checking SMB",
+    "[-] Could not connect to SMB on 445/tcp: connection refused",
+    "[*] Checking SMB over NetBIOS",
+    "[+] SMB over NetBIOS is accessible on 139/tcp",
+    "",
+    " =============================================================",
+    "|    NetBIOS Names and Workgroup/Domain for 172.16.148.152    |",
+    " =============================================================",
+    "[+] Got domain/workgroup name: MYGROUP",
+    "[+] Full NetBIOS names information:",
+    "- KIOPTRIX        <00> -         B <ACTIVE>  Workstation Service",
+    "- KIOPTRIX        <03> -         B <ACTIVE>  Messenger Service",
+    "- KIOPTRIX        <20> -         B <ACTIVE>  File Server Service",
+    "- ..__MSBROWSE__. <01> - <GROUP> B <ACTIVE>  Master Browser",
+    "- MYGROUP         <00> - <GROUP> B <ACTIVE>  Domain/Workgroup Name",
+    "- MYGROUP         <1d> -         B <ACTIVE>  Master Browser",
+    "- MYGROUP         <1e> - <GROUP> B <ACTIVE>  Browser Service Elections",
+    "- MAC Address = 00-00-00-00-00-00",
+    "",
+    " ===========================================",
+    "|    SMB Dialect Check on 172.16.148.152    |",
+    " ===========================================",
+    "[*] Trying on 139/tcp",
+    "[+] Supported dialects and settings:",
+    "Supported dialects:",
+    "  SMB 1.0: true",
+    "  SMB 2.0.2: false",
+    "  SMB 2.1: false",
+    "  SMB 3.0: false",
+    "  SMB 3.1.1: false"
+   ]
+  },
+  {
+   "stage": "lookup",
+   "cmd": "msf-search samba",
+   "path": "tests/fixtures/run25/msf-search-samba.txt",
+   "lines": [
+    "QUERY: samba",
+    "",
+    "Matching Modules",
+    "================",
+    "",
+    "   #   Full Name                                                    Disclosure Date  Rank       Check  Name",
+    "   -   ---------                                                    ---------------  ----       -----  ----",
+    "   0   exploit/unix/webapp/citrix_access_gateway_exec               2010-12-21       excellent  Yes    Citrix Access Gateway Command Execution",
+    "   1   exploit/windows/license/calicclnt_getconfig                  2005-03-02       average    No     Computer Associates License Client GETCONFIG Overflow",
+    "   2     \\_ target: Automatic                                       .                .          .      .",
+    "   3     \\_ target: Windows 2000 English                            .                .          .      .",
+    "   4     \\_ target: Windows XP English SP0-1                        .                .          .      .",
+    "   5     \\_ target: Windows XP English SP2                          .                .          .      .",
+    "   6     \\_ target: Windows 2003 English SP0                        .                .          .      .",
+    "   7   exploit/unix/misc/distcc_exec                                2002-02-01       excellent  Yes    DistCC Daemon Command Execution",
+    "   8   exploit/windows/smb/group_policy_startup                     2015-01-26       manual     No     Group Policy Script Execution From Shared Resource",
+    "   9     \\_ target: Windows x86                                     .                .          .      .",
+    "   10    \\_ target: Windows x64                                     .                .          .      .",
+    "   11  exploit/windows/fileformat/ms14_060_sandworm                 2014-10-14       excellent  No     MS14-060 Microsoft Windows OLE Package Manager Code Execution",
+    "   12  exploit/unix/http/quest_kace_systems_management_rce          2018-05-31       excellent  Yes    Quest KACE Systems Management Command Injection",
+    "   13  exploit/multi/samba/usermap_script                           2007-05-14       excellent  No     Samba \"username map script\" Command Execution",
+    "   14  exploit/multi/samba/nttrans                                  2003-04-07       average    No     Samba 2.2.2 - 2.2.6 nttrans Buffer Overflow",
+    "   15  exploit/linux/samba/setinfopolicy_heap                       2012-04-10       normal     Yes    Samba SetInformationPolicy AuditEventsInfo Heap Overflow",
+    "   16    \\_ target: 2:3.5.11~dfsg-1ubuntu2 on Ubuntu Server 11.10   .                .          .      .",
+    "   17    \\_ target: 2:3.5.8~dfsg-1ubuntu2 on Ubuntu Server 11.10    .                .          .      .",
+    "   18    \\_ target: 2:3.5.8~dfsg-1ubuntu2 on Ubuntu Server 11.04    .                .          .      ."
+   ]
+  }
+ ],
+ "synced_at": "2026-11-11T22:34:16.005Z"
+}

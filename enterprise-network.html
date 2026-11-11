@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Google Analytics (gtag.js) - counts your visitors -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-V2R1YY0P62"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-V2R1YY0P62');
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enterprise Network Lab (live) · Aymane Elouafi</title>
+  <meta name="description" content="Live build log of a virtualized enterprise network: pfSense firewall, VLAN-aware switch, DMZ with Nginx and Squid, Suricata IDS, and attack simulations, synced from GitHub.">
+  <meta name="author" content="Aymane Elouafi">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="google-site-verification" content="P6WC3YGSehH9r2o-Lon_-tKZGpFiOWJjHD41vtJqLsk">
+  <link rel="canonical" href="https://aymaneelouafi.me/enterprise-network.html">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-512.png" type="image/png" sizes="512x512">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <!-- Open Graph (Facebook, LinkedIn, Discord...) -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Enterprise Network Lab (live) · Aymane Elouafi">
+  <meta property="og:description" content="Live build log of a virtualized enterprise network: pfSense firewall, VLAN-aware switch, DMZ with Nginx and Squid, Suricata IDS, and attack simulations, synced from GitHub.">
+  <meta property="og:url" content="https://aymaneelouafi.me/enterprise-network.html">
+  <meta property="og:site_name" content="Aymane Elouafi">
+  <meta property="og:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Enterprise Network Lab (live) · Aymane Elouafi">
+  <meta name="twitter:description" content="Live build log of a virtualized enterprise network: pfSense firewall, VLAN-aware switch, DMZ with Nginx and Squid, Suricata IDS, and attack simulations, synced from GitHub.">
+  <meta name="twitter:image" content="https://aymaneelouafi.me/images/og.png">
+
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareSourceCode",
+      "name": "Enterprise Network Lab",
+      "description": "Live build log of a virtualized enterprise network: pfSense firewall, VLAN-aware switch, DMZ with Nginx and Squid, Suricata IDS, and attack simulations, synced from GitHub.",
+      "codeRepository": "https://github.com/aymane-elouafi/enterprise-network",
+      "programmingLanguage": [
+        "Shell"
+      ],
+      "author": {
+        "@type": "Person",
+        "name": "Aymane Elouafi",
+        "@id": "https://aymaneelouafi.me/#person",
+        "url": "https://aymaneelouafi.me"
+      },
+      "dateCreated": "2026-11-11",
+      "dateModified": "2026-11-11",
+      "url": "https://aymaneelouafi.me/enterprise-network.html",
+      "keywords": "pfsense, vlan, dmz, suricata, ids, red-vs-blue"
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Aymane Elouafi",
+          "item": "https://aymaneelouafi.me/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Live projects"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Enterprise Network Lab",
+          "item": "https://aymaneelouafi.me/enterprise-network.html"
+        }
+      ]
+    }
+  ]
+}
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css?v=59f29efc9e">
+  <script defer src="/menu.js?v=59f29efc9e"></script>
+</head>
+<body class="live-body">
+  <div class="aurora" aria-hidden="true"><span class="b1"></span><span class="b2"></span><span class="b3"></span></div>
+  <div class="topbar">
+    <button class="menu-toggle" aria-label="Open menu" aria-expanded="false">☰ menu</button>
+    <a class="topbar-home" href="/">~/aymane</a>
+  </div>
+  <div class="backdrop" id="backdrop"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-inner">
+      <p class="sidebar-title">// methodology &amp; notes</p>
+    <details class="nav-phase nav-live" open>
+      <summary><span class="nav-num live-dot" aria-hidden="true"></span> Live projects</summary>
+      <div class="nav-section">
+        <ul>
+          <li><a href="enterprise-network.html" class="current">Enterprise Network Lab</a></li>
+          <li><a href="recon-agent.html">AI Pentest Agent</a></li>
+          <li><a href="api-attack-detection.html">Web API Attack Detection with AI</a></li>
+        </ul>
+      </div>
+    </details>
+    <details class="nav-phase" open>
+      <summary><span class="nav-num">1</span> Information Gathering</summary>
+        <div class="nav-section">
+          <span class="nav-sec-title">Host Discovery &amp; Port Scanning</span>
+          <ul>
+            <li><a href="nmap.html">Network Enumeration with Nmap</a></li>
+          </ul>
+        </div>
+        <div class="nav-section">
+          <span class="nav-sec-title">Service Enumeration / Footprinting</span>
+          <ul>
+            <li><a href="nfs.html">Footprinting NFS</a></li>
+            <li><a href="ftp.html">Footprinting FTP</a></li>
+            <li><a href="dns.html">Footprinting DNS</a></li>
+            <li><a href="smtp.html">Footprinting SMTP</a></li>
+            <li><a href="imap-pop3.html">Footprinting IMAP / POP3</a></li>
+            <li><a href="snmp.html">Footprinting SNMP</a></li>
+            <li><a href="mysql.html">Footprinting MySQL</a></li>
+            <li><a href="mssql.html">Footprinting MSSQL</a></li>
+            <li><a href="oracle-tns.html">Footprinting Oracle TNS</a></li>
+            <li><a href="ipmi.html">Footprinting IPMI</a></li>
+          </ul>
+        </div>
+        <div class="nav-section empty"><span class="nav-sec-title">Web Recon</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">2</span> Vulnerability Assessment</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Known Vulnerabilities (version → CVE)</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Web Vulnerabilities</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Misconfigurations &amp; Default Credentials</span></div>
+    </details>
+    <details class="nav-phase" open>
+      <summary><span class="nav-num">3</span> Exploitation</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Service / Network Exploitation</span></div>
+        <div class="nav-section">
+          <span class="nav-sec-title">Web Exploitation</span>
+          <ul>
+            <li><a href="wordpress.html">Hacking WordPress</a></li>
+          </ul>
+        </div>
+        <div class="nav-section empty"><span class="nav-sec-title">Password Attacks</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">4</span> Post-Exploitation</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Local Enumeration</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Privilege Escalation (Linux / Windows)</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Looting &amp; Credential Hunting</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">5</span> Lateral Movement</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">Pivoting &amp; Tunneling</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Credential Reuse &amp; Pass-the-Hash</span></div>
+    </details>
+    <details class="nav-phase">
+      <summary><span class="nav-num">6</span> Active Directory</summary>
+        <div class="nav-section empty"><span class="nav-sec-title">AD Enumeration</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">AD Attacks</span></div>
+        <div class="nav-section empty"><span class="nav-sec-title">Domain Dominance &amp; Lateral Movement</span></div>
+    </details>
+    <details class="nav-phase nav-projects">
+      <summary><span class="nav-num">▣</span> Projects</summary>
+      <div class="nav-section">
+        <ul>
+          <li><a href="enterprise-lab-part1.html">Enterprise Lab, Part 1 — pfSense, VLANs, a DMZ and a Suricata IDS</a></li>
+          <li><a href="cloud-soc-aws.html">Cloud-Native SOC on AWS — Purple Teaming &amp; Detection Engineering</a></li>
+          <li><a href="proxmox-ceph-vxlan.html">Hyper-Converged Proxmox Cluster — Ceph, VXLAN &amp; Grafana</a></li>
+          <li><a href="proxmox-ha-cluster.html">High-Availability Proxmox VE Cluster with Shared NAS</a></li>
+        </ul>
+      </div>
+    </details>
+    <details class="nav-phase nav-walk">
+      <summary><span class="nav-num">★</span> HTB Walkthroughs</summary>
+      <div class="nav-section">
+        <ul>
+          <li><a href="cap.html">Cap - HTB Walkthrough</a></li>
+        </ul>
+      </div>
+    </details>
+    </div>
+  </aside>
+  <main class="container live-page" data-live="enterprise-network" data-repo="aymane-elouafi/enterprise-network" data-visual="network" data-ver="2026-11-11T22:22:19.595Z">
+
+    <a class="back" href="/">← cd ..</a>
+
+    <header class="live-hero wide">
+      <div class="live-pill"><span class="live-dot" aria-hidden="true"></span> LIVE <span class="pill-sep"></span> synced from GitHub</div>
+      <h1 class="scramble">Enterprise Network Lab</h1>
+      <p class="lead">A segmented enterprise network built by hand: pfSense, VLANs, a DMZ, Suricata, then real attacks against it. It grows one lab at a time.</p>
+      <div class="hero-stats">
+        <div class="ring" style="--p:21" role="img" aria-label="21% of the roadmap done">
+          <svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="34" class="ring-bg"/><circle cx="40" cy="40" r="34" class="ring-fg" stroke-dasharray="213.6" stroke-dashoffset="168.8"/></svg>
+          <b data-count="21">21</b><small>%</small>
+        </div>
+        <dl class="stat-grid">
+          <div><dt>last push</dt><dd data-ago="2026-11-11T21:55:59Z" data-push="aymane-elouafi/enterprise-network">2026-11-11</dd></div>
+          <div><dt>commits</dt><dd data-count="1">1</dd></div>
+          <div><dt>files</dt><dd data-count="153">153</dd></div>
+          <div><dt>repo size</dt><dd>12.9 MB</dd></div>
+          <div><dt>milestones</dt><dd>1<span class="muted">/7</span> <span class="wip-tag">+1 wip</span></dd></div>
+          <div><dt>activity</dt><dd><svg class="spark" viewBox="0 0 160 34" width="160" height="34" aria-label="commits per day, last 21 days" role="img">
+  <polyline points="0,34 0.0,31.0 8.0,31.0 16.0,31.0 24.0,31.0 32.0,31.0 40.0,31.0 48.0,31.0 56.0,31.0 64.0,31.0 72.0,31.0 80.0,31.0 88.0,31.0 96.0,31.0 104.0,31.0 112.0,31.0 120.0,31.0 128.0,31.0 136.0,31.0 144.0,31.0 152.0,31.0 160.0,5.0 160,34" class="spark-fill"/><polyline points="0.0,31.0 8.0,31.0 16.0,31.0 24.0,31.0 32.0,31.0 40.0,31.0 48.0,31.0 56.0,31.0 64.0,31.0 72.0,31.0 80.0,31.0 88.0,31.0 96.0,31.0 104.0,31.0 112.0,31.0 120.0,31.0 128.0,31.0 136.0,31.0 144.0,31.0 152.0,31.0 160.0,5.0" class="spark-line"/></svg></dd></div>
+        </dl>
+      </div>
+      <div class="langbar" role="img" aria-label="languages"><i style="width:100.0%;background:#89e051"></i></div>
+      <div class="langs"><span><b style="background:#89e051"></b>Shell 100%</span></div>
+      <p class="repo-line"><a href="https://github.com/aymane-elouafi/enterprise-network" target="_blank" rel="noopener">⎇ aymane-elouafi/enterprise-network</a></p>
+    </header>
+
+    <section class="viz wide viz-network" id="viz" aria-label="Enterprise Network Lab live visualisation"></section>
+
+    <section class="chapters wide reveal">
+      <h2 class="section-title">Write-ups</h2>
+      <div class="chapter-grid">
+        <a class="chapter ch-done" href="enterprise-lab-part1.html"><span class="ch-status">done</span><span class="ch-title">Part 1: building the segmented lab</span><span class="ch-go">read →</span></a>
+        <a class="chapter ch-wip" href="https://github.com/aymane-elouafi/enterprise-network/tree/main/part-2-attack-phase" target="_blank" rel="noopener"><span class="ch-status">in progress</span><span class="ch-title">Part 2: attack phase</span><span class="ch-go">follow on GitHub →</span></a>
+      </div>
+    </section>
+    <section class="milestones wide reveal">
+      <h2 class="section-title">Roadmap <span class="muted">· parsed live from the repo</span></h2>
+      <ol class="ms-track">
+        <li class="ms ms-done" style="--i:0">
+          <span class="ms-dot" aria-hidden="true"></span>
+          <span class="ms-id">1</span>
+          <span class="ms-label">pfSense + VLANs + DMZ + Suricata IDS</span>
+          <span class="ms-detail">Network base, firewall, reverse/forward proxy, IDS</span>
+          <span class="ms-status">done</span>
+        </li>
+        <li class="ms ms-wip" style="--i:1">
+          <span class="ms-dot" aria-hidden="true"></span>
+          <span class="ms-id">1b</span>
+          <span class="ms-label">Attack phase against lab 1</span>
+          <span class="ms-detail">Detection gaps in firewall, IDS, Nginx, Squid</span>
+          <span class="ms-status">in progress (2.1-2.3 done)</span>
+        </li>
+        <li class="ms ms-todo" style="--i:2">
+          <span class="ms-dot" aria-hidden="true"></span>
+          <span class="ms-id">2</span>
+          <span class="ms-label">Active Directory (DC01 + CLIENT01/02 domain-joined)</span>
+          <span class="ms-detail">Identity: Kerberos, GPO, LDAP. Then AD attacks: Kerberoasting, AS-REP roasting, pass-the-hash, BloodHound</span>
+          <span class="ms-status">planned</span>
+        </li>
+        <li class="ms ms-todo" style="--i:3">
+          <span class="ms-dot" aria-hidden="true"></span>
+          <span class="ms-id">3</span>
+          <span class="ms-label">Wazuh SIEM (manager + indexer + dashboard)</span>
+          <span class="ms-detail">Central logs from all VMs, agents on Linux and Windows, Suricata + pfSense logs ingested</span>
+          <span class="ms-status">planned</span>
+        </li>
+        <li class="ms ms-todo" style="--i:4">
+          <span class="ms-dot" aria-hidden="true"></span>
+          <span class="ms-id">4</span>
+          <span class="ms-label">FIM (inside Wazuh)</span>
+          <span class="ms-detail">File Integrity Monitoring on WEB01 (web root, /etc), DC01 (SYSVOL), tested with the web shell from attack 6.x</span>
+          <span class="ms-status">planned</span>
+        </li>
+        <li class="ms ms-todo" style="--i:5">
+          <span class="ms-dot" aria-hidden="true"></span>
+          <span class="ms-id">5</span>
+          <span class="ms-label">EDR/XDR discussion + lab</span>
+          <span class="ms-detail">Wazuh active response and Sysmon on Windows; compare with real EDR/XDR products (concepts: endpoint telemetry vs network vs identity correlation)</span>
+          <span class="ms-status">planned</span>
+        </li>
+        <li class="ms ms-todo" style="--i:6">
+          <span class="ms-dot" aria-hidden="true"></span>
+          <span class="ms-id">6</span>
+          <span class="ms-label">DLP</span>
+          <span class="ms-detail">Detect/block sensitive data leaving (payroll.txt on SRV01 as the bait): egress inspection, Wazuh rules, a small open-source DLP or proxy-based content rules</span>
+          <span class="ms-status">planned</span>
+        </li>
+      </ol>
+    </section>
+    <section class="steps wide reveal">
+      <h2 class="section-title">Attack log <span class="muted">· every screenshot pushed to the repo shows up here</span></h2>
+      <div class="step-grid shots">
+        <article class="step">
+          <header><span class="step-id">A1.4</span><span class="step-title">parrot ip br a</span><span class="step-n">1 shot</span></header>
+          <div class="step-shots"><img src="https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A1.4-01-parrot-ip-br-a.png" alt="A1.4: parrot ip br a" loading="lazy" decoding="async"></div>
+        </article>
+        <article class="step">
+          <header><span class="step-id">A2.1</span><span class="step-title">subnet sweep nmap sn</span><span class="step-n">2 shots</span></header>
+          <div class="step-shots"><img src="https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.1-01-subnet-sweep-nmap-sn.png" alt="A2.1: subnet sweep nmap sn" loading="lazy" decoding="async"><img src="https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.1-02-pfsense-pass-logging-wan.png" alt="A2.1: pfsense pass logging wan" loading="lazy" decoding="async"></div>
+        </article>
+        <article class="step">
+          <header><span class="step-id">A2.2</span><span class="step-title">pfsense syn scan blocks</span><span class="step-n">1 shot</span></header>
+          <div class="step-shots"><img src="https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.2-01-pfsense-syn-scan-blocks.png" alt="A2.2: pfsense syn scan blocks" loading="lazy" decoding="async"></div>
+        </article>
+        <article class="step">
+          <header><span class="step-id">A2.3</span><span class="step-title">nmap full scan output</span><span class="step-n">8 shots</span></header>
+          <div class="step-shots"><img src="https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.3-01-nmap-full-scan-output.png" alt="A2.3: nmap full scan output" loading="lazy" decoding="async"><img src="https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.3-02-nginx-nse-requests.png" alt="A2.3: nginx nse requests" loading="lazy" decoding="async"><img src="https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.3-03-apache-nse-requests.png" alt="A2.3: apache nse requests" loading="lazy" decoding="async"><img src="https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.3-04-suricata-tail-empty-first-try.png" alt="A2.3: suricata tail empty first try" loading="lazy" decoding="async"><img src="https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.3-05-suricata-nse-alerts-both-legs.png" alt="A2.3: suricata nse alerts both legs" loading="lazy" decoding="async"><img src="https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.3-06-suricata-xff-before.png" alt="A2.3: suricata xff before" loading="lazy" decoding="async"><img src="https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.3-07-suricata-xff-after.png" alt="A2.3: suricata xff after" loading="lazy" decoding="async"><img src="https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.3-08-fastlog-both-legs-rerun.png" alt="A2.3: fastlog both legs rerun" loading="lazy" decoding="async"></div>
+        </article>
+        <article class="step">
+          <header><span class="step-id">A2.6</span><span class="step-title">whatweb simple summary</span><span class="step-n">7 shots</span></header>
+          <div class="step-shots"><img src="https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.6-01-whatweb-simple-summary.png" alt="A2.6: whatweb simple summary" loading="lazy" decoding="async"><img src="https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.6-02-whatweb-simple-headers.png" alt="A2.6: whatweb simple headers" loading="lazy" decoding="async"><img src="https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.6-03-nginx-whatweb-first-request.png" alt="A2.6: nginx whatweb first request" loading="lazy" decoding="async"><img src="https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.6-04-suricata-whatweb-first-alert.png" alt="A2.6: suricata whatweb first alert" loading="lazy" decoding="async"><img src="https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.6-05-whatweb-aggressive-dvwa.png" alt="A2.6: whatweb aggressive dvwa" loading="lazy" decoding="async"><img src="https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.6-06-nginx-whatweb-both-requests.png" alt="A2.6: nginx whatweb both requests" loading="lazy" decoding="async"><img src="https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.6-07-suricata-whatweb-both-alerts.png" alt="A2.6: suricata whatweb both alerts" loading="lazy" decoding="async"></div>
+        </article>
+      </div>
+    </section>
+    <section class="feed wide reveal">
+      <div class="term">
+        <div class="term-bar"><i></i><i></i><i></i><span>git log --live aymane-elouafi/enterprise-network</span><span class="feed-state" id="feed-state">snapshot</span></div>
+        <ol class="commits" id="commits">
+          <li><a href="https://github.com/aymane-elouafi/enterprise-network/commit/eedc8d700492cafc358d760daae2ad542f2eaf15" target="_blank" rel="noopener"><span class="sha">eedc8d7</span><span class="msg">Add enterprise network lab: Part 1 write-up, configs, diagrams, attack-phase screenshots</span><time datetime="2026-11-11T21:55:27Z" data-ago="2026-11-11T21:55:27Z">2026-11-11</time></a></li>
+        </ol>
+      </div>
+    </section>
+    <article id="content" class="readme reveal">
+      <p class="prompt">$ cat README.md <span class="muted">(synced from aymane-elouafi/enterprise-network)</span></p>
+<p>A virtualized enterprise network built in VMware, documented step by step: pfSense firewall with VLANs and a DMZ, a VLAN-aware Debian switch, Nginx reverse proxy, Squid proxy, Apache/DVWA and Samba servers, a Suricata IDS, then attack simulations to test detection at each layer.</p>
+<ul>
+<li><a href="enterprise-lab-part1.html">Part 1: main installation</a></li>
+<li><a href="https://github.com/aymane-elouafi/enterprise-network/blob/main/part-2-attack-phase/screenshots" target="_blank" rel="noopener">Part 2: attack phase</a> (in progress)</li>
+<li><a href="https://github.com/aymane-elouafi/enterprise-network/blob/main/ROADMAP.md" target="_blank" rel="noopener">Roadmap</a></li>
+<li><code>configs/</code>: setup scripts for each VM. <code>diagrams/</code>: architecture diagram.</li>
+</ul>
+<p>Lab only: all addresses are private and the vulnerable apps (DVWA) are deliberately insecure.</p>
+
+    </article>
+
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="/post.js?v=59f29efc9e"></script>
+  <script src="/live.js?v=59f29efc9e"></script>
+</body>
+</html>

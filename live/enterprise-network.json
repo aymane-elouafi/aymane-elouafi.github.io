@@ -1,0 +1,228 @@
+{
+ "id": "enterprise-network",
+ "repo": "aymane-elouafi/enterprise-network",
+ "url": "https://github.com/aymane-elouafi/enterprise-network",
+ "branch": "main",
+ "created_at": "2026-11-11T21:48:30Z",
+ "pushed_at": "2026-11-11T21:55:59Z",
+ "stars": 0,
+ "languages": {
+  "Shell": 18588
+ },
+ "commit_count": 1,
+ "files": 153,
+ "bytes": 12900140,
+ "top": [
+  {
+   "path": "README.md",
+   "dir": false
+  },
+  {
+   "path": "ROADMAP.md",
+   "dir": false
+  },
+  {
+   "path": "configs",
+   "dir": true
+  },
+  {
+   "path": "diagrams",
+   "dir": true
+  },
+  {
+   "path": "part-1-main-installation",
+   "dir": true
+  },
+  {
+   "path": "part-2-attack-phase",
+   "dir": true
+  },
+  {
+   "path": "screenshots",
+   "dir": true
+  }
+ ],
+ "commits": [
+  {
+   "sha": "eedc8d7",
+   "msg": "Add enterprise network lab: Part 1 write-up, configs, diagrams, attack-phase screenshots",
+   "date": "2026-11-11T21:55:27Z",
+   "url": "https://github.com/aymane-elouafi/enterprise-network/commit/eedc8d700492cafc358d760daae2ad542f2eaf15"
+  }
+ ],
+ "readme": "# Enterprise network lab\n\nA virtualized enterprise network built in VMware, documented step by step: pfSense firewall with VLANs and a DMZ, a VLAN-aware Debian switch, Nginx reverse proxy, Squid proxy, Apache/DVWA and Samba servers, a Suricata IDS, then attack simulations to test detection at each layer.\n\n- [Part 1: main installation](part-1-main-installation/Part%201%20-%20Building%20a%20Segmented%20Enterprise%20Lab.md)\n- [Part 2: attack phase](part-2-attack-phase/screenshots) (in progress)\n- [Roadmap](ROADMAP.md)\n- `configs/`: setup scripts for each VM. `diagrams/`: architecture diagram.\n\nLab only: all addresses are private and the vulnerable apps (DVWA) are deliberately insecure.\n",
+ "milestones": [
+  {
+   "id": "1",
+   "label": "pfSense + VLANs + DMZ + Suricata IDS",
+   "detail": "Network base, firewall, reverse/forward proxy, IDS",
+   "statusText": "built",
+   "status": "done"
+  },
+  {
+   "id": "1b",
+   "label": "Attack phase against lab 1",
+   "detail": "Detection gaps in firewall, IDS, Nginx, Squid",
+   "statusText": "in progress (2.1-2.3 done)",
+   "status": "wip"
+  },
+  {
+   "id": "2",
+   "label": "Active Directory (DC01 + CLIENT01/02 domain-joined)",
+   "detail": "Identity: Kerberos, GPO, LDAP. Then AD attacks: Kerberoasting, AS-REP roasting, pass-the-hash, BloodHound",
+   "statusText": "planned",
+   "status": "todo"
+  },
+  {
+   "id": "3",
+   "label": "Wazuh SIEM (manager + indexer + dashboard)",
+   "detail": "Central logs from all VMs, agents on Linux and Windows, Suricata + pfSense logs ingested",
+   "statusText": "planned",
+   "status": "todo"
+  },
+  {
+   "id": "4",
+   "label": "FIM (inside Wazuh)",
+   "detail": "File Integrity Monitoring on WEB01 (web root, /etc), DC01 (SYSVOL), tested with the web shell from attack 6.x",
+   "statusText": "planned",
+   "status": "todo"
+  },
+  {
+   "id": "5",
+   "label": "EDR/XDR discussion + lab",
+   "detail": "Wazuh active response and Sysmon on Windows; compare with real EDR/XDR products (concepts: endpoint telemetry vs network vs identity correlation)",
+   "statusText": "planned",
+   "status": "todo"
+  },
+  {
+   "id": "6",
+   "label": "DLP",
+   "detail": "Detect/block sensitive data leaving (payroll.txt on SRV01 as the bait): egress inspection, Wazuh rules, a small open-source DLP or proxy-based content rules",
+   "statusText": "planned",
+   "status": "todo"
+  }
+ ],
+ "steps": [
+  {
+   "id": "A1.4",
+   "shots": [
+    {
+     "n": 1,
+     "caption": "parrot ip br a",
+     "src": "https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A1.4-01-parrot-ip-br-a.png"
+    }
+   ]
+  },
+  {
+   "id": "A2.1",
+   "shots": [
+    {
+     "n": 1,
+     "caption": "subnet sweep nmap sn",
+     "src": "https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.1-01-subnet-sweep-nmap-sn.png"
+    },
+    {
+     "n": 2,
+     "caption": "pfsense pass logging wan",
+     "src": "https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.1-02-pfsense-pass-logging-wan.png"
+    }
+   ]
+  },
+  {
+   "id": "A2.2",
+   "shots": [
+    {
+     "n": 1,
+     "caption": "pfsense syn scan blocks",
+     "src": "https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.2-01-pfsense-syn-scan-blocks.png"
+    }
+   ]
+  },
+  {
+   "id": "A2.3",
+   "shots": [
+    {
+     "n": 1,
+     "caption": "nmap full scan output",
+     "src": "https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.3-01-nmap-full-scan-output.png"
+    },
+    {
+     "n": 2,
+     "caption": "nginx nse requests",
+     "src": "https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.3-02-nginx-nse-requests.png"
+    },
+    {
+     "n": 3,
+     "caption": "apache nse requests",
+     "src": "https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.3-03-apache-nse-requests.png"
+    },
+    {
+     "n": 4,
+     "caption": "suricata tail empty first try",
+     "src": "https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.3-04-suricata-tail-empty-first-try.png"
+    },
+    {
+     "n": 5,
+     "caption": "suricata nse alerts both legs",
+     "src": "https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.3-05-suricata-nse-alerts-both-legs.png"
+    },
+    {
+     "n": 6,
+     "caption": "suricata xff before",
+     "src": "https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.3-06-suricata-xff-before.png"
+    },
+    {
+     "n": 7,
+     "caption": "suricata xff after",
+     "src": "https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.3-07-suricata-xff-after.png"
+    },
+    {
+     "n": 8,
+     "caption": "fastlog both legs rerun",
+     "src": "https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.3-08-fastlog-both-legs-rerun.png"
+    }
+   ]
+  },
+  {
+   "id": "A2.6",
+   "shots": [
+    {
+     "n": 1,
+     "caption": "whatweb simple summary",
+     "src": "https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.6-01-whatweb-simple-summary.png"
+    },
+    {
+     "n": 2,
+     "caption": "whatweb simple headers",
+     "src": "https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.6-02-whatweb-simple-headers.png"
+    },
+    {
+     "n": 3,
+     "caption": "nginx whatweb first request",
+     "src": "https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.6-03-nginx-whatweb-first-request.png"
+    },
+    {
+     "n": 4,
+     "caption": "suricata whatweb first alert",
+     "src": "https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.6-04-suricata-whatweb-first-alert.png"
+    },
+    {
+     "n": 5,
+     "caption": "whatweb aggressive dvwa",
+     "src": "https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.6-05-whatweb-aggressive-dvwa.png"
+    },
+    {
+     "n": 6,
+     "caption": "nginx whatweb both requests",
+     "src": "https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.6-06-nginx-whatweb-both-requests.png"
+    },
+    {
+     "n": 7,
+     "caption": "suricata whatweb both alerts",
+     "src": "https://raw.githubusercontent.com/aymane-elouafi/enterprise-network/main/part-2-attack-phase/screenshots/A2.6-07-suricata-whatweb-both-alerts.png"
+    }
+   ]
+  }
+ ],
+ "synced_at": "2026-11-11T22:22:19.595Z"
+}
