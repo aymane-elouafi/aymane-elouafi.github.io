@@ -885,7 +885,7 @@ body.lb-lock { overflow: hidden; }
 .lc-head { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 0.72rem; }
 .lc-live { color: var(--bad); letter-spacing: 0.12em; font-weight: 700; }
 .lc-repo { color: var(--faint); margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lc-viz { margin-top: 12px; border-radius: 12px; overflow: hidden; background: rgba(0, 0, 0, 0.25); border: 1px solid var(--border); min-height: 150px; }
+.lc-viz { position: relative; margin-top: 12px; border-radius: 12px; overflow: hidden; background: rgba(0, 0, 0, 0.25); border: 1px solid var(--border); min-height: 150px; }
 .live-card.featured .lc-viz { min-height: 260px; }
 .lc-progress { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 0.72rem; color: var(--muted); margin-bottom: 8px; }
 .bar { flex: 1; height: 5px; border-radius: 9px; background: rgba(255, 255, 255, 0.06); overflow: hidden; }
@@ -972,7 +972,7 @@ body.lb-lock { overflow: hidden; }
 .net-hud b { font-weight: 700; font-variant-numeric: tabular-nums; }
 .hud-ok b { color: var(--ok); } .hud-bad b { color: var(--bad); } .hud-warn b { color: var(--warn); } .hud-info b { color: var(--info); }
 .hud-note { margin-left: auto; color: var(--faint); font-size: 0.68rem; }
-.mini .net-hud { padding: 7px 10px; font-size: 0.66rem; background: none; border: 0; position: absolute; top: 0; left: 0; z-index: 2; }
+.mini .net-hud { padding: 7px 12px; font-size: 0.66rem; gap: 4px 14px; }
 
 /* ---------- network ---------- */
 .net-svg, .pipe-svg { display: block; width: 100%; height: auto; }
@@ -1042,7 +1042,11 @@ body.lb-lock { overflow: hidden; }
   transition: opacity 0.3s ease, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .net-banner.on { opacity: 1; transform: translate(-50%, 0); }
-.mini .net-banner { top: 34px; font-size: 0.64rem; padding: 4px 10px; }
+.mini .net-banner {
+  top: auto; bottom: 10px;
+  font-size: 0.64rem; padding: 4px 10px;
+  max-width: calc(100% - 20px); overflow: hidden; text-overflow: ellipsis;
+}
 
 .net-console {
   height: 190px;
@@ -1270,4 +1274,18 @@ body.lb-lock { overflow: hidden; }
 .net-scroll { overflow-x: auto; scrollbar-width: thin; scrollbar-color: #2a2e36 transparent; }
 @media (max-width: 600px) {
   .viz.net:not(.mini) .net-svg { width: 720px; max-width: none; }
+}
+/* phones: the attack banner gets its own strip under the counters instead of covering the map */
+@media (max-width: 600px) {
+  .net .net-banner, .net .net-banner.on {
+    position: static;
+    transform: none;
+    display: block;
+    width: auto; max-width: none;
+    margin: 6px 10px 0;
+    padding: 3px 10px;
+    font-size: 0.62rem;
+    text-align: center;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
 }
