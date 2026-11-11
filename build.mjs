@@ -664,18 +664,6 @@ ${topbar()}
 ${sidebar("")}
   <main class="container home">
 
-    <!-- ===== LIVE PROJECTS (in progress, synced from GitHub) ===== -->
-    <section class="live-home wide">
-      <div class="live-title">
-        <h2><span class="live-dot" aria-hidden="true"></span> Live projects <span class="muted">· in progress</span></h2>
-        <p class="live-sub">These pages are wired to GitHub: a pipeline syncs every push, so they change as the projects do.</p>
-      </div>
-      <div class="ticker" aria-hidden="true"><div class="ticker-track" id="ticker">${projects.flatMap(p => (live[p.id] ? live[p.id].commits.slice(0, 4) : []).map(c => `<span><b>${esc(p.repo.split("/")[1])}</b> ${esc(c.msg)}</span>`)).join("")}</div></div>
-      <div class="live-grid">
-${projects.map(liveCard).join("\n")}
-      </div>
-    </section>
-
     <!-- ===== INTRO ===== -->
     <header class="intro">
       <p class="prompt"><span class="accent">aymane@sec</span>:~$ whoami</p>
@@ -704,6 +692,18 @@ ${projects.map(liveCard).join("\n")}
         <a href="${HTB}" target="_blank" rel="noopener">Hack The Box</a>
       </p>
     </header>
+
+    <!-- ===== LIVE PROJECTS (in progress, synced from GitHub) ===== -->
+    <section class="live-home">
+      <div class="live-title">
+        <h2><span class="live-dot" aria-hidden="true"></span> Live projects <span class="muted">· in progress</span></h2>
+        <p class="live-sub">These pages are wired to GitHub: a pipeline syncs every push, so they change as the projects do.</p>
+      </div>
+      <div class="ticker" aria-hidden="true"><div class="ticker-track" id="ticker">${projects.flatMap(p => (live[p.id] ? live[p.id].commits.slice(0, 4) : []).map(c => `<span><b>${esc(p.repo.split("/")[1])}</b> ${esc(c.msg)}</span>`)).join("")}</div></div>
+      <div class="live-grid wide">
+${projects.map(liveCard).join("\n")}
+      </div>
+    </section>
 
     <!-- ===== PROJECTS (featured) ===== -->
     <section class="projects">

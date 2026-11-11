@@ -797,7 +797,7 @@ body.lb-lock { overflow: hidden; }
 
 /* break out of the 720px reading column for the big visuals */
 .wide {
-  --w: min(1060px, calc(100vw - 40px));
+  --w: min(1060px, calc(100vw - 48px));
   width: var(--w);
   margin-left: calc(50% - var(--w) / 2);
 }
@@ -823,7 +823,7 @@ body.lb-lock { overflow: hidden; }
 .nav-live summary .live-dot { margin-right: 4px; }
 
 /* ---------- home ---------- */
-.live-home { margin-bottom: 64px; }
+.live-home { margin-top: 60px; border-top: 1px solid var(--border); padding-top: 36px; }
 .live-title h2 { font-size: 1.15rem; margin: 0 0 6px; display: flex; align-items: center; gap: 10px; }
 .live-sub { color: var(--muted); margin: 0 0 18px; font-size: 0.93rem; }
 
