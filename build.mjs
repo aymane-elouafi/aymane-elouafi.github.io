@@ -144,7 +144,7 @@ function sidebar(currentId) {
     const sections = ph.sections.map(sec => {
       const list = secPosts(sec);
       if (!list.length) {
-        return `        <div class="nav-section empty"><span class="nav-sec-title">${esc(sec.title)}</span></div>`;
+        return `        <div class="nav-section empty"><span class="nav-sec-title">${esc(sec.title)}<em>soon</em></span></div>`;
       }
       return `        <div class="nav-section">
           <span class="nav-sec-title">${esc(sec.title)}</span>
@@ -155,13 +155,13 @@ ${list.map(postLink).map(s => "            " + s).join("\n")}
     }).join("\n");
 
     return `    <details class="nav-phase"${open ? " open" : ""}>
-      <summary><span class="nav-num">${ph.num}</span> ${esc(ph.title)}</summary>
+      <summary><span class="nav-num">${ph.num}</span><span class="nav-label">${esc(ph.title)}</span>${phasePosts.length ? `<span class="nav-count">${phasePosts.length}</span>` : ""}</summary>
 ${sections}
     </details>`;
   }).join("\n");
 
   const projectsHtml = `    <details class="nav-phase nav-projects"${projectList.some(p => p.id === currentId) ? " open" : ""}>
-      <summary><span class="nav-num">▣</span> Projects</summary>
+      <summary><span class="nav-num">▣</span><span class="nav-label">Projects</span><span class="nav-count">${projectList.length}</span></summary>
       <div class="nav-section">
         <ul>
 ${(projectList.length ? projectList.map(postLink) : ["<li class=\"empty\">(soon)</li>"]).map(s => "          " + s).join("\n")}
@@ -170,7 +170,7 @@ ${(projectList.length ? projectList.map(postLink) : ["<li class=\"empty\">(soon)
     </details>`;
 
   const walkHtml = `    <details class="nav-phase nav-walk"${walkthroughs.some(p => p.id === currentId) ? " open" : ""}>
-      <summary><span class="nav-num">★</span> HTB Walkthroughs</summary>
+      <summary><span class="nav-num">★</span><span class="nav-label">HTB Walkthroughs</span><span class="nav-count">${walkthroughs.length}</span></summary>
       <div class="nav-section">
         <ul>
 ${(walkthroughs.length ? walkthroughs.map(postLink) : ["<li class=\"empty\">(soon)</li>"]).map(s => "          " + s).join("\n")}
@@ -179,7 +179,7 @@ ${(walkthroughs.length ? walkthroughs.map(postLink) : ["<li class=\"empty\">(soo
     </details>`;
 
   const liveHtml = `    <details class="nav-phase nav-live" open>
-      <summary><span class="nav-num live-dot" aria-hidden="true"></span> Live projects</summary>
+      <summary><span class="nav-num"><i class="live-dot" aria-hidden="true"></i></span><span class="nav-label">Live projects</span><span class="nav-count">${projects.length}</span></summary>
       <div class="nav-section">
         <ul>
 ${projects.map(p => `          <li><a href="${p.id}.html"${p.id === currentId ? ' class="current"' : ""}>${esc(p.title)}</a></li>`).join("\n")}
