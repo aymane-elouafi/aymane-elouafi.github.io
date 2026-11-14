@@ -345,6 +345,7 @@ footer {
   background: linear-gradient(180deg, #101216, #0c0d10 60%);
   border-right: 1px solid var(--border);
   overflow-y: auto;
+  overflow-x: hidden;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
 }
