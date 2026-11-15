@@ -29,6 +29,7 @@ const HTB = "https://profile.hackthebox.com/profile/019fc7ef-cecd-73b9-839f-3b4b
 const SAME_AS = [LINKEDIN, GITHUB, HTB];
 const ROLE = "Cybersecurity Engineer";
 const GA_ID = "G-V2R1YY0P62"; // Google Analytics measurement ID
+const CLARITY_ID = "zds571drnj"; // Microsoft Clarity project ID
 
 const posts = JSON.parse(readFileSync("posts.json", "utf8"));
 const methodology = JSON.parse(readFileSync("methodology.json", "utf8"));
@@ -67,6 +68,14 @@ function head({ title, description, canonical, ogType, jsonld }) {
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
     gtag('config', '${GA_ID}');
+  </script>
+  <!-- Microsoft Clarity - heatmaps and session recordings -->
+  <script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "${CLARITY_ID}");
   </script>
 
   <meta charset="UTF-8">
