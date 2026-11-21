@@ -58,6 +58,24 @@
     ]
   },
   {
+    "id": "linux-remote-management",
+    "title": "Footprinting Linux Remote Management (SSH, Rsync, R-Services)",
+    "date": "2026-11-21",
+    "series": "Footprinting Services",
+    "tags": ["htb", "footprinting", "ssh", "openssh", "rsync", "r-services", "rlogin", "linux", "enumeration"],
+    "description": "Footprinting Linux remote management: SSH auth methods, dangerous sshd_config settings and ssh-audit, open Rsync shares on 873, and abusing trusted hosts.equiv/.rhosts entries in the legacy r-services on 512-514.",
+    "cheatsheet": [
+      { "cmd": "./ssh-audit.py <target>", "desc": "Fingerprint SSH: banner, version, weak algorithms" },
+      { "cmd": "ssh -v <user>@<target> -o PreferredAuthentications=password", "desc": "See allowed auth methods, force password auth" },
+      { "cmd": "sudo nmap -sV -p 873 <target>", "desc": "Scan for Rsync" },
+      { "cmd": "nc -nv <target> 873   then   #list", "desc": "List the Rsync shares" },
+      { "cmd": "rsync -av --list-only rsync://<target>/<share>", "desc": "Enumerate an open share (drop --list-only to pull it)" },
+      { "cmd": "sudo nmap -sV -p 512,513,514 <target>", "desc": "Scan for r-services (rexec, rlogin, rsh)" },
+      { "cmd": "rlogin <target> -l <user>", "desc": "Log in via a trusted .rhosts / hosts.equiv entry" },
+      { "cmd": "rwho   /   rusers -al <target>", "desc": "List users logged in on the network" }
+    ]
+  },
+  {
     "id": "windows-remote-management",
     "title": "Footprinting Windows Remote Management (RDP, WinRM, WMI)",
     "date": "2026-11-21",
