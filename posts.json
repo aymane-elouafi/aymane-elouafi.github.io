@@ -58,6 +58,22 @@
     ]
   },
   {
+    "id": "windows-remote-management",
+    "title": "Footprinting Windows Remote Management (RDP, WinRM, WMI)",
+    "date": "2026-11-21",
+    "series": "Footprinting Services",
+    "tags": ["htb", "footprinting", "rdp", "winrm", "wmi", "windows", "evil-winrm", "impacket", "enumeration"],
+    "description": "Footprinting Windows remote management: RDP on 3389 (NLA, weak encryption, self-signed certs, the mstshash=nmap OPSEC tell), WinRM on 5985/5986 with evil-winrm, and WMI command execution with Impacket's wmiexec.py.",
+    "cheatsheet": [
+      { "cmd": "nmap -sV -sC <target> -p3389 --script rdp*", "desc": "Footprint RDP: NLA, product version, hostname" },
+      { "cmd": "./rdp-sec-check.pl <target>", "desc": "Check RDP security layers and encryption, no auth needed" },
+      { "cmd": "xfreerdp /u:<user> /p:\"<pass>\" /v:<target>", "desc": "Connect to RDP from Linux" },
+      { "cmd": "nmap -sV -sC <target> -p5985,5986 --disable-arp-ping -n", "desc": "Footprint WinRM (HTTP / HTTPS)" },
+      { "cmd": "evil-winrm -i <target> -u <user> -p <pass>", "desc": "Remote PowerShell over WinRM" },
+      { "cmd": "wmiexec.py <user>:\"<pass>\"@<target> \"hostname\"", "desc": "Run a command over WMI (TCP 135, then a high port)" }
+    ]
+  },
+  {
     "id": "ipmi",
     "title": "Footprinting IPMI",
     "date": "2026-10-28",
